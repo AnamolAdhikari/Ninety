@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import type { FootballService } from "@/server/services/football.service";
 import { getFootballService } from "@/server/services/football.service";
+import { isSafeOpaqueId } from "@/server/http/input";
 
 export const dynamic = "force-dynamic";
 
 export function createMatchHandler(service: Pick<FootballService, "getMatchCenter">) {
   return async function matchHandler(matchId: string) {
+    if (!isSafeOpaqueId(matchId)) return NextResponse.json({ error: { code: "INVALID_MATCH_ID", message: "Match identifier is invalid." } }, { status: 400, headers: { "Cache-Control": "no-store" } });
     try {
       const data = await service.getMatchCenter(matchId);
       if (!data) return NextResponse.json({ error: { code: "MATCH_NOT_FOUND", message: "Match unavailable." } }, { status: 404, headers: { "Cache-Control": "no-store" } });

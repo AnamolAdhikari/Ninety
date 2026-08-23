@@ -1,22 +1,15 @@
 "use client";
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { ChevronRight, Radio, Star } from "lucide-react";
 import type { FootballDashboardData } from "@/domain/football/types";
-import { getFootballDashboard } from "@/features/football/api/football-client";
 import { MatchCard } from "./match-card";
 import { TeamCrest } from "./team-crest";
 import { LocalKickoff } from "./local-kickoff";
 import { AppHeader } from "@/features/shell/app-header";
 import { FavoriteMatches } from "@/features/personalization/components/favorite-matches";
 
-export function FootballDashboard() {
-  const [data, setData] = useState<FootballDashboardData | null>(null);
-  const [error, setError] = useState(false);
-  useEffect(() => { const controller = new AbortController(); getFootballDashboard(controller.signal).then(setData).catch((e) => { if (e?.name !== "AbortError") setError(true); }); return () => controller.abort(); }, []);
-  if (error) return <main className="grid min-h-screen place-items-center px-6 text-center"><div><p className="mb-2 text-2xl font-semibold">We&apos;re off the pitch for a moment.</p><button onClick={() => location.reload()} className="text-[#c7ff4a]">Try again</button></div></main>;
-  if (!data) return <div className="mx-auto min-h-screen max-w-[1500px] animate-pulse px-5 pt-24"><div className="h-[430px] rounded-3xl bg-white/[.05]" /></div>;
+export function FootballDashboard({ data }: { data: FootballDashboardData }) {
   const featured = data.featured;
   return <div className="noise min-h-screen pb-24 lg:pb-0">
     <AppHeader/>

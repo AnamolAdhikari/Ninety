@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { createContentSecurityPolicy } from "./content-security-policy";
+describe("content security policy", () => { it("keeps media origins explicit and production scripts hardened", () => { const policy = createContentSecurityPolicy(["https://embed.example.com"], false, ["https://images.example.com"]); expect(policy).toContain("frame-src 'self' https://embed.example.com"); expect(policy).toContain("img-src 'self' data: blob: https://images.example.com"); expect(policy).not.toContain("unsafe-eval"); expect(policy).not.toMatch(/(?:img|frame)-src[^;]*\shttps:\s/); expect(policy).toContain("object-src 'none'"); }); });
