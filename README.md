@@ -40,7 +40,27 @@ Dashboard → /watch/[matchId]
 Browser API consumers → /api/football/match/[matchId] → FootballService
 ```
 
-Dynamic URLs contain only stable NINETY match IDs. The match center is primarily server-rendered, with a small client boundary for accessible tabs. Its cinematic player is intentionally a visual placeholder: stream lookup, source selection, embeds, HLS, and DASH are not implemented.
+Dynamic URLs contain only stable NINETY match IDs. The match center is primarily server-rendered, with small client boundaries for accessible tabs, local time, and authorized playback.
+
+## Authorized stream playback
+
+Playback uses a separate server-only boundary and never calls the football metadata provider's stream endpoints:
+
+```text
+Browser → /api/football/match/:id/streams → StreamService → StreamProvider
+
+Browser selects opaque NINETY stream ID
+  → /api/football/match/:id/streams/:streamId
+  → server resolves the operator-authorized catalog entry
+  → browser receives only the final embed URL
+  → sandboxed iframe
+```
+
+Production requires `FOOTBALL_STREAM_PROVIDER=configured` and an operator-maintained `FOOTBALL_STREAM_CATALOG_JSON`. Catalog keys must be NINETY match IDs and entries must use authorized HTTPS embed URLs. Development defaults to a same-origin mock player. Production never falls back to mock playback.
+
+The stream list and resolution endpoints use `no-store`; embed URLs are not retained in browser storage. Only the selected opaque NINETY stream ID is remembered per match. Resolution failures try each listed source at most once. The iframe sandbox is `allow-scripts allow-same-origin`; popups and top-level navigation are intentionally not granted. Its permissions allow only autoplay, fullscreen, and picture-in-picture.
+
+The final embed host is necessarily visible in browser DevTools because the browser connects to it. Provider configuration, catalog contents, credentials, and upstream identifiers remain server-only.
 
 The service deduplicates matches and produces separately sorted `live`, `today`, and `upcoming` collections. Live matches prioritize provider-supplied popularity, while today and upcoming matches are chronological. The provider uses a six-second timeout, a no-store live request, and a 60-second schedule revalidation. The public dashboard response has a short CDN cache window.
 

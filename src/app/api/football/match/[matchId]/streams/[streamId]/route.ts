@@ -1,0 +1,6 @@
+import { NextResponse } from "next/server";
+import type { StreamService } from "@/server/services/stream.service";
+import { getStreamService } from "@/server/services/stream.service";
+export const dynamic = "force-dynamic";
+export function createStreamResolutionHandler(service: Pick<StreamService, "resolve">) { return async (matchId: string, streamId: string) => { try { const result = await service.resolve(matchId, streamId); if (result.kind !== "ok") return NextResponse.json({ error: { code: result.kind === "match-not-found" ? "MATCH_NOT_FOUND" : "STREAM_NOT_FOUND", message: result.kind === "match-not-found" ? "Match unavailable." : "Stream unavailable." } }, { status: 404, headers: { "Cache-Control": "no-store" } }); return NextResponse.json(result.data, { headers: { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" } }); } catch { return NextResponse.json({ error: { code: "STREAM_UNAVAILABLE", message: "Stream is temporarily unavailable." } }, { status: 503, headers: { "Cache-Control": "no-store" } }); } }; }
+export async function GET(_request: Request, { params }: RouteContext<"/api/football/match/[matchId]/streams/[streamId]">) { const { matchId, streamId } = await params; return createStreamResolutionHandler(getStreamService())(matchId, streamId); }
