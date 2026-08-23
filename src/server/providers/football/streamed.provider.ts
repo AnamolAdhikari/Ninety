@@ -15,13 +15,23 @@ interface StreamedMatch {
   teams?: { home?: { name: string; badge?: string }; away?: { name: string; badge?: string } };
 }
 
+export const STREAMED_METADATA_TIMEOUT_MS = 15_000;
 const palette: [string, string][] = [["#2962ff", "#0d1b45"], ["#d8173c", "#52101d"], ["#1aa36f", "#073f2b"], ["#8c5cff", "#2b195c"]];
 const slugify = (value: string) => value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 72);
 const shortHash = (value: string) => createHash("sha256").update(value).digest("hex").slice(0, 10);
-const optionalUrl = (value: unknown, baseUrl: string) => {
+const optionalProviderAssetUrl = (value: unknown, baseUrl: string) => {
   if (typeof value !== "string" || !value.trim()) return undefined;
   try { const url = new URL(value, `${baseUrl}/`); const provider = new URL(baseUrl); return url.protocol === "https:" && url.origin === provider.origin ? url.toString() : undefined; } catch { return undefined; }
 };
+
+export function buildStreamedBadgeUrl(baseUrl: string, badge: unknown): string | undefined {
+  if (typeof badge !== "string" || !badge.trim()) return undefined;
+  try {
+    const provider = new URL(baseUrl);
+    if (provider.protocol !== "https:") return undefined;
+    return `${provider.origin}/api/images/badge/${encodeURIComponent(badge.trim())}.webp`;
+  } catch { return undefined; }
+}
 
 function parseRaw(value: unknown): StreamedMatch | null {
   if (!value || typeof value !== "object") return null;
@@ -45,7 +55,7 @@ function parseRaw(value: unknown): StreamedMatch | null {
 function makeTeam(name: string, badge: unknown, baseUrl: string): Team {
   const slug = slugify(name) || "team";
   const colorIndex = Number.parseInt(shortHash(name).slice(0, 2), 16) % palette.length;
-  return { id: `${slug}-${shortHash(name).slice(0, 4)}`, slug, name, shortName: name.split(/\s+/).map((word) => word[0]).join("").slice(0, 3).toUpperCase(), colors: palette[colorIndex], crestUrl: optionalUrl(badge, baseUrl) };
+  return { id: `${slug}-${shortHash(name).slice(0, 4)}`, slug, name, shortName: name.split(/\s+/).map((word) => word[0]).join("").slice(0, 3).toUpperCase(), colors: palette[colorIndex], crestUrl: buildStreamedBadgeUrl(baseUrl, badge) };
 }
 
 export function normalizeStreamedMatch(value: unknown, liveIds: ReadonlySet<string>, baseUrl: string, now = new Date()): Match | null {
@@ -57,24 +67,30 @@ export function normalizeStreamedMatch(value: unknown, liveIds: ReadonlySet<stri
   const awayName = raw.teams.away.name;
   const slug = `${slugify(homeName)}-v-${slugify(awayName)}`;
   const status: MatchStatus = liveIds.has(raw.id) ? "LIVE" : kickoff.valueOf() < now.valueOf() - 4 * 60 * 60 * 1000 ? "FINISHED" : "UPCOMING";
-  return { id: `${slug}-${shortHash(`${raw.id}:${raw.date}`)}`, slug, competition: "Football", stage: status === "LIVE" ? "Live coverage" : "Scheduled", status, popular: raw.popular, kickoff: kickoff.toISOString(), posterUrl: optionalUrl(raw.poster, baseUrl), home: makeTeam(homeName, raw.teams.home.badge, baseUrl), away: makeTeam(awayName, raw.teams.away.badge, baseUrl) };
+  return { id: `${slug}-${shortHash(`${raw.id}:${raw.date}`)}`, slug, competition: "Football", stage: status === "LIVE" ? "Live coverage" : "Scheduled", status, popular: raw.popular, kickoff: kickoff.toISOString(), posterUrl: optionalProviderAssetUrl(raw.poster, baseUrl), home: makeTeam(homeName, raw.teams.home.badge, baseUrl), away: makeTeam(awayName, raw.teams.away.badge, baseUrl) };
 }
 
 export class StreamedFootballProvider implements FootballProvider {
-  constructor(private readonly baseUrl: string, private readonly fetcher: typeof fetch = fetch, private readonly timeoutMs = 6_000) {
+  constructor(private readonly baseUrl: string, private readonly fetcher: typeof fetch = fetch, private readonly timeoutMs = STREAMED_METADATA_TIMEOUT_MS) {
     if (!/^https:\/\//i.test(baseUrl)) throw new FootballProviderError("FOOTBALL_PROVIDER_BASE_URL must use HTTPS.");
   }
 
   async getMatches(): Promise<Match[]> {
     try {
-      const signal = AbortSignal.timeout(this.timeoutMs);
-      const [footballResponse, liveResponse] = await Promise.all([
-        this.fetcher(`${this.baseUrl}/api/matches/football`, { signal, next: { revalidate: 60 } }),
-        this.fetcher(`${this.baseUrl}/api/matches/live`, { signal, cache: "no-store" }),
+      const readArray = async (path: string, init: RequestInit) => {
+        const response = await this.fetcher(`${this.baseUrl}${path}`, { ...init, signal: AbortSignal.timeout(this.timeoutMs) });
+        if (!response.ok) throw new Error(`Upstream ${path} returned ${response.status}`);
+        const data: unknown = await response.json();
+        if (!Array.isArray(data)) throw new Error(`Upstream ${path} was not a match array`);
+        return data;
+      };
+      const [footballResult, liveResult] = await Promise.allSettled([
+        readArray("/api/matches/football", { next: { revalidate: 60 } }),
+        readArray("/api/matches/live", { cache: "no-store" }),
       ]);
-      if (!footballResponse.ok || !liveResponse.ok) throw new Error(`Upstream returned ${footballResponse.status}/${liveResponse.status}`);
-      const [football, live] = await Promise.all([footballResponse.json(), liveResponse.json()]);
-      if (!Array.isArray(football) || !Array.isArray(live)) throw new Error("Upstream response was not a match array");
+      if (footballResult.status === "rejected") throw footballResult.reason;
+      const football = footballResult.value;
+      const live = liveResult.status === "fulfilled" ? liveResult.value : [];
       const liveIds = new Set(live.flatMap((item) => item && typeof item === "object" && typeof (item as UnknownRecord).id === "string" ? [(item as UnknownRecord).id as string] : []));
       return football.map((item) => normalizeStreamedMatch(item, liveIds, this.baseUrl)).filter((match): match is Match => match !== null);
     } catch (error) {

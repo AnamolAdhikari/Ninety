@@ -1,12 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
-import { normalizeStreamedMatch, StreamedFootballProvider } from "./streamed.provider";
+import { buildStreamedBadgeUrl, normalizeStreamedMatch, STREAMED_METADATA_TIMEOUT_MS, StreamedFootballProvider } from "./streamed.provider";
 
-const rawMatch = { id: "source-42", title: "Arsenal vs Chelsea", category: "football", date: Date.parse("2026-08-23T18:00:00Z"), popular: true, teams: { home: { name: "Arsenal", badge: "/badge/arsenal.webp" }, away: { name: "Chelsea", badge: "http://unsafe.test/badge.png" } }, sources: [{ source: "hidden", id: "secret" }] };
+const rawMatch = { id: "source-42", title: "Arsenal vs Chelsea", category: "football", date: Date.parse("2027-08-23T18:00:00Z"), popular: true, teams: { home: { name: "Arsenal", badge: "arsenal-badge" }, away: { name: "Chelsea" } }, sources: [{ source: "hidden", id: "secret" }] };
+const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 
 describe("StreamedFootballProvider normalization", () => {
+  it("builds badge image URLs from opaque badge identifiers", () => {
+    expect(buildStreamedBadgeUrl("https://streamed.pk", "arsenal-badge")).toBe("https://streamed.pk/api/images/badge/arsenal-badge.webp");
+    expect(buildStreamedBadgeUrl("https://streamed.pk/", "club badge/ä")).toBe("https://streamed.pk/api/images/badge/club%20badge%2F%C3%A4.webp");
+    expect(buildStreamedBadgeUrl("https://streamed.pk", "")).toBeUndefined();
+    expect(buildStreamedBadgeUrl("https://streamed.pk", undefined)).toBeUndefined();
+    expect(buildStreamedBadgeUrl("http://streamed.pk", "arsenal-badge")).toBeUndefined();
+    expect(buildStreamedBadgeUrl("https://streamed.pk", "/arsenal-badge")).not.toBe("https://streamed.pk/arsenal-badge");
+  });
+
   it("maps provider data to NINETY models without leaking source IDs", () => {
-    const match = normalizeStreamedMatch(rawMatch, new Set(["source-42"]), "https://streamed.pk", new Date("2026-08-23T18:30:00Z"));
-    expect(match).toMatchObject({ slug: "arsenal-v-chelsea", status: "LIVE", popular: true, competition: "Football", home: { name: "Arsenal", crestUrl: "https://streamed.pk/badge/arsenal.webp" }, away: { name: "Chelsea" } });
+    const match = normalizeStreamedMatch(rawMatch, new Set(["source-42"]), "https://streamed.pk", new Date("2027-08-23T18:30:00Z"));
+    expect(match).toMatchObject({ slug: "arsenal-v-chelsea", status: "LIVE", popular: true, competition: "Football", home: { name: "Arsenal", crestUrl: "https://streamed.pk/api/images/badge/arsenal-badge.webp" }, away: { name: "Chelsea" } });
     expect(match?.id).not.toContain("source-42");
     expect(JSON.stringify(match)).not.toContain("sources");
     expect(match?.away.crestUrl).toBeUndefined();
@@ -18,14 +28,32 @@ describe("StreamedFootballProvider normalization", () => {
     expect(normalizeStreamedMatch({ ...rawMatch, teams: undefined, title: "Unknown event" }, new Set(), "https://streamed.pk")).toBeNull();
   });
 
-  it("rejects crest hosts outside the configured provider origin", () => {
-    const match = normalizeStreamedMatch({ ...rawMatch, teams: { ...rawMatch.teams, home: { name: "Arsenal", badge: "https://tracking.example/crest.png" } } }, new Set(), "https://streamed.pk");
-    expect(match?.home.crestUrl).toBeUndefined();
+  it("uses the production-safe metadata timeout", () => expect(STREAMED_METADATA_TIMEOUT_MS).toBe(15_000));
+
+  it("fetches primary and live metadata concurrently", async () => {
+    const requested: string[] = [];
+    const fetcher = vi.fn(async (input: string | URL | Request) => { requested.push(String(input)); return String(input).endsWith("/live") ? json([{ id: "source-42" }]) : json([rawMatch]); }) as unknown as typeof fetch;
+    const matches = await new StreamedFootballProvider("https://streamed.pk", fetcher).getMatches();
+    expect(requested).toEqual(["https://streamed.pk/api/matches/football", "https://streamed.pk/api/matches/live"]);
+    expect(matches[0].status).toBe("LIVE");
   });
 
-  it("applies a timeout and normalizes upstream failures", async () => {
-    const fetcher = vi.fn().mockResolvedValue(new Response("nope", { status: 500 }));
-    const provider = new StreamedFootballProvider("https://streamed.pk", fetcher);
-    await expect(provider.getMatches()).rejects.toMatchObject({ name: "FootballProviderError", message: "Football data provider is unavailable." });
+  it("returns primary matches when live enrichment fails", async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request) => String(input).endsWith("/live") ? json({ malformed: true }) : json([rawMatch])) as unknown as typeof fetch;
+    const matches = await new StreamedFootballProvider("https://streamed.pk", fetcher).getMatches();
+    expect(matches).toHaveLength(1);
+    expect(matches[0].status).toBe("UPCOMING");
+    expect(matches[0].stage).toBe("Scheduled");
+  });
+
+  it("keeps timeout protection and normalizes primary failures", async () => {
+    const fetcher = vi.fn((_input: string | URL | Request, init?: RequestInit) => new Promise<Response>((_resolve, reject) => init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true }))) as unknown as typeof fetch;
+    const provider = new StreamedFootballProvider("https://streamed.pk", fetcher, 5);
+    await expect(provider.getMatches()).rejects.toMatchObject({ name: "FootballProviderError", message: "Football data provider is unavailable.", cause: { name: "TimeoutError" } });
+  });
+
+  it("normalizes primary HTTP failures even if live succeeds", async () => {
+    const fetcher = vi.fn(async (input: string | URL | Request) => String(input).endsWith("/live") ? json([]) : json({}, 500)) as unknown as typeof fetch;
+    await expect(new StreamedFootballProvider("https://streamed.pk", fetcher).getMatches()).rejects.toMatchObject({ name: "FootballProviderError", message: "Football data provider is unavailable." });
   });
 });
