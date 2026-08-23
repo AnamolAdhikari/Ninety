@@ -1,10 +1,14 @@
-import type { FootballDashboardData, Match, Team } from "@/domain/football/types";
+import type { Match, Team } from "@/domain/football/types";
 import type { FootballProvider } from "./provider";
+
 const team = (id: string, name: string, shortName: string, colors: [string, string]): Team => ({ id, name, shortName, colors });
+
 const matches: Match[] = [
-  { id: "ars-mci", competition: "Premier League", stage: "Matchday 27", status: "LIVE", minute: 67, kickoff: "2026-08-23T18:30:00Z", home: team("ars", "Arsenal", "ARS", ["#e30613", "#fff"]), away: team("mci", "Manchester City", "MCI", ["#6cabdd", "#fff"]), homeScore: 2, awayScore: 1 },
-  { id: "fcb-int", competition: "UEFA Champions League", stage: "League phase", status: "UPCOMING", kickoff: "2026-08-23T20:00:00Z", home: team("fcb", "Barcelona", "BAR", ["#a50044", "#004d98"]), away: team("int", "Inter", "INT", ["#0068a8", "#000"]) },
-  { id: "bvb-lev", competition: "Bundesliga", stage: "Matchday 3", status: "FINISHED", kickoff: "2026-08-23T14:30:00Z", home: team("bvb", "Dortmund", "BVB", ["#fdeb19", "#000"]), away: team("b04", "Leverkusen", "B04", ["#e32221", "#000"]), homeScore: 1, awayScore: 1 },
-  { id: "psg-om", competition: "Ligue 1", stage: "Matchday 4", status: "UPCOMING", kickoff: "2026-08-23T21:00:00Z", home: team("psg", "Paris SG", "PSG", ["#004170", "#da291c"]), away: team("om", "Marseille", "OM", ["#2faee0", "#fff"]) },
+  { id: "arsenal-manchester-city-e2708b44", slug: "arsenal-v-manchester-city", competition: "Premier League", stage: "Matchday 27", status: "LIVE", popular: true, minute: 67, kickoff: "2026-08-23T18:30:00Z", home: team("arsenal-91c2", "Arsenal", "ARS", ["#e30613", "#fff"]), away: team("manchester-city-7c3a", "Manchester City", "MCI", ["#6cabdd", "#fff"]), homeScore: 2, awayScore: 1 },
+  { id: "barcelona-inter-31c010da", slug: "barcelona-v-inter", competition: "UEFA Champions League", stage: "League phase", status: "UPCOMING", popular: true, kickoff: "2026-08-23T20:00:00Z", home: team("barcelona-cc21", "Barcelona", "BAR", ["#a50044", "#004d98"]), away: team("inter-a212", "Inter", "INT", ["#0068a8", "#000"]) },
+  { id: "dortmund-leverkusen-8b5f2a31", slug: "dortmund-v-leverkusen", competition: "Bundesliga", stage: "Matchday 3", status: "FINISHED", popular: false, kickoff: "2026-08-23T14:30:00Z", home: team("dortmund-4cc2", "Dortmund", "BVB", ["#fdeb19", "#000"]), away: team("leverkusen-cb90", "Leverkusen", "B04", ["#e32221", "#000"]), homeScore: 1, awayScore: 1 },
 ];
-export class MockFootballProvider implements FootballProvider { async getDashboard(): Promise<FootballDashboardData> { return { generatedAt: new Date().toISOString(), featured: matches[0], matches, competitions: [{ id: "pl", name: "Premier League", region: "England" }, { id: "ucl", name: "Champions League", region: "Europe" }, { id: "laliga", name: "LaLiga", region: "Spain" }, { id: "seriea", name: "Serie A", region: "Italy" }] }; } }
+
+export class MockFootballProvider implements FootballProvider {
+  async getMatches(): Promise<Match[]> { return matches; }
+}

@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NINETY
 
-## Getting Started
+NINETY is a football-only match experience built with Next.js, TypeScript, Tailwind CSS, Motion, and Lucide.
 
-First, run the development server:
+## Local development
 
 ```bash
+npm install
+copy .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Validation commands:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run test
+npm run lint
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Football provider architecture
 
-## Learn More
+The browser only requests `GET /api/football/dashboard`. That NINETY route calls the server-only `FootballService`, which obtains normalized matches through the `FootballProvider` contract. Provider implementations own all upstream response parsing; raw provider records, source IDs, stream information, configuration, and errors never cross the API boundary.
 
-To learn more about Next.js, take a look at the following resources:
+```text
+Browser → /api/football/dashboard → FootballService → FootballProvider
+                                                    ├─ StreamedFootballProvider
+                                                    └─ MockFootballProvider
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The service deduplicates matches and produces separately sorted `live`, `today`, and `upcoming` collections. Live matches prioritize provider-supplied popularity, while today and upcoming matches are chronological. The provider uses a six-second timeout, a no-store live request, and a 60-second schedule revalidation. The public dashboard response has a short CDN cache window.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Environment configuration
 
-## Deploy on Vercel
+All provider settings are server-only. Do not add `NEXT_PUBLIC_` prefixes.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```dotenv
+FOOTBALL_PROVIDER=streamed
+FOOTBALL_PROVIDER_BASE_URL=https://streamed.pk
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Supported `FOOTBALL_PROVIDER` values:
+
+- `streamed` uses the real football metadata provider and requires an HTTPS base URL.
+- `mock` uses deterministic local data for development and tests.
+
+When unset, development defaults to `mock` and production defaults to `streamed`. Production therefore cannot silently fall back to fabricated match data. Copy `.env.example` to the ignored `.env.local` file for local configuration; never commit secrets.
+
+## Data policy
+
+Only football match metadata is retrieved. Stream endpoints and player functionality are outside this phase. External data is converted into NINETY domain models with stable internal match IDs and slugs. Missing scores, competition metadata, crests, or match states are not fabricated; the UI renders honest fallbacks and empty states.

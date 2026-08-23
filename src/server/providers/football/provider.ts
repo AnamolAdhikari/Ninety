@@ -1,2 +1,5 @@
-import type { FootballDashboardData } from "@/domain/football/types";
-export interface FootballProvider { getDashboard(): Promise<FootballDashboardData>; }
+import type { Match } from "@/domain/football/types";
+
+export interface FootballProvider {
+  getMatches(): Promise<Match[]>;
+}
