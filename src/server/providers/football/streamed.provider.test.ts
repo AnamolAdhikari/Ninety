@@ -18,6 +18,11 @@ describe("StreamedFootballProvider normalization", () => {
     expect(normalizeStreamedMatch({ ...rawMatch, teams: undefined, title: "Unknown event" }, new Set(), "https://streamed.pk")).toBeNull();
   });
 
+  it("rejects crest hosts outside the configured provider origin", () => {
+    const match = normalizeStreamedMatch({ ...rawMatch, teams: { ...rawMatch.teams, home: { name: "Arsenal", badge: "https://tracking.example/crest.png" } } }, new Set(), "https://streamed.pk");
+    expect(match?.home.crestUrl).toBeUndefined();
+  });
+
   it("applies a timeout and normalizes upstream failures", async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response("nope", { status: 500 }));
     const provider = new StreamedFootballProvider("https://streamed.pk", fetcher);

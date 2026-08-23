@@ -20,7 +20,7 @@ const slugify = (value: string) => value.toLowerCase().normalize("NFKD").replace
 const shortHash = (value: string) => createHash("sha256").update(value).digest("hex").slice(0, 10);
 const optionalUrl = (value: unknown, baseUrl: string) => {
   if (typeof value !== "string" || !value.trim()) return undefined;
-  try { const url = new URL(value, `${baseUrl}/`); return url.protocol === "https:" ? url.toString() : undefined; } catch { return undefined; }
+  try { const url = new URL(value, `${baseUrl}/`); const provider = new URL(baseUrl); return url.protocol === "https:" && url.origin === provider.origin ? url.toString() : undefined; } catch { return undefined; }
 };
 
 function parseRaw(value: unknown): StreamedMatch | null {
