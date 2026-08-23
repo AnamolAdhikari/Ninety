@@ -2,11 +2,17 @@ export type MatchStatus = "LIVE" | "UPCOMING" | "FINISHED";
 
 export interface Team {
   id: string;
+  slug: string;
   name: string;
   shortName: string;
   colors: [string, string];
   crestUrl?: string;
 }
+
+export interface Competition { id: string; slug: string; name: string; region?: string; }
+export interface ClubData { team: Team; matches: Match[]; live: Match[]; upcoming: Match[]; competitions: Competition[]; }
+export interface LeagueData { competition: Competition; live: Match[]; today: Match[]; upcoming: Match[]; }
+export interface FootballSearchData { clubs: Team[]; matches: Match[]; competitions: Competition[]; }
 
 export interface Match {
   id: string;
@@ -31,7 +37,7 @@ export interface FootballDashboardData {
   today: Match[];
   upcoming: Match[];
   matches: Match[];
-  competitions: { id: string; name: string; region: string }[];
+  competitions: Competition[];
 }
 
 export interface FootballMatchCenterData {

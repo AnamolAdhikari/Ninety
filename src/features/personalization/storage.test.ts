@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { addRecent, parseIds, parseRecent, toggleFavorite } from "./storage";
+describe("personalization storage",()=>{it("stores only unique NINETY slugs",()=>{expect(parseIds('["arsenal","arsenal",42]')).toEqual(["arsenal"]);expect(toggleFavorite(["arsenal"],"barcelona")).toEqual(["arsenal","barcelona"]);expect(toggleFavorite(["arsenal"],"arsenal")).toEqual([])});it("keeps recent NINETY match IDs unique and bounded",()=>{const entries=Array.from({length:9},(_,i)=>({id:`match-${i}`,viewedAt:i}));const updated=addRecent(entries,"match-4",99);expect(updated).toHaveLength(8);expect(updated[0]).toEqual({id:"match-4",viewedAt:99});expect(parseRecent(JSON.stringify(updated))).toEqual(updated)})});

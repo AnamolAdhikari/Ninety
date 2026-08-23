@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { FootballMatchCenterData, Match } from "@/domain/football/types";
 import { createMatchHandler } from "./route";
 
-const match: Match = { id: "ninety-match-a1", slug: "home-v-away", competition: "Football", stage: "Scheduled", status: "UPCOMING", popular: false, kickoff: "2026-08-23T12:00:00Z", home: { id: "home", name: "Home", shortName: "HOM", colors: ["#111", "#333"] }, away: { id: "away", name: "Away", shortName: "AWA", colors: ["#222", "#444"] } };
+const match: Match = { id: "ninety-match-a1", slug: "home-v-away", competition: "Football", stage: "Scheduled", status: "UPCOMING", popular: false, kickoff: "2026-08-23T12:00:00Z", home: { id: "home", slug: "home", name: "Home", shortName: "HOM", colors: ["#111", "#333"] }, away: { id: "away", slug: "away", name: "Away", shortName: "AWA", colors: ["#222", "#444"] } };
 
 describe("GET /api/football/match/[matchId]", () => {
   it("returns a normalized match-center response", async () => {

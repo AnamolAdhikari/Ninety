@@ -62,6 +62,25 @@ The stream list and resolution endpoints use `no-store`; embed URLs are not reta
 
 The final embed host is necessarily visible in browser DevTools because the browser connects to it. Provider configuration, catalog contents, credentials, and upstream identifiers remain server-only.
 
+## Football discovery
+
+Public routes:
+
+```text
+/                         Personalized football dashboard
+/live                     Live football, filterable by competition
+/matches?date=YYYY-MM-DD  Shareable seven-day fixtures browser
+/leagues                  Available normalized competitions
+/league/[slug]            League live/today/upcoming fixtures
+/club/[slug]              Club fixtures and follow control
+/favorites                Browser-local favorite clubs
+/watch/[matchId]           Match center and authorized player
+```
+
+Discovery uses normalized NINETY models only. Competition slugs are derived from normalized names, and club slugs are generated in the provider normalization layer; neither exposes source identifiers. Server-side discovery methods filter a single normalized match collection for dates, live states, competitions, clubs, and search results. Search is debounced in the browser, requires two characters, and calls only `/api/football/search`.
+
+Date and competition filters are encoded in the `/matches` query string, preserving refresh, back/forward navigation, and sharing. Favorites (`ninety.favorite.clubs`) and recently viewed matches (`ninety.recent.matches`) remain browser-local in V1 and contain only NINETY slugs/IDs and timestamps. They contain no embed URLs or provider data.
+
 The service deduplicates matches and produces separately sorted `live`, `today`, and `upcoming` collections. Live matches prioritize provider-supplied popularity, while today and upcoming matches are chronological. The provider uses a six-second timeout, a no-store live request, and a 60-second schedule revalidation. The public dashboard response has a short CDN cache window.
 
 ## Environment configuration

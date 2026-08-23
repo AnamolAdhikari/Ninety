@@ -1,5 +1,5 @@
 import "server-only";
-import type { FootballDashboardData, FootballMatchCenterData, Match } from "@/domain/football/types";
+import type { ClubData, Competition, FootballDashboardData, FootballMatchCenterData, FootballSearchData, LeagueData, Match, Team } from "@/domain/football/types";
 import { createFootballProvider } from "@/server/providers/football/provider.factory";
 import type { FootballProvider } from "@/server/providers/football/provider";
 
@@ -9,6 +9,10 @@ const sameLocalDay = (value: string, now: Date) => {
   const date = new Date(value);
   return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
 };
+export const competitionSlug = (name: string) => name.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+const regionFor = (name: string) => ({ "Premier League": "England", "LaLiga": "Spain", "La Liga": "Spain", "Serie A": "Italy", "Bundesliga": "Germany", "UEFA Champions League": "Europe" }[name] ?? "Worldwide");
+const competitionsFrom = (matches: Match[]): Competition[] => [...new Set(matches.map((match) => match.competition).filter(Boolean))].map((name) => ({ id: competitionSlug(name), slug: competitionSlug(name), name, region: regionFor(name) }));
+const teamsFrom = (matches: Match[]): Team[] => [...new Map(matches.flatMap((match) => [match.home, match.away]).map((team) => [team.slug, team])).values()];
 
 export class FootballService {
   constructor(private readonly provider: FootballProvider, private readonly clock: () => Date = () => new Date()) {}
@@ -20,8 +24,7 @@ export class FootballService {
     const today = unique.filter((match) => sameLocalDay(match.kickoff, now)).sort(byKickoff);
     const upcoming = unique.filter((match) => match.status === "UPCOMING" && new Date(match.kickoff) > now).sort(byKickoff);
     const matches = [...live, ...today.filter((match) => !live.some((liveMatch) => liveMatch.id === match.id)), ...upcoming.filter((match) => !today.some((todayMatch) => todayMatch.id === match.id))];
-    const competitionNames = [...new Set(unique.map((match) => match.competition).filter(Boolean))];
-    return { generatedAt: now.toISOString(), featured: live[0] ?? upcoming.find((match) => match.popular) ?? upcoming[0] ?? today[0] ?? null, live, today, upcoming, matches, competitions: competitionNames.map((name) => ({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), name, region: name === "Football" ? "Worldwide" : "Football" })) };
+    return { generatedAt: now.toISOString(), featured: live[0] ?? upcoming.find((match) => match.popular) ?? upcoming[0] ?? today[0] ?? null, live, today, upcoming, matches, competitions: competitionsFrom(unique) };
   }
 
   async getMatchById(matchId: string): Promise<Match | null> {
@@ -39,6 +42,14 @@ export class FootballService {
       .slice(0, 6);
     return { match, related };
   }
+
+  async getMatchesByDate(date: string, competition?: string): Promise<Match[]> { const matches = await this.provider.getMatches(); return matches.filter((match) => match.kickoff.slice(0, 10) === date && (!competition || competitionSlug(match.competition) === competition)).sort(byKickoff); }
+  async getLiveMatches(competition?: string): Promise<Match[]> { return (await this.provider.getMatches()).filter((match) => match.status === "LIVE" && (!competition || competitionSlug(match.competition) === competition)).sort(byLivePriority); }
+  async getCompetitions(): Promise<Competition[]> { return competitionsFrom(await this.provider.getMatches()); }
+  async getLeague(slug: string): Promise<LeagueData | null> { const matches = await this.provider.getMatches(); const competition = competitionsFrom(matches).find((item) => item.slug === slug); if (!competition) return null; const scoped = matches.filter((match) => competitionSlug(match.competition) === slug).sort(byKickoff); const now = this.clock(); return { competition, live: scoped.filter((match) => match.status === "LIVE"), today: scoped.filter((match) => sameLocalDay(match.kickoff, now)), upcoming: scoped.filter((match) => match.status === "UPCOMING" && new Date(match.kickoff) > now) }; }
+  async getClub(slug: string): Promise<ClubData | null> { const matches = await this.provider.getMatches(); const team = teamsFrom(matches).find((item) => item.slug === slug); if (!team) return null; const scoped = matches.filter((match) => match.home.slug === slug || match.away.slug === slug).sort(byKickoff); const now = this.clock(); return { team, matches: scoped, live: scoped.filter((match) => match.status === "LIVE"), upcoming: scoped.filter((match) => match.status === "UPCOMING" && new Date(match.kickoff) > now), competitions: competitionsFrom(scoped) }; }
+  async getClubs(slugs?: string[]): Promise<ClubData[]> { const matches = await this.provider.getMatches(); const wanted = slugs ? new Set(slugs) : null; return teamsFrom(matches).filter((team) => !wanted || wanted.has(team.slug)).map((team) => { const scoped = matches.filter((match) => match.home.slug === team.slug || match.away.slug === team.slug).sort(byKickoff); return { team, matches: scoped, live: scoped.filter((match) => match.status === "LIVE"), upcoming: scoped.filter((match) => match.status === "UPCOMING"), competitions: competitionsFrom(scoped) }; }); }
+  async search(query: string): Promise<FootballSearchData> { const term = query.trim().toLowerCase(); if (term.length < 2) return { clubs: [], matches: [], competitions: [] }; const matches = await this.provider.getMatches(); const clubs = teamsFrom(matches).filter((team) => team.name.toLowerCase().includes(term)).slice(0, 6); const competitions = competitionsFrom(matches).filter((competition) => competition.name.toLowerCase().includes(term)).slice(0, 4); const matching = matches.filter((match) => `${match.home.name} ${match.away.name} ${match.competition}`.toLowerCase().includes(term)).slice(0, 8); return { clubs, matches: matching, competitions }; }
 }
 
 let service: FootballService | undefined;

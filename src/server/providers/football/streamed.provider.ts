@@ -45,7 +45,7 @@ function parseRaw(value: unknown): StreamedMatch | null {
 function makeTeam(name: string, badge: unknown, baseUrl: string): Team {
   const slug = slugify(name) || "team";
   const colorIndex = Number.parseInt(shortHash(name).slice(0, 2), 16) % palette.length;
-  return { id: `${slug}-${shortHash(name).slice(0, 4)}`, name, shortName: name.split(/\s+/).map((word) => word[0]).join("").slice(0, 3).toUpperCase(), colors: palette[colorIndex], crestUrl: optionalUrl(badge, baseUrl) };
+  return { id: `${slug}-${shortHash(name).slice(0, 4)}`, slug, name, shortName: name.split(/\s+/).map((word) => word[0]).join("").slice(0, 3).toUpperCase(), colors: palette[colorIndex], crestUrl: optionalUrl(badge, baseUrl) };
 }
 
 export function normalizeStreamedMatch(value: unknown, liveIds: ReadonlySet<string>, baseUrl: string, now = new Date()): Match | null {

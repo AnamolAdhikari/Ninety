@@ -1,7 +1,7 @@
 import type { Match, Team } from "@/domain/football/types";
 import type { FootballProvider } from "./provider";
 
-const team = (id: string, name: string, shortName: string, colors: [string, string]): Team => ({ id, name, shortName, colors });
+const team = (id: string, name: string, shortName: string, colors: [string, string]): Team => ({ id, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""), name, shortName, colors });
 
 const matches: Match[] = [
   { id: "arsenal-manchester-city-e2708b44", slug: "arsenal-v-manchester-city", competition: "Premier League", stage: "Matchday 27", status: "LIVE", popular: true, minute: 67, kickoff: "2026-08-23T18:30:00Z", home: team("arsenal-91c2", "Arsenal", "ARS", ["#e30613", "#fff"]), away: team("manchester-city-7c3a", "Manchester City", "MCI", ["#6cabdd", "#fff"]), homeScore: 2, awayScore: 1 },
