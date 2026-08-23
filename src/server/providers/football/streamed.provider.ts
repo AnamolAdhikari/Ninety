@@ -12,7 +12,38 @@ interface StreamedMatch {
   date: number;
   poster?: string;
   popular: boolean;
+  competition?: { name: string; country?: string };
   teams?: { home?: { name: string; badge?: string }; away?: { name: string; badge?: string } };
+}
+
+const cleanMetadataLabel = (value: unknown) => {
+  if (typeof value !== "string") return undefined;
+  const label = value.replace(/\s+/g, " ").trim();
+  return label && label.length <= 120 && !/[\u0000-\u001f\u007f]/.test(label) ? label : undefined;
+};
+
+function readCountry(value: unknown): string | undefined {
+  if (typeof value === "string") return cleanMetadataLabel(value);
+  if (!value || typeof value !== "object") return undefined;
+  return cleanMetadataLabel((value as UnknownRecord).name);
+}
+
+export function readStreamedCompetition(value: unknown): { name: string; country?: string } | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const item = value as UnknownRecord;
+  for (const key of ["competition", "league", "tournament"] as const) {
+    const candidate = item[key];
+    const name = typeof candidate === "string"
+      ? cleanMetadataLabel(candidate)
+      : candidate && typeof candidate === "object"
+        ? cleanMetadataLabel((candidate as UnknownRecord).name ?? (candidate as UnknownRecord).title)
+        : undefined;
+    if (!name) continue;
+    const nestedCountry = candidate && typeof candidate === "object" ? readCountry((candidate as UnknownRecord).country) : undefined;
+    const country = nestedCountry ?? readCountry(item.country);
+    return country ? { name, country } : { name };
+  }
+  return undefined;
 }
 
 export const STREAMED_METADATA_TIMEOUT_MS = 15_000;
@@ -49,7 +80,7 @@ function parseRaw(value: unknown): StreamedMatch | null {
   const home = readSide("home") ?? (fromTitle[0] ? { name: fromTitle[0], badge: undefined } : undefined);
   const away = readSide("away") ?? (fromTitle[1] ? { name: fromTitle[1], badge: undefined } : undefined);
   if (!home || !away) return null;
-  return { id: item.id, title: item.title, category: "football", date: item.date, poster: typeof item.poster === "string" ? item.poster : undefined, popular: item.popular === true, teams: { home, away } };
+  return { id: item.id, title: item.title, category: "football", date: item.date, poster: typeof item.poster === "string" ? item.poster : undefined, popular: item.popular === true, competition: readStreamedCompetition(item), teams: { home, away } };
 }
 
 function makeTeam(name: string, badge: unknown, baseUrl: string): Team {
@@ -67,7 +98,7 @@ export function normalizeStreamedMatch(value: unknown, liveIds: ReadonlySet<stri
   const awayName = raw.teams.away.name;
   const slug = `${slugify(homeName)}-v-${slugify(awayName)}`;
   const status: MatchStatus = liveIds.has(raw.id) ? "LIVE" : kickoff.valueOf() < now.valueOf() - 4 * 60 * 60 * 1000 ? "FINISHED" : "UPCOMING";
-  return { id: `${slug}-${shortHash(`${raw.id}:${raw.date}`)}`, slug, competition: "Football", stage: status === "LIVE" ? "Live coverage" : "Scheduled", status, popular: raw.popular, kickoff: kickoff.toISOString(), posterUrl: optionalProviderAssetUrl(raw.poster, baseUrl), home: makeTeam(homeName, raw.teams.home.badge, baseUrl), away: makeTeam(awayName, raw.teams.away.badge, baseUrl) };
+  return { id: `${slug}-${shortHash(`${raw.id}:${raw.date}`)}`, slug, competition: raw.competition?.name ?? "Football", competitionCountry: raw.competition?.country, stage: status === "LIVE" ? "Live coverage" : "Scheduled", status, popular: raw.popular, kickoff: kickoff.toISOString(), posterUrl: optionalProviderAssetUrl(raw.poster, baseUrl), home: makeTeam(homeName, raw.teams.home.badge, baseUrl), away: makeTeam(awayName, raw.teams.away.badge, baseUrl) };
 }
 
 export class StreamedFootballProvider implements FootballProvider {

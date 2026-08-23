@@ -18,6 +18,7 @@ export interface Match {
   id: string;
   slug: string;
   competition: string;
+  competitionCountry?: string;
   stage: string;
   status: MatchStatus;
   popular: boolean;

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildStreamedBadgeUrl, normalizeStreamedMatch, STREAMED_METADATA_TIMEOUT_MS, StreamedFootballProvider } from "./streamed.provider";
+import { buildStreamedBadgeUrl, normalizeStreamedMatch, readStreamedCompetition, STREAMED_METADATA_TIMEOUT_MS, StreamedFootballProvider } from "./streamed.provider";
 
 const rawMatch = { id: "source-42", title: "Arsenal vs Chelsea", category: "football", date: Date.parse("2027-08-23T18:00:00Z"), popular: true, teams: { home: { name: "Arsenal", badge: "arsenal-badge" }, away: { name: "Chelsea" } }, sources: [{ source: "hidden", id: "secret" }] };
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
@@ -20,6 +20,15 @@ describe("StreamedFootballProvider normalization", () => {
     expect(match?.id).not.toContain("source-42");
     expect(JSON.stringify(match)).not.toContain("sources");
     expect(match?.away.crestUrl).toBeUndefined();
+  });
+
+  it("preserves only explicit competition metadata with a stable fallback", () => {
+    expect(readStreamedCompetition({ competition: { name: " Major  League   Soccer ", country: { name: "United States" }, id: "raw-id" } })).toEqual({ name: "Major League Soccer", country: "United States" });
+    expect(readStreamedCompetition({ league: "Liga MX" })).toEqual({ name: "Liga MX" });
+    expect(readStreamedCompetition({ tournament: { title: "Copa Libertadores" }, country: "South America" })).toEqual({ name: "Copa Libertadores", country: "South America" });
+    expect(readStreamedCompetition({ category: "football", title: "Arsenal vs Chelsea", teams: rawMatch.teams })).toBeUndefined();
+    expect(normalizeStreamedMatch({ ...rawMatch, competition: "Premier League" }, new Set(), "https://streamed.pk")?.competition).toBe("Premier League");
+    expect(normalizeStreamedMatch(rawMatch, new Set(), "https://streamed.pk")?.competition).toBe("Football");
   });
 
   it("rejects malformed fields and non-football records", () => {

@@ -38,4 +38,15 @@ describe("FootballService", () => {
     expect((await service.getLeague("uefa-champions-league"))?.competition.region).toBe("Europe");
     expect((await service.search("real")).clubs[0].slug).toBe("real-madrid");
   });
+
+  it("deduplicates case and punctuation aliases and scopes league data by slug", async () => {
+    const aliases: Match[] = [
+      { ...base, id: "canonical", competition: "Premier League", competitionCountry: "England" },
+      { ...base, id: "alias", competition: "premier-league", kickoff: "2026-08-23T14:00:00Z" },
+    ];
+    const service = new FootballService({ getMatches: async () => aliases }, () => new Date("2026-08-23T09:00:00Z"));
+    expect(await service.getCompetitions()).toEqual([{ id: "premier-league", slug: "premier-league", name: "Premier League", region: "England" }]);
+    expect(await service.getMatchesByDate("2026-08-23", "premier-league")).toHaveLength(2);
+    expect((await service.getLeague("premier-league"))?.upcoming).toHaveLength(2);
+  });
 });

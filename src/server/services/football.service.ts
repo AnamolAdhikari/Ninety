@@ -10,8 +10,18 @@ const sameLocalDay = (value: string, now: Date) => {
   return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
 };
 export const competitionSlug = (name: string) => name.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-const regionFor = (name: string) => ({ "Premier League": "England", "LaLiga": "Spain", "La Liga": "Spain", "Serie A": "Italy", "Bundesliga": "Germany", "UEFA Champions League": "Europe" }[name] ?? "Worldwide");
-const competitionsFrom = (matches: Match[]): Competition[] => [...new Set(matches.map((match) => match.competition).filter(Boolean))].map((name) => ({ id: competitionSlug(name), slug: competitionSlug(name), name, region: regionFor(name) }));
+const regionFor = (name: string) => ({ "premier-league": "England", laliga: "Spain", "la-liga": "Spain", "serie-a": "Italy", bundesliga: "Germany", "uefa-champions-league": "Europe" }[competitionSlug(name)] ?? "Worldwide");
+const competitionsFrom = (matches: Match[]): Competition[] => {
+  const competitions = new Map<string, Competition>();
+  for (const match of matches) {
+    const slug = competitionSlug(match.competition);
+    if (!slug) continue;
+    const existing = competitions.get(slug);
+    if (!existing) competitions.set(slug, { id: slug, slug, name: match.competition.trim(), region: match.competitionCountry ?? regionFor(match.competition) });
+    else if (match.competitionCountry && existing.region === "Worldwide") competitions.set(slug, { ...existing, region: match.competitionCountry });
+  }
+  return [...competitions.values()];
+};
 const teamsFrom = (matches: Match[]): Team[] => [...new Map(matches.flatMap((match) => [match.home, match.away]).map((team) => [team.slug, team])).values()];
 
 export class FootballService {
