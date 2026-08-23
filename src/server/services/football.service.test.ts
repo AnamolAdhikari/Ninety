@@ -19,4 +19,12 @@ describe("FootballService", () => {
     expect(dashboard.featured).toBeNull();
     expect(dashboard.matches).toEqual([]);
   });
+
+  it("resolves only exact NINETY match IDs and builds related matches", async () => {
+    const matches: Match[] = [base, { ...base, id: "related", slug: "c-v-d" }];
+    const service = new FootballService({ getMatches: async () => matches });
+    expect((await service.getMatchById("base"))?.slug).toBe("a-v-b");
+    expect(await service.getMatchById("provider-source-id")).toBeNull();
+    expect((await service.getMatchCenter("base"))?.related.map((match) => match.id)).toEqual(["related"]);
+  });
 });

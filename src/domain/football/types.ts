@@ -33,3 +33,8 @@ export interface FootballDashboardData {
   matches: Match[];
   competitions: { id: string; name: string; region: string }[];
 }
+
+export interface FootballMatchCenterData {
+  match: Match;
+  related: Match[];
+}

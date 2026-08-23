@@ -28,6 +28,20 @@ Browser → /api/football/dashboard → FootballService → FootballProvider
                                                     └─ MockFootballProvider
 ```
 
+Match navigation follows the same server-owned boundary:
+
+```text
+Dashboard → /watch/[matchId]
+                    ↓
+       FootballService.getMatchCenter
+                    ↓
+      normalized match + related matches
+
+Browser API consumers → /api/football/match/[matchId] → FootballService
+```
+
+Dynamic URLs contain only stable NINETY match IDs. The match center is primarily server-rendered, with a small client boundary for accessible tabs. Its cinematic player is intentionally a visual placeholder: stream lookup, source selection, embeds, HLS, and DASH are not implemented.
+
 The service deduplicates matches and produces separately sorted `live`, `today`, and `upcoming` collections. Live matches prioritize provider-supplied popularity, while today and upcoming matches are chronological. The provider uses a six-second timeout, a no-store live request, and a 60-second schedule revalidation. The public dashboard response has a short CDN cache window.
 
 ## Environment configuration

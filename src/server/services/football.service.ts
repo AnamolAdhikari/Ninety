@@ -1,5 +1,5 @@
 import "server-only";
-import type { FootballDashboardData, Match } from "@/domain/football/types";
+import type { FootballDashboardData, FootballMatchCenterData, Match } from "@/domain/football/types";
 import { createFootballProvider } from "@/server/providers/football/provider.factory";
 import type { FootballProvider } from "@/server/providers/football/provider";
 
@@ -22,6 +22,22 @@ export class FootballService {
     const matches = [...live, ...today.filter((match) => !live.some((liveMatch) => liveMatch.id === match.id)), ...upcoming.filter((match) => !today.some((todayMatch) => todayMatch.id === match.id))];
     const competitionNames = [...new Set(unique.map((match) => match.competition).filter(Boolean))];
     return { generatedAt: now.toISOString(), featured: live[0] ?? upcoming.find((match) => match.popular) ?? upcoming[0] ?? today[0] ?? null, live, today, upcoming, matches, competitions: competitionNames.map((name) => ({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), name, region: name === "Football" ? "Worldwide" : "Football" })) };
+  }
+
+  async getMatchById(matchId: string): Promise<Match | null> {
+    const matches = await this.provider.getMatches();
+    return matches.find((match) => match.id === matchId) ?? null;
+  }
+
+  async getMatchCenter(matchId: string): Promise<FootballMatchCenterData | null> {
+    const matches = await this.provider.getMatches();
+    const match = matches.find((candidate) => candidate.id === matchId);
+    if (!match) return null;
+    const related = matches
+      .filter((candidate) => candidate.id !== match.id)
+      .sort((a, b) => Number(b.competition === match.competition) - Number(a.competition === match.competition) || Number(b.status === "LIVE") - Number(a.status === "LIVE") || byKickoff(a, b))
+      .slice(0, 6);
+    return { match, related };
   }
 }
 
