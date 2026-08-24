@@ -13,4 +13,9 @@ describe("server environment", () => {
     expect(() => validateServerEnvironment({ NODE_ENV: "development", FOOTBALL_COMPETITION_PROVIDER: "football-data", FOOTBALL_COMPETITION_API_BASE_URL: "http://api.example", FOOTBALL_COMPETITION_API_TOKEN: "secret" })).toThrow("HTTPS");
     expect(() => validateServerEnvironment({ NODE_ENV: "development", FOOTBALL_COMPETITION_PROVIDER: "football-data", FOOTBALL_COMPETITION_API_BASE_URL: "https://api.example" })).toThrow("API token");
   });
+  it("requires complete secure configuration for real playback", () => {
+    expect(() => validateServerEnvironment({ NODE_ENV: "development", FOOTBALL_STREAM_PROVIDER: "streamed" })).toThrow("FOOTBALL_STREAM_PROVIDER_BASE_URL");
+    expect(() => validateServerEnvironment({ NODE_ENV: "development", FOOTBALL_STREAM_PROVIDER: "streamed", FOOTBALL_STREAM_PROVIDER_BASE_URL: "http://provider.example" })).toThrow("HTTPS");
+    expect(validateServerEnvironment({ NODE_ENV: "development", FOOTBALL_STREAM_PROVIDER: "streamed", FOOTBALL_STREAM_PROVIDER_BASE_URL: "https://provider.example", FOOTBALL_EMBED_ORIGINS: "https://embed.example" })).toMatchObject({ streamProvider: "streamed", streamProviderBaseUrl: "https://provider.example", embedOrigins: ["https://embed.example"] });
+  });
 });
