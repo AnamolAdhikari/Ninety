@@ -22,7 +22,7 @@ describe("FootballService", () => {
 
   it("preserves real crest URLs through a fresh service snapshot", async () => {
     const crestUrl = "https://images.example/api/images/badge/a.webp";
-    const dashboard = await new FootballService({ getMatches: async () => [{ ...base, home: { ...base.home, crestUrl } }] }).getDashboard();
+    const dashboard = await new FootballService({ getMatches: async () => [{ ...base, home: { ...base.home, crestUrl } }] }, () => new Date("2026-08-23T09:00:00Z")).getDashboard();
     expect(dashboard.matches[0].home.crestUrl).toBe(crestUrl);
   });
 
@@ -77,7 +77,7 @@ describe("FootballService", () => {
   });
 
   it("isolates secondary provider failures without losing primary fixtures", async () => {
-    const service = new FootballService({ getMatches: async () => [base] }, undefined, { getFixtures: async () => { throw new DOMException("timed out", "TimeoutError"); } });
+    const service = new FootballService({ getMatches: async () => [base] }, () => new Date("2026-08-23T09:00:00Z"), { getFixtures: async () => { throw new DOMException("timed out", "TimeoutError"); } });
     expect((await service.getDashboard()).matches).toHaveLength(1);
     expect((await service.getCompetitions())[0].name).toBe("Premier League");
   });
