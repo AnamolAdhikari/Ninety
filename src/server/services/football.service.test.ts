@@ -92,4 +92,10 @@ describe("FootballService", () => {
     expect((await service.getLeague("premier-league"))?.competition.slug).toBe("premier-league");
     expect((await service.getLeague("premier-league"))?.clubs.map((club) => club.slug)).toEqual(["a", "b"]);
   });
+
+  it("enriches the Fulham and Chelsea dashboard fixture from FC-suffixed metadata", async () => {
+    const fulhamChelsea: Match = { ...base, id: "fulham-chelsea", slug: "fulham-v-chelsea", competition: "Football", kickoff: "2026-08-24T19:00:00Z", home: { ...base.home, id: "fulham", slug: "fulham", name: "Fulham", shortName: "FUL" }, away: { ...base.away, id: "chelsea", slug: "chelsea", name: "Chelsea", shortName: "CHE" } };
+    const service = new FootballService({ getMatches: async () => [fulhamChelsea] }, () => new Date("2026-08-24T12:00:00Z"), { getFixtures: async () => [{ homeTeam: "Fulham FC", awayTeam: "Chelsea FC", kickoff: "2026-08-24T19:00:00Z", competition: "Premier League", country: "England" }] });
+    expect((await service.getDashboard()).matches[0].competition).toBe("Premier League");
+  });
 });

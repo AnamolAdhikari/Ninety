@@ -31,8 +31,16 @@ const teamAliases: Record<string, string> = {
   "paris-sg": "paris-saint-germain",
   "inter-milan": "inter",
   internazionale: "inter",
+  "as-roma": "roma",
 };
-const teamKey = (name: string) => { const key = plainSlug(name).replace(/-fc$/, ""); return teamAliases[key] ?? key; };
+const genericClubMarkers = new Set(["fc", "afc", "cf", "sc"]);
+const teamKey = (name: string) => {
+  const tokens = plainSlug(name).split("-").filter(Boolean);
+  while (tokens.length > 1 && genericClubMarkers.has(tokens[0])) tokens.shift();
+  while (tokens.length > 1 && genericClubMarkers.has(tokens.at(-1)!)) tokens.pop();
+  const key = tokens.join("-");
+  return teamAliases[key] ?? key;
+};
 const GENERIC_COMPETITION = "football";
 export const FIXTURE_KICKOFF_TOLERANCE_MS = 15 * 60 * 1000;
 
