@@ -20,6 +20,12 @@ describe("FootballService", () => {
     expect(dashboard.matches).toEqual([]);
   });
 
+  it("preserves real crest URLs through a fresh service snapshot", async () => {
+    const crestUrl = "https://images.example/api/images/badge/a.webp";
+    const dashboard = await new FootballService({ getMatches: async () => [{ ...base, home: { ...base.home, crestUrl } }] }).getDashboard();
+    expect(dashboard.matches[0].home.crestUrl).toBe(crestUrl);
+  });
+
   it("resolves only exact NINETY match IDs and builds related matches", async () => {
     const matches: Match[] = [base, { ...base, id: "related", slug: "c-v-d" }];
     const service = new FootballService({ getMatches: async () => matches });
@@ -31,11 +37,11 @@ describe("FootballService", () => {
   it("normalizes competitions and filters discovery data", async () => {
     const matches: Match[] = [base, { ...base, id: "live", status: "LIVE", competition: "UEFA Champions League", home: { ...base.home, id: "real", slug: "real-madrid", name: "Real Madrid" } }];
     const service = new FootballService({ getMatches: async () => matches }, () => new Date("2026-08-23T09:00:00Z"));
-    expect((await service.getCompetitions()).map((item) => item.slug)).toEqual(["uefa-champions-league", "premier-league"]);
+    expect((await service.getCompetitions()).map((item) => item.slug)).toEqual(["champions-league", "premier-league"]);
     expect(await service.getMatchesByDate("2026-08-23", "premier-league")).toHaveLength(1);
     expect((await service.getLiveMatches()).map((match) => match.id)).toEqual(["live"]);
     expect((await service.getClub("real-madrid"))?.team.name).toBe("Real Madrid");
-    expect((await service.getLeague("uefa-champions-league"))?.competition.region).toBe("Europe");
+    expect((await service.getLeague("champions-league"))?.competition.region).toBe("Europe");
     expect((await service.search("real")).clubs[0].slug).toBe("real-madrid");
   });
 
@@ -68,5 +74,22 @@ describe("FootballService", () => {
     expect(searchScore("Premier League", "premier league")).toBeGreaterThan(searchScore("Premier League", "premier"));
     expect(searchScore("Premier League", "league")).toBeGreaterThan(searchScore("Premier League", "mier"));
     expect(searchScore("Premier League", "missing")).toBe(0);
+  });
+
+  it("isolates secondary provider failures without losing primary fixtures", async () => {
+    const service = new FootballService({ getMatches: async () => [base] }, undefined, { getFixtures: async () => { throw new DOMException("timed out", "TimeoutError"); } });
+    expect((await service.getDashboard()).matches).toHaveLength(1);
+    expect((await service.getCompetitions())[0].name).toBe("Premier League");
+  });
+
+  it("derives distinct filters and strictly isolates enriched league fixtures", async () => {
+    const generic = [{ ...base, id: "england", competition: "Football" }, { ...base, id: "spain", competition: "Football", home: { ...base.home, id: "real", slug: "real-madrid", name: "Real Madrid" }, away: { ...base.away, id: "barca", slug: "barcelona", name: "Barcelona" } }];
+    const metadata = [{ homeTeam: "A", awayTeam: "B", kickoff: base.kickoff, competition: "Premier League", country: "England" }, { homeTeam: "Real Madrid", awayTeam: "Barcelona", kickoff: base.kickoff, competition: "La Liga", country: "Spain" }];
+    const service = new FootballService({ getMatches: async () => generic }, undefined, { getFixtures: async () => metadata });
+    expect((await service.getCompetitions()).map((item) => item.slug)).toEqual(["la-liga", "premier-league"]);
+    expect((await service.getMatchDiscovery("2026-08-23", "la-liga")).matches.map((item) => item.id)).toEqual(["spain"]);
+    expect((await service.getLiveDiscovery("premier-league")).matches).toEqual([]);
+    expect((await service.getLeague("premier-league"))?.competition.slug).toBe("premier-league");
+    expect((await service.getLeague("premier-league"))?.clubs.map((club) => club.slug)).toEqual(["a", "b"]);
   });
 });

@@ -1,12 +1,16 @@
 import "server-only";
 
 export type FootballProviderName = "mock" | "streamed";
+export type CompetitionProviderName = "disabled" | "football-data";
 export type StreamProviderName = "mock" | "configured";
 export type EnvironmentSource = Readonly<Record<string, string | undefined>>;
 
 export interface ServerEnvironment {
   footballProvider: FootballProviderName;
   footballProviderBaseUrl?: string;
+  competitionProvider: CompetitionProviderName;
+  competitionApiBaseUrl?: string;
+  competitionApiToken?: string;
   streamProvider: StreamProviderName;
   streamCatalogJson?: string;
   embedOrigins: string[];
@@ -27,6 +31,12 @@ export function validateServerEnvironment(env: EnvironmentSource = process.env):
   const footballProviderBaseUrl = env.FOOTBALL_PROVIDER_BASE_URL ? httpsUrl(env.FOOTBALL_PROVIDER_BASE_URL, "FOOTBALL_PROVIDER_BASE_URL") : undefined;
   if (footballProvider === "streamed" && !footballProviderBaseUrl) throw new Error("FOOTBALL_PROVIDER_BASE_URL is required for the streamed provider.");
 
+  const competitionProvider = (env.FOOTBALL_COMPETITION_PROVIDER ?? "disabled") as CompetitionProviderName;
+  if (!("disabled football-data".split(" ") as string[]).includes(competitionProvider)) throw new Error("FOOTBALL_COMPETITION_PROVIDER must be disabled or football-data.");
+  const competitionApiBaseUrl = env.FOOTBALL_COMPETITION_API_BASE_URL ? httpsUrl(env.FOOTBALL_COMPETITION_API_BASE_URL, "FOOTBALL_COMPETITION_API_BASE_URL") : undefined;
+  const competitionApiToken = env.FOOTBALL_COMPETITION_API_TOKEN?.trim() || undefined;
+  if (competitionProvider === "football-data" && (!competitionApiBaseUrl || !competitionApiToken)) throw new Error("Competition metadata provider requires an HTTPS base URL and API token.");
+
   const streamProvider = (env.FOOTBALL_STREAM_PROVIDER ?? (production ? "configured" : "mock")) as StreamProviderName;
   if (!(["mock", "configured"] as string[]).includes(streamProvider)) throw new Error("FOOTBALL_STREAM_PROVIDER must be mock or configured.");
   const streamCatalogJson = env.FOOTBALL_STREAM_CATALOG_JSON;
@@ -38,5 +48,5 @@ export function validateServerEnvironment(env: EnvironmentSource = process.env):
 
   const embedOrigins = (env.FOOTBALL_EMBED_ORIGINS ?? "").split(",").map((value) => value.trim()).filter(Boolean).map((value) => new URL(httpsUrl(value, "FOOTBALL_EMBED_ORIGINS")).origin);
   const siteUrl = env.NINETY_SITE_URL ? httpsUrl(env.NINETY_SITE_URL, "NINETY_SITE_URL") : "http://localhost:3000";
-  return { footballProvider, footballProviderBaseUrl, streamProvider, streamCatalogJson, embedOrigins: [...new Set(embedOrigins)], siteUrl };
+  return { footballProvider, footballProviderBaseUrl, competitionProvider, competitionApiBaseUrl, competitionApiToken, streamProvider, streamCatalogJson, embedOrigins: [...new Set(embedOrigins)], siteUrl };
 }

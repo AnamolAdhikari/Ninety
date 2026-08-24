@@ -8,6 +8,9 @@ interface __BaseEnv_CloudflareEnv {
 	ASSETS: Fetcher;
 	FOOTBALL_PROVIDER: string;
 	FOOTBALL_PROVIDER_BASE_URL: string;
+	FOOTBALL_COMPETITION_PROVIDER: string;
+	FOOTBALL_COMPETITION_API_BASE_URL: string;
+	FOOTBALL_COMPETITION_API_TOKEN: string;
 	FOOTBALL_STREAM_PROVIDER: string;
 	FOOTBALL_STREAM_CATALOG_JSON: string;
 	FOOTBALL_EMBED_ORIGINS: string;
@@ -21,5 +24,5 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "FOOTBALL_PROVIDER" | "FOOTBALL_PROVIDER_BASE_URL" | "FOOTBALL_STREAM_PROVIDER" | "FOOTBALL_STREAM_CATALOG_JSON" | "FOOTBALL_EMBED_ORIGINS" | "NINETY_SITE_URL">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "FOOTBALL_PROVIDER" | "FOOTBALL_PROVIDER_BASE_URL" | "FOOTBALL_COMPETITION_PROVIDER" | "FOOTBALL_COMPETITION_API_BASE_URL" | "FOOTBALL_COMPETITION_API_TOKEN" | "FOOTBALL_STREAM_PROVIDER" | "FOOTBALL_STREAM_CATALOG_JSON" | "FOOTBALL_EMBED_ORIGINS" | "NINETY_SITE_URL">> {}
 }

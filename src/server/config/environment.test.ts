@@ -8,4 +8,9 @@ describe("server environment", () => {
     expect(() => validateServerEnvironment({ NODE_ENV: "development", FOOTBALL_PROVIDER: "streamed", FOOTBALL_PROVIDER_BASE_URL: "http://example.com" })).toThrow("HTTPS");
     expect(() => validateServerEnvironment({ NODE_ENV: "development", FOOTBALL_EMBED_ORIGINS: "http://embed.example.com" })).toThrow("HTTPS");
   });
+  it("keeps competition enrichment optional and server-only", () => {
+    expect(validateServerEnvironment({ NODE_ENV: "development" }).competitionProvider).toBe("disabled");
+    expect(() => validateServerEnvironment({ NODE_ENV: "development", FOOTBALL_COMPETITION_PROVIDER: "football-data", FOOTBALL_COMPETITION_API_BASE_URL: "http://api.example", FOOTBALL_COMPETITION_API_TOKEN: "secret" })).toThrow("HTTPS");
+    expect(() => validateServerEnvironment({ NODE_ENV: "development", FOOTBALL_COMPETITION_PROVIDER: "football-data", FOOTBALL_COMPETITION_API_BASE_URL: "https://api.example" })).toThrow("API token");
+  });
 });

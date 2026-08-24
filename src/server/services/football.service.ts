@@ -3,6 +3,9 @@ import { cache } from "react";
 import type { ClubData, Competition, FootballDashboardData, FootballMatchCenterData, FootballSearchData, LeagueData, Match, MatchDiscoveryData, Team } from "@/domain/football/types";
 import { createFootballProvider } from "@/server/providers/football/provider.factory";
 import type { FootballProvider } from "@/server/providers/football/provider";
+import { createCompetitionMetadataProvider } from "@/server/providers/competition/provider.factory";
+import { disabledCompetitionMetadataProvider, type CompetitionMetadataProvider } from "@/server/providers/competition/provider";
+import { canonicalCompetition, enrichMatchesWithCompetitions } from "./competition-enrichment";
 
 const byKickoff = (a: Match, b: Match) => new Date(a.kickoff).valueOf() - new Date(b.kickoff).valueOf();
 const byLivePriority = (a: Match, b: Match) => Number(b.popular) - Number(a.popular) || byKickoff(a, b);
@@ -11,25 +14,31 @@ const sameLocalDay = (value: string, now: Date) => {
   return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
 };
 
-export const competitionSlug = (name: string) => name.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-const regionFor = (name: string) => ({ "premier-league": "England", laliga: "Spain", "la-liga": "Spain", "serie-a": "Italy", bundesliga: "Germany", "uefa-champions-league": "Europe" }[competitionSlug(name)] ?? "Worldwide");
-const teamsFrom = (matches: Match[]): Team[] => [...new Map(matches.flatMap((match) => [match.home, match.away]).map((team) => [team.slug, team])).values()];
+export const competitionSlug = (name: string) => canonicalCompetition(name).slug;
+const teamsFrom = (matches: Match[]): Team[] => {
+  const teams = new Map<string, Team>();
+  for (const team of matches.flatMap((match) => [match.home, match.away])) {
+    const current = teams.get(team.slug);
+    if (!current || (!current.crestUrl && team.crestUrl)) teams.set(team.slug, team);
+  }
+  return [...teams.values()];
+};
 
 export function competitionsFrom(matches: Match[]): Competition[] {
   const grouped = new Map<string, Match[]>();
   for (const match of matches) {
-    const slug = competitionSlug(match.competition);
+    const slug = canonicalCompetition(match.competition, match.competitionCountry).slug;
     if (!slug) continue;
     grouped.set(slug, [...(grouped.get(slug) ?? []), match]);
   }
   return [...grouped.entries()].map(([slug, fixtures]) => {
     const first = fixtures[0];
-    const country = fixtures.find((match) => match.competitionCountry)?.competitionCountry;
+    const canonical = canonicalCompetition(first.competition, fixtures.find((match) => match.competitionCountry)?.competitionCountry);
     return {
       id: slug,
       slug,
-      name: first.competition.trim(),
-      region: country ?? regionFor(first.competition),
+      name: canonical.name,
+      region: canonical.region,
       fixtureCount: fixtures.length,
       liveCount: fixtures.filter((match) => match.status === "LIVE").length,
       upcomingCount: fixtures.filter((match) => match.status === "UPCOMING").length,
@@ -50,9 +59,14 @@ export function searchScore(value: string, query: string) {
 }
 
 export class FootballService {
-  constructor(private readonly provider: FootballProvider, private readonly clock: () => Date = () => new Date()) {}
+  constructor(private readonly provider: FootballProvider, private readonly clock: () => Date = () => new Date(), private readonly competitionProvider: CompetitionMetadataProvider = disabledCompetitionMetadataProvider) {}
 
-  private async matches() { return [...new Map((await this.provider.getMatches()).map((match) => [match.id, match])).values()]; }
+  private async matches() {
+    const [primary, secondary] = await Promise.allSettled([this.provider.getMatches(), this.competitionProvider.getFixtures()]);
+    if (primary.status === "rejected") throw primary.reason;
+    const enriched = enrichMatchesWithCompetitions(primary.value, secondary.status === "fulfilled" ? secondary.value : []);
+    return [...new Map(enriched.map((match) => [match.id, match])).values()];
+  }
 
   async getDashboard(): Promise<FootballDashboardData> {
     const now = this.clock();
@@ -132,8 +146,10 @@ let service: FootballService | undefined;
 export function getFootballService() {
   if (!service) {
     const provider = createFootballProvider();
+    const competitionProvider = createCompetitionMetadataProvider();
     const getMatches = cache(() => provider.getMatches());
-    service = new FootballService({ getMatches });
+    const getFixtures = cache(() => competitionProvider.getFixtures());
+    service = new FootballService({ getMatches }, undefined, { getFixtures });
   }
   return service;
 }

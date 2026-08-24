@@ -1,5 +1,5 @@
 const baseUrl = (process.env.NINETY_SMOKE_URL ?? "http://127.0.0.1:8787").replace(/\/$/, "");
-const forbidden = /FOOTBALL_PROVIDER|FOOTBALL_STREAM_CATALOG_JSON|sourceId|providerBaseUrl/i;
+const forbidden = /FOOTBALL_PROVIDER|FOOTBALL_COMPETITION|FOOTBALL_STREAM_CATALOG_JSON|sourceId|providerBaseUrl/i;
 
 async function read(path, expected = 200) {
   const response = await fetch(`${baseUrl}${path}`, { redirect: "manual" });
