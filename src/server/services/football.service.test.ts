@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Match } from "@/domain/football/types";
-import { competitionsFrom, FootballService, searchScore } from "./football.service";
+import { byLivePriority, competitionsFrom, fixtureIdentity, FootballService, matchesCompetition, mergeFixtureCollection, mergeMatch, searchScore, shouldLeadWithLive } from "./football.service";
 
 const base: Match = { id: "base", slug: "a-v-b", competition: "Premier League", stage: "Scheduled", status: "UPCOMING", popular: false, kickoff: "2026-08-23T12:00:00Z", home: { id: "a", slug: "a", name: "A", shortName: "A", colors: ["#000", "#fff"] }, away: { id: "b", slug: "b", name: "B", shortName: "B", colors: ["#000", "#fff"] } };
 
@@ -66,7 +66,7 @@ describe("FootballService", () => {
     const service = new FootballService({ getMatches: async () => { calls += 1; return [base]; } });
     const discovery = await service.getMatchDiscovery("2026-08-23");
     expect(discovery.matches).toHaveLength(1);
-    expect(discovery.competitions).toHaveLength(1);
+    expect(discovery.competitions.map((item) => item.slug)).toEqual(["football", "premier-league"]);
     expect(calls).toBe(1);
   });
 
@@ -97,5 +97,54 @@ describe("FootballService", () => {
     const fulhamChelsea: Match = { ...base, id: "fulham-chelsea", slug: "fulham-v-chelsea", competition: "Football", kickoff: "2026-08-24T19:00:00Z", home: { ...base.home, id: "fulham", slug: "fulham", name: "Fulham", shortName: "FUL" }, away: { ...base.away, id: "chelsea", slug: "chelsea", name: "Chelsea", shortName: "CHE" } };
     const service = new FootballService({ getMatches: async () => [fulhamChelsea] }, () => new Date("2026-08-24T12:00:00Z"), { getFixtures: async () => [{ homeTeam: "Fulham FC", awayTeam: "Chelsea FC", kickoff: "2026-08-24T19:00:00Z", competition: "Premier League", country: "England" }] });
     expect((await service.getDashboard()).matches[0].competition).toBe("Premier League");
+  });
+
+  it("treats Football as the parent sport while competition filters stay specific", () => {
+    expect(matchesCompetition(base, "football")).toBe(true);
+    expect(matchesCompetition(base, "premier-league")).toBe(true);
+    expect(matchesCompetition(base, "bundesliga")).toBe(false);
+  });
+
+  it("preserves enriched fields through weaker refreshes and accepts authoritative updates", () => {
+    const strong = { ...base, status: "LIVE" as const, minute: 42, homeScore: 2, awayScore: 3, home: { ...base.home, crestUrl: "https://images.example/a" } };
+    const weak = { ...base, competition: "Football", status: "UPCOMING" as const };
+    expect(mergeMatch(strong, weak)).toMatchObject({ status: "LIVE", minute: 42, homeScore: 2, awayScore: 3, competition: "Premier League", home: { crestUrl: "https://images.example/a" } });
+    expect(mergeMatch(strong, { ...weak, status: "LIVE", homeScore: 3, awayScore: 3, minute: 51 })).toMatchObject({ status: "LIVE", minute: 51, homeScore: 3, awayScore: 3 });
+    expect(mergeMatch(strong, { ...weak, status: "FINISHED", homeScore: 2, awayScore: 4 })).toMatchObject({ status: "FINISHED", homeScore: 2, awayScore: 4 });
+    expect(mergeMatch(strong, { ...weak, status: "FINISHED" }).minute).toBeUndefined();
+  });
+
+  it("keeps an enriched score across dashboard refresh and Football filtering", async () => {
+    let response: Match[] = [{ ...base, status: "LIVE", homeScore: 2, awayScore: 3 }];
+    const service = new FootballService({ getMatches: async () => response });
+    expect((await service.getDashboard()).live[0]).toMatchObject({ homeScore: 2, awayScore: 3 });
+    response = [{ ...base, status: "LIVE" }];
+    expect((await service.getLiveDiscovery("football")).matches[0]).toMatchObject({ homeScore: 2, awayScore: 3 });
+  });
+
+  it("deduplicates stable fixture identity while preserving the strongest score", () => {
+    const duplicate = { ...base, id: "provider-duplicate" };
+    const scored = { ...base, id: "scored", homeScore: 1, awayScore: 0 };
+    const merged = mergeFixtureCollection([scored, duplicate]);
+    expect(fixtureIdentity(scored)).toBe(fixtureIdentity(duplicate));
+    expect(merged).toHaveLength(1);
+    expect(merged[0]).toMatchObject({ id: "scored", homeScore: 1, awayScore: 0 });
+  });
+
+  it("keeps live counts and rendered discovery based on one deduplicated collection", async () => {
+    const live = { ...base, status: "LIVE" as const };
+    const service = new FootballService({ getMatches: async () => [live, { ...live, id: "duplicate" }] });
+    const discovery = await service.getLiveDiscovery("football");
+    expect(discovery.matches).toHaveLength(1);
+    expect(discovery.competitions.find((item) => item.slug === "football")?.liveCount).toBe(discovery.matches.length);
+  });
+
+  it("prioritizes enriched playable live matches and falls back without one", () => {
+    const unknown = { ...base, id: "unknown", status: "LIVE" as const };
+    const playable = { ...base, id: "playable", slug: "playable", status: "LIVE" as const, playableLive: true };
+    const enrichedPlayable = { ...playable, id: "scored", slug: "scored", homeScore: 1, awayScore: 0 };
+    expect([unknown, playable, enrichedPlayable].sort(byLivePriority).map((match) => match.id)).toEqual(["scored", "playable", "unknown"]);
+    expect(shouldLeadWithLive([unknown])).toBe(false);
+    expect(shouldLeadWithLive([unknown, playable])).toBe(true);
   });
 });

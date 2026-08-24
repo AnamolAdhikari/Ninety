@@ -30,6 +30,7 @@ export interface Match {
   away: Team;
   homeScore?: number;
   awayScore?: number;
+  playableLive?: boolean;
 }
 
 export interface FootballDashboardData {

@@ -54,15 +54,15 @@ export function enrichMatchesWithCompetitions(matches: Match[], fixtures: Compet
     const fixture = candidates[0];
     const enriched = canonicalCompetition(fixture.competition, fixture.country);
     const competition = current.slug !== GENERIC_COMPETITION ? current : enriched;
+    const score = fixture.homeScore != null && fixture.awayScore != null ? { homeScore: fixture.homeScore, awayScore: fixture.awayScore } : {};
     return {
       ...match,
       competition: competition.name,
       competitionCountry: competition.region,
       status: fixture.status ?? match.status,
       stage: fixture.status === "LIVE" ? "Live coverage" : fixture.status === "FINISHED" ? "Full time" : match.stage,
-      minute: fixture.status === "LIVE" ? fixture.minute : undefined,
-      homeScore: fixture.homeScore,
-      awayScore: fixture.awayScore,
+      ...(fixture.status === "LIVE" && fixture.minute != null ? { minute: fixture.minute } : fixture.status === "FINISHED" ? { minute: undefined } : {}),
+      ...score,
     };
   });
 }

@@ -62,10 +62,22 @@ describe("isolated player server", () => {
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
     const address = server.address(); const origin = `http://127.0.0.1:${address.port}`;
     const html = await (await fetch(`${origin}/`)).text();
-    expect(html).toContain("Stream loading?");
+    expect(html).toContain("Stream not starting?");
     expect(html).not.toMatch(/Development diagnostics|Manual playback check|Stream ID/);
     expect((await fetch(`${origin}/register`, { method: "POST" })).status).toBe(400);
     expect((await fetch(`${origin}/diagnostic/bootstrap?playback=playback-test`)).status).toBe(400);
+  });
+
+  it("shows diagnostics only when explicitly enabled in development", async () => {
+    const hidden = createIsolatedPlayerServer(); servers.push(hidden);
+    await new Promise((resolve) => hidden.listen(0, "127.0.0.1", resolve));
+    const hiddenHtml = await (await fetch(`http://127.0.0.1:${hidden.address().port}/`)).text();
+    expect(hiddenHtml).not.toMatch(/Development diagnostics|Manual playback check|VPN/);
+    const enabled = createIsolatedPlayerServer({ diagnostics: true }); servers.push(enabled);
+    await new Promise((resolve) => enabled.listen(0, "127.0.0.1", resolve));
+    const enabledHtml = await (await fetch(`http://127.0.0.1:${enabled.address().port}/`)).text();
+    expect(enabledHtml).toContain("Development diagnostics");
+    expect(enabledHtml).not.toMatch(/Manual playback check|VPN/);
   });
 
   it("requires explicit HTTPS origins for production runtime", () => {
