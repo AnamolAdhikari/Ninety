@@ -28,14 +28,15 @@ export const fixtureTeamIdentity = (name: string) => {
 export const fixtureIdentity = (match: Match) => `${fixtureTeamIdentity(match.home.name)}:${fixtureTeamIdentity(match.away.name)}:${new Date(match.kickoff).toISOString()}`;
 
 export function mergeMatch(previous: Match, incoming: Match): Match {
-  const finished = incoming.status === "FINISHED";
-  const status = previous.status === "LIVE" && incoming.status === "UPCOMING" ? "LIVE" : incoming.status;
-  const incomingHasScore = incoming.homeScore != null && incoming.awayScore != null;
+  const staleAfterFinished = previous.status === "FINISHED" && incoming.status !== "FINISHED";
+  const status = staleAfterFinished ? "FINISHED" : previous.status === "LIVE" && incoming.status === "UPCOMING" ? "LIVE" : incoming.status;
+  const incomingHasScore = !staleAfterFinished && incoming.homeScore != null && incoming.awayScore != null;
   return {
     ...previous,
     ...incoming,
     id: previous.id,
     status,
+    stage: staleAfterFinished ? previous.stage : incoming.stage,
     competition: incoming.competition === "Football" && previous.competition !== "Football" ? previous.competition : incoming.competition,
     competitionCountry: incoming.competitionCountry ?? previous.competitionCountry,
     posterUrl: incoming.posterUrl ?? previous.posterUrl,
@@ -43,8 +44,8 @@ export function mergeMatch(previous: Match, incoming: Match): Match {
     away: { ...previous.away, ...incoming.away, crestUrl: incoming.away.crestUrl ?? previous.away.crestUrl },
     homeScore: incomingHasScore ? incoming.homeScore : previous.homeScore,
     awayScore: incomingHasScore ? incoming.awayScore : previous.awayScore,
-    minute: finished ? undefined : incoming.minute ?? previous.minute,
-    playableLive: incoming.playableLive ?? previous.playableLive,
+    minute: status === "FINISHED" ? undefined : incoming.minute ?? previous.minute,
+    playableLive: status === "LIVE" ? incoming.playableLive ?? previous.playableLive : undefined,
   };
 }
 
@@ -109,7 +110,14 @@ export class FootballService {
   private async matches() {
     const [primary, secondary] = await Promise.allSettled([this.provider.getMatches(), this.competitionProvider.getFixtures()]);
     if (primary.status === "rejected") throw primary.reason;
-    const enriched = enrichMatchesWithCompetitions(primary.value, secondary.status === "fulfilled" ? secondary.value : []).map((match) => match.status === "LIVE" ? { ...match, playableLive: this.availability.get(match.id) } : match);
+    const now = this.clock();
+    const primaryIdentities = new Set(primary.value.map(fixtureIdentity));
+    const sameDayCandidates = [...this.known.entries()]
+      .filter(([identity, match]) => !primaryIdentities.has(identity) && sameLocalDay(match.kickoff, now))
+      .map(([, match]) => match);
+    const enriched = enrichMatchesWithCompetitions([...primary.value, ...sameDayCandidates], secondary.status === "fulfilled" ? secondary.value : [])
+      .filter((match) => primaryIdentities.has(fixtureIdentity(match)) || match.status === "FINISHED")
+      .map((match) => match.status === "LIVE" ? { ...match, playableLive: this.availability.get(match.id) } : { ...match, playableLive: undefined });
     const unique = mergeFixtureCollection(enriched, this.known);
     this.known.clear();
     for (const match of unique) this.known.set(fixtureIdentity(match), match);

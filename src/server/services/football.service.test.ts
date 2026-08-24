@@ -112,6 +112,8 @@ describe("FootballService", () => {
     expect(mergeMatch(strong, { ...weak, status: "LIVE", homeScore: 3, awayScore: 3, minute: 51 })).toMatchObject({ status: "LIVE", minute: 51, homeScore: 3, awayScore: 3 });
     expect(mergeMatch(strong, { ...weak, status: "FINISHED", homeScore: 2, awayScore: 4 })).toMatchObject({ status: "FINISHED", homeScore: 2, awayScore: 4 });
     expect(mergeMatch(strong, { ...weak, status: "FINISHED" }).minute).toBeUndefined();
+    const finished = { ...strong, status: "FINISHED" as const, stage: "Full time", minute: undefined, playableLive: undefined };
+    expect(mergeMatch(finished, { ...strong, status: "LIVE", stage: "Live coverage", homeScore: 1, awayScore: 2, minute: 89, playableLive: true })).toMatchObject({ status: "FINISHED", stage: "Full time", homeScore: 2, awayScore: 3, minute: undefined, playableLive: undefined });
   });
 
   it("keeps an enriched score across dashboard refresh and Football filtering", async () => {
@@ -120,6 +122,53 @@ describe("FootballService", () => {
     expect((await service.getDashboard()).live[0]).toMatchObject({ homeScore: 2, awayScore: 3 });
     response = [{ ...base, status: "LIVE" }];
     expect((await service.getLiveDiscovery("football")).matches[0]).toMatchObject({ homeScore: 2, awayScore: 3 });
+  });
+
+  it("preserves an authoritative finished-today result after it leaves the primary live feed", async () => {
+    const fulhamChelsea: Match = {
+      ...base,
+      id: "fulham-chelsea",
+      slug: "fulham-v-chelsea",
+      competition: "Football",
+      status: "LIVE",
+      stage: "Live coverage",
+      kickoff: "2026-08-23T12:00:00Z",
+      homeScore: 2,
+      awayScore: 3,
+      minute: 90,
+      playableLive: true,
+      home: { ...base.home, id: "fulham", slug: "fulham", name: "Fulham", crestUrl: "https://images.example/fulham" },
+      away: { ...base.away, id: "chelsea", slug: "chelsea", name: "Chelsea", crestUrl: "https://images.example/chelsea" },
+    };
+    let primary: Match[] = [fulhamChelsea];
+    let status: "LIVE" | "FINISHED" = "LIVE";
+    const service = new FootballService(
+      { getMatches: async () => primary },
+      () => new Date("2026-08-23T18:00:00Z"),
+      { getFixtures: async () => [{ homeTeam: "Fulham FC", awayTeam: "Chelsea FC", kickoff: fulhamChelsea.kickoff, competition: "Premier League", country: "England", status, homeScore: 2, awayScore: 3 }] },
+    );
+
+    expect((await service.getDashboard()).live).toHaveLength(1);
+    primary = [];
+    status = "FINISHED";
+
+    const dashboard = await service.getDashboard();
+    expect(dashboard.live).toEqual([]);
+    expect(dashboard.today).toEqual([expect.objectContaining({ id: "fulham-chelsea", competition: "Premier League", status: "FINISHED", stage: "Full time", homeScore: 2, awayScore: 3, minute: undefined, playableLive: undefined })]);
+    expect(dashboard.matches).toHaveLength(1);
+    expect((await service.getLeague("premier-league"))?.today).toHaveLength(1);
+    expect(await service.getLiveMatches()).toEqual([]);
+    expect(await service.getMatchesByDate("2026-08-23")).toEqual([expect.objectContaining({ status: "FINISHED", homeScore: 2, awayScore: 3 })]);
+  });
+
+  it("does not retain a missing finished fixture on the next day", async () => {
+    let primary: Match[] = [{ ...base, status: "FINISHED", stage: "Full time", homeScore: 2, awayScore: 3 }];
+    let now = new Date("2026-08-23T18:00:00Z");
+    const service = new FootballService({ getMatches: async () => primary }, () => now);
+    expect((await service.getDashboard()).today).toHaveLength(1);
+    primary = [];
+    now = new Date("2026-08-24T12:00:00Z");
+    expect((await service.getDashboard()).matches).toEqual([]);
   });
 
   it("deduplicates stable fixture identity while preserving the strongest score", () => {
