@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { MatchCard } from "@/features/football/components/match-card";
 import { MatchScoreHeader } from "@/features/football/components/match-score-header";
 import { MatchTabs } from "@/features/football/components/match-tabs";
-import { StreamPlayer } from "@/features/stream/components/stream-player";
+import { StreamPlayer } from "@/features/stream/components/stream-player-server";
 import { getMatchCenterData } from "@/features/football/server/match-center-data";
 import { RecentTracker } from "@/features/personalization/components/recent-tracker";
 

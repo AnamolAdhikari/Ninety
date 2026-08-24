@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:player": "node scripts/isolated-player/server.mjs",
     "dev:lan": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "cf:build": "opennextjs-cloudflare build",
