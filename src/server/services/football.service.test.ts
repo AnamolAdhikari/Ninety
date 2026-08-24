@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Match } from "@/domain/football/types";
-import { FootballService } from "./football.service";
+import { competitionsFrom, FootballService, searchScore } from "./football.service";
 
 const base: Match = { id: "base", slug: "a-v-b", competition: "Premier League", stage: "Scheduled", status: "UPCOMING", popular: false, kickoff: "2026-08-23T12:00:00Z", home: { id: "a", slug: "a", name: "A", shortName: "A", colors: ["#000", "#fff"] }, away: { id: "b", slug: "b", name: "B", shortName: "B", colors: ["#000", "#fff"] } };
 
@@ -31,7 +31,7 @@ describe("FootballService", () => {
   it("normalizes competitions and filters discovery data", async () => {
     const matches: Match[] = [base, { ...base, id: "live", status: "LIVE", competition: "UEFA Champions League", home: { ...base.home, id: "real", slug: "real-madrid", name: "Real Madrid" } }];
     const service = new FootballService({ getMatches: async () => matches }, () => new Date("2026-08-23T09:00:00Z"));
-    expect((await service.getCompetitions()).map((item) => item.slug)).toEqual(["premier-league", "uefa-champions-league"]);
+    expect((await service.getCompetitions()).map((item) => item.slug)).toEqual(["uefa-champions-league", "premier-league"]);
     expect(await service.getMatchesByDate("2026-08-23", "premier-league")).toHaveLength(1);
     expect((await service.getLiveMatches()).map((match) => match.id)).toEqual(["live"]);
     expect((await service.getClub("real-madrid"))?.team.name).toBe("Real Madrid");
@@ -45,8 +45,28 @@ describe("FootballService", () => {
       { ...base, id: "alias", competition: "premier-league", kickoff: "2026-08-23T14:00:00Z" },
     ];
     const service = new FootballService({ getMatches: async () => aliases }, () => new Date("2026-08-23T09:00:00Z"));
-    expect(await service.getCompetitions()).toEqual([{ id: "premier-league", slug: "premier-league", name: "Premier League", region: "England" }]);
+    expect(await service.getCompetitions()).toEqual([{ id: "premier-league", slug: "premier-league", name: "Premier League", region: "England", fixtureCount: 2, liveCount: 0, upcomingCount: 2, clubCount: 2 }]);
     expect(await service.getMatchesByDate("2026-08-23", "premier-league")).toHaveLength(2);
     expect((await service.getLeague("premier-league"))?.upcoming).toHaveLength(2);
+  });
+
+  it("derives competition intelligence without fabricating provider metadata", () => {
+    const matches: Match[] = [base, { ...base, id: "live", status: "LIVE", home: { ...base.home, id: "c", slug: "c", name: "C" } }];
+    expect(competitionsFrom(matches)[0]).toMatchObject({ slug: "premier-league", fixtureCount: 2, liveCount: 1, upcomingCount: 1, clubCount: 3 });
+  });
+
+  it("loads each discovery view from one provider snapshot", async () => {
+    let calls = 0;
+    const service = new FootballService({ getMatches: async () => { calls += 1; return [base]; } });
+    const discovery = await service.getMatchDiscovery("2026-08-23");
+    expect(discovery.matches).toHaveLength(1);
+    expect(discovery.competitions).toHaveLength(1);
+    expect(calls).toBe(1);
+  });
+
+  it("ranks exact and prefix search results above loose matches", () => {
+    expect(searchScore("Premier League", "premier league")).toBeGreaterThan(searchScore("Premier League", "premier"));
+    expect(searchScore("Premier League", "league")).toBeGreaterThan(searchScore("Premier League", "mier"));
+    expect(searchScore("Premier League", "missing")).toBe(0);
   });
 });

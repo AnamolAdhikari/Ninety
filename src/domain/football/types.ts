@@ -9,9 +9,10 @@ export interface Team {
   crestUrl?: string;
 }
 
-export interface Competition { id: string; slug: string; name: string; region?: string; }
+export interface Competition { id: string; slug: string; name: string; region?: string; fixtureCount: number; liveCount: number; upcomingCount: number; clubCount: number; }
 export interface ClubData { team: Team; matches: Match[]; live: Match[]; upcoming: Match[]; competitions: Competition[]; }
-export interface LeagueData { competition: Competition; live: Match[]; today: Match[]; upcoming: Match[]; }
+export interface LeagueData { competition: Competition; live: Match[]; today: Match[]; upcoming: Match[]; clubs: Team[]; }
+export interface MatchDiscoveryData { matches: Match[]; competitions: Competition[]; }
 export interface FootballSearchData { clubs: Team[]; matches: Match[]; competitions: Competition[]; }
 
 export interface Match {
