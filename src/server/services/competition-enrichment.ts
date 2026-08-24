@@ -47,13 +47,22 @@ export const FIXTURE_KICKOFF_TOLERANCE_MS = 15 * 60 * 1000;
 export function enrichMatchesWithCompetitions(matches: Match[], fixtures: CompetitionFixture[]): Match[] {
   return matches.map((match) => {
     const current = canonicalCompetition(match.competition, match.competitionCountry);
-    if (current.slug !== GENERIC_COMPETITION) return { ...match, competition: current.name, competitionCountry: current.region };
     const candidates = fixtures.filter((fixture) => teamKey(fixture.homeTeam) === teamKey(match.home.name)
       && teamKey(fixture.awayTeam) === teamKey(match.away.name)
       && Math.abs(new Date(fixture.kickoff).valueOf() - new Date(match.kickoff).valueOf()) <= FIXTURE_KICKOFF_TOLERANCE_MS);
-    if (candidates.length !== 1) return match;
-    const enriched = canonicalCompetition(candidates[0].competition, candidates[0].country);
-    if (!enriched.slug || enriched.slug === GENERIC_COMPETITION) return match;
-    return { ...match, competition: enriched.name, competitionCountry: enriched.region };
+    if (candidates.length !== 1) return current.slug !== GENERIC_COMPETITION ? { ...match, competition: current.name, competitionCountry: current.region } : match;
+    const fixture = candidates[0];
+    const enriched = canonicalCompetition(fixture.competition, fixture.country);
+    const competition = current.slug !== GENERIC_COMPETITION ? current : enriched;
+    return {
+      ...match,
+      competition: competition.name,
+      competitionCountry: competition.region,
+      status: fixture.status ?? match.status,
+      stage: fixture.status === "LIVE" ? "Live coverage" : fixture.status === "FINISHED" ? "Full time" : match.stage,
+      minute: fixture.status === "LIVE" ? fixture.minute : undefined,
+      homeScore: fixture.homeScore,
+      awayScore: fixture.awayScore,
+    };
   });
 }

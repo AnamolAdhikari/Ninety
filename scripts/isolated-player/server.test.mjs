@@ -16,6 +16,8 @@ describe("isolated player server", () => {
     expect(headers["Referrer-Policy"]).toBe("no-referrer");
     expect(headers["Cache-Control"]).toBe("no-store");
     expect(headers["X-Frame-Options"]).toBe("DENY");
+    expect(headers["Cross-Origin-Resource-Policy"]).toBe("same-origin");
+    expect(headers["Permissions-Policy"]).toContain("payment=()");
     expect(headers["Content-Security-Policy"]).toContain("frame-src https://embed.example");
     expect(headers["Content-Security-Policy"]).toContain("frame-ancestors 'none'");
     expect(headers["Content-Security-Policy"]).toContain("form-action 'none'");

@@ -6,13 +6,19 @@ import { enforceRateLimit } from "@/server/http/rate-limit";
 
 export const dynamic = "force-dynamic";
 
+export function matchCacheControl(status: "LIVE" | "UPCOMING" | "FINISHED") {
+  if (status === "LIVE") return "public, s-maxage=10, stale-while-revalidate=10";
+  if (status === "UPCOMING") return "public, s-maxage=60, stale-while-revalidate=120";
+  return "public, s-maxage=300, stale-while-revalidate=600";
+}
+
 export function createMatchHandler(service: Pick<FootballService, "getMatchCenter">) {
   return async function matchHandler(matchId: string) {
     if (!isSafeOpaqueId(matchId)) return NextResponse.json({ error: { code: "INVALID_MATCH_ID", message: "Match identifier is invalid." } }, { status: 400, headers: { "Cache-Control": "no-store" } });
     try {
       const data = await service.getMatchCenter(matchId);
       if (!data) return NextResponse.json({ error: { code: "MATCH_NOT_FOUND", message: "Match unavailable." } }, { status: 404, headers: { "Cache-Control": "no-store" } });
-      return NextResponse.json(data, { headers: { "Cache-Control": data.match.status === "LIVE" ? "public, s-maxage=10, stale-while-revalidate=20" : "public, s-maxage=60, stale-while-revalidate=120" } });
+      return NextResponse.json(data, { headers: { "Cache-Control": matchCacheControl(data.match.status) } });
     } catch {
       return NextResponse.json({ error: { code: "FOOTBALL_DATA_UNAVAILABLE", message: "Match data is temporarily unavailable." } }, { status: 503, headers: { "Cache-Control": "no-store" } });
     }

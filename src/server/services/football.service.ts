@@ -1,5 +1,4 @@
 import "server-only";
-import { cache } from "react";
 import type { ClubData, Competition, FootballDashboardData, FootballMatchCenterData, FootballSearchData, LeagueData, Match, MatchDiscoveryData, Team } from "@/domain/football/types";
 import { createFootballProvider } from "@/server/providers/football/provider.factory";
 import type { FootballProvider } from "@/server/providers/football/provider";
@@ -147,9 +146,7 @@ export function getFootballService() {
   if (!service) {
     const provider = createFootballProvider();
     const competitionProvider = createCompetitionMetadataProvider();
-    const getMatches = cache(() => provider.getMatches());
-    const getFixtures = cache(() => competitionProvider.getFixtures());
-    service = new FootballService({ getMatches }, undefined, { getFixtures });
+    service = new FootballService(provider, undefined, competitionProvider);
   }
   return service;
 }

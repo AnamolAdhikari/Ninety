@@ -25,6 +25,13 @@ describe("StreamedStreamProvider", () => {
     expect(await new StreamedStreamProvider("https://provider.example", ["https://embed.example"], fetcher).getStreamsForMatch("unknown-match")).toEqual([]);
   });
 
+  it("never substitutes a different fixture when exact identity is unavailable", async () => {
+    const unrelated = { ...rawMatch, id: "different-provider-id", title: "Fulham vs Chelsea" };
+    const fetcher = vi.fn(async () => json([unrelated])) as unknown as typeof fetch;
+    expect(await new StreamedStreamProvider("https://provider.example", ["https://embed.example"], fetcher).getStreamsForMatch(matchId)).toEqual([]);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects malformed streams, insecure URLs, and unauthorized embed origins", () => {
     const origins = new Set(["https://embed.example"]);
     expect(normalizeAuthorizedStream(matchId, "alpha", {}, origins)).toBeNull();
