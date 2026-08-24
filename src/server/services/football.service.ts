@@ -4,7 +4,7 @@ import { createFootballProvider } from "@/server/providers/football/provider.fac
 import type { FootballProvider } from "@/server/providers/football/provider";
 import { createCompetitionMetadataProvider } from "@/server/providers/competition/provider.factory";
 import { disabledCompetitionMetadataProvider, type CompetitionMetadataProvider } from "@/server/providers/competition/provider";
-import { canonicalCompetition, enrichMatchesWithCompetitions } from "./competition-enrichment";
+import { canonicalCompetition, enrichMatchesWithCompetitions, plainSlug } from "./competition-enrichment";
 import { streamAvailability, type StreamAvailabilityCache } from "./stream-availability";
 
 const byKickoff = (a: Match, b: Match) => new Date(a.kickoff).valueOf() - new Date(b.kickoff).valueOf();
@@ -18,7 +18,13 @@ const sameLocalDay = (value: string, now: Date) => {
 
 export const competitionSlug = (name: string) => canonicalCompetition(name).slug;
 export const matchesCompetition = (match: Match, competition?: string) => !competition || competition === "football" || competitionSlug(match.competition) === competition;
-export const fixtureIdentity = (match: Match) => `${match.slug}:${match.home.slug}:${match.away.slug}:${new Date(match.kickoff).toISOString()}`;
+const fixtureIdentityConnectors = new Set(["a", "de", "del", "el", "la", "los", "las"]);
+export const fixtureTeamIdentity = (name: string) => {
+  const tokens = plainSlug(name).split("-").filter(Boolean);
+  if (tokens.length < 2) return tokens.join("-");
+  return tokens.filter((token) => !fixtureIdentityConnectors.has(token) && !["fc", "cf", "afc"].includes(token)).join("-");
+};
+export const fixtureIdentity = (match: Match) => `${fixtureTeamIdentity(match.home.name)}:${fixtureTeamIdentity(match.away.name)}:${new Date(match.kickoff).toISOString()}`;
 
 export function mergeMatch(previous: Match, incoming: Match): Match {
   const finished = incoming.status === "FINISHED";

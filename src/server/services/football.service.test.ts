@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Match } from "@/domain/football/types";
-import { byLivePriority, competitionsFrom, fixtureIdentity, FootballService, matchesCompetition, mergeFixtureCollection, mergeMatch, searchScore, shouldLeadWithLive } from "./football.service";
+import { byLivePriority, competitionsFrom, fixtureIdentity, fixtureTeamIdentity, FootballService, matchesCompetition, mergeFixtureCollection, mergeMatch, searchScore, shouldLeadWithLive } from "./football.service";
 
 const base: Match = { id: "base", slug: "a-v-b", competition: "Premier League", stage: "Scheduled", status: "UPCOMING", popular: false, kickoff: "2026-08-23T12:00:00Z", home: { id: "a", slug: "a", name: "A", shortName: "A", colors: ["#000", "#fff"] }, away: { id: "b", slug: "b", name: "B", shortName: "B", colors: ["#000", "#fff"] } };
 
@@ -27,7 +27,7 @@ describe("FootballService", () => {
   });
 
   it("resolves only exact NINETY match IDs and builds related matches", async () => {
-    const matches: Match[] = [base, { ...base, id: "related", slug: "c-v-d" }];
+    const matches: Match[] = [base, { ...base, id: "related", slug: "c-v-d", home: { ...base.home, id: "c", slug: "c", name: "C" }, away: { ...base.away, id: "d", slug: "d", name: "D" } }];
     const service = new FootballService({ getMatches: async () => matches });
     expect((await service.getMatchById("base"))?.slug).toBe("a-v-b");
     expect(await service.getMatchById("provider-source-id")).toBeNull();
@@ -146,5 +146,15 @@ describe("FootballService", () => {
     expect([unknown, playable, enrichedPlayable].sort(byLivePriority).map((match) => match.id)).toEqual(["scored", "playable", "unknown"]);
     expect(shouldLeadWithLive([unknown])).toBe(false);
     expect(shouldLeadWithLive([unknown, playable])).toBe(true);
+  });
+
+  it("deduplicates the Málaga and Deportivo naming aliases without collapsing distinct fixtures", () => {
+    const malaga = { ...base, id: "malaga-one", slug: "malaga-v-deportivo-la-coruna", status: "LIVE" as const, home: { ...base.home, name: "Málaga", slug: "malaga" }, away: { ...base.away, name: "Deportivo La Coruna", slug: "deportivo-la-coruna" } };
+    const alias = { ...malaga, id: "malaga-two", slug: "malaga-v-deportivo-de-a-coruna", away: { ...malaga.away, name: "Deportivo de A Coruña", slug: "deportivo-de-a-coruna" }, homeScore: 1, awayScore: 0 };
+    expect(fixtureTeamIdentity(malaga.away.name)).toBe("deportivo-coruna");
+    expect(fixtureIdentity(malaga)).toBe(fixtureIdentity(alias));
+    expect(mergeFixtureCollection([malaga, alias])).toEqual([expect.objectContaining({ id: "malaga-one", homeScore: 1, awayScore: 0, away: expect.objectContaining({ name: "Deportivo de A Coruña" }) })]);
+    expect(fixtureIdentity({ ...alias, kickoff: "2026-08-23T14:00:00Z" })).not.toBe(fixtureIdentity(malaga));
+    expect(fixtureIdentity({ ...alias, away: { ...alias.away, name: "Deportivo B" } })).not.toBe(fixtureIdentity(malaga));
   });
 });
