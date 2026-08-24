@@ -16,6 +16,8 @@ describe("isolated player server", () => {
     expect(headers["Referrer-Policy"]).toBe("no-referrer");
     expect(headers["Cache-Control"]).toBe("no-store");
     expect(headers["X-Frame-Options"]).toBe("DENY");
+    expect(headers["Cross-Origin-Resource-Policy"]).toBe("same-origin");
+    expect(headers["Permissions-Policy"]).toContain("payment=()");
     expect(headers["Content-Security-Policy"]).toContain("frame-src https://embed.example");
     expect(headers["Content-Security-Policy"]).toContain("frame-ancestors 'none'");
     expect(headers["Content-Security-Policy"]).toContain("form-action 'none'");
@@ -60,10 +62,30 @@ describe("isolated player server", () => {
     await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
     const address = server.address(); const origin = `http://127.0.0.1:${address.port}`;
     const html = await (await fetch(`${origin}/`)).text();
-    expect(html).toContain("Stream loading?");
+    const js = await (await fetch(`${origin}/player.js`)).text();
+    expect(html).toContain("Stream not starting?");
     expect(html).not.toMatch(/Development diagnostics|Manual playback check|Stream ID/);
+    expect(html).not.toContain("data-policy");
+    expect(js).toContain("policyExperiments=false");
     expect((await fetch(`${origin}/register`, { method: "POST" })).status).toBe(400);
     expect((await fetch(`${origin}/diagnostic/bootstrap?playback=playback-test`)).status).toBe(400);
+  });
+
+  it("shows diagnostics only when explicitly enabled in development", async () => {
+    const hidden = createIsolatedPlayerServer(); servers.push(hidden);
+    await new Promise((resolve) => hidden.listen(0, "127.0.0.1", resolve));
+    const hiddenHtml = await (await fetch(`http://127.0.0.1:${hidden.address().port}/`)).text();
+    expect(hiddenHtml).not.toMatch(/Development diagnostics|Manual playback check|VPN/);
+    const enabled = createIsolatedPlayerServer({ diagnostics: true }); servers.push(enabled);
+    await new Promise((resolve) => enabled.listen(0, "127.0.0.1", resolve));
+    const enabledHtml = await (await fetch(`http://127.0.0.1:${enabled.address().port}/`)).text();
+    const enabledJs = await (await fetch(`http://127.0.0.1:${enabled.address().port}/player.js`)).text();
+    expect(enabledHtml).toContain("Development diagnostics");
+    expect(enabledHtml).toContain('data-policy="credentialless"');
+    expect(enabledHtml).not.toMatch(/Manual playback check|VPN/);
+    expect(enabledJs).toContain("policyExperiments=true");
+    expect(enabledJs).toContain("Focus lost after playback interaction");
+    expect(enabledJs).toContain("frame.setAttribute('credentialless','')");
   });
 
   it("requires explicit HTTPS origins for production runtime", () => {

@@ -4,6 +4,10 @@ export interface CompetitionFixture {
   kickoff: string;
   competition: string;
   country?: string;
+  status?: "LIVE" | "UPCOMING" | "FINISHED";
+  minute?: number;
+  homeScore?: number;
+  awayScore?: number;
 }
 
 export interface CompetitionMetadataProvider {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FootballMatchCenterData, Match } from "@/domain/football/types";
-import { createMatchHandler } from "./route";
+import { createMatchHandler, matchCacheControl } from "./route";
 
 const match: Match = { id: "ninety-match-a1", slug: "home-v-away", competition: "Football", stage: "Scheduled", status: "UPCOMING", popular: false, kickoff: "2026-08-23T12:00:00Z", home: { id: "home", slug: "home", name: "Home", shortName: "HOM", colors: ["#111", "#333"] }, away: { id: "away", slug: "away", name: "Away", shortName: "AWA", colors: ["#222", "#444"] } };
 
@@ -23,5 +23,11 @@ describe("GET /api/football/match/[matchId]", () => {
     const response = await createMatchHandler({ getMatchCenter: async () => ({ match, related: [] }) })(match.id);
     const body = JSON.stringify(await response.json());
     expect(body).not.toMatch(/provider|source|stream|embed|baseUrl/i);
+  });
+
+  it("uses live, upcoming, and finished response cache policies", () => {
+    expect(matchCacheControl("LIVE")).toContain("s-maxage=10");
+    expect(matchCacheControl("UPCOMING")).toContain("s-maxage=60");
+    expect(matchCacheControl("FINISHED")).toContain("s-maxage=300");
   });
 });

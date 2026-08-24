@@ -1,20 +1,68 @@
 import "server-only";
-import { cache } from "react";
 import type { ClubData, Competition, FootballDashboardData, FootballMatchCenterData, FootballSearchData, LeagueData, Match, MatchDiscoveryData, Team } from "@/domain/football/types";
 import { createFootballProvider } from "@/server/providers/football/provider.factory";
 import type { FootballProvider } from "@/server/providers/football/provider";
 import { createCompetitionMetadataProvider } from "@/server/providers/competition/provider.factory";
 import { disabledCompetitionMetadataProvider, type CompetitionMetadataProvider } from "@/server/providers/competition/provider";
-import { canonicalCompetition, enrichMatchesWithCompetitions } from "./competition-enrichment";
+import { canonicalCompetition, enrichMatchesWithCompetitions, plainSlug } from "./competition-enrichment";
+import { streamAvailability, type StreamAvailabilityCache } from "./stream-availability";
+import { competitionPriority } from "@/domain/football/competition-order";
 
 const byKickoff = (a: Match, b: Match) => new Date(a.kickoff).valueOf() - new Date(b.kickoff).valueOf();
-const byLivePriority = (a: Match, b: Match) => Number(b.popular) - Number(a.popular) || byKickoff(a, b);
+const RECENT_FINISHED_RETENTION_MS = 2 * 24 * 60 * 60 * 1000;
+const isRecentFinished = (match: Match, now: Date) => {
+  const elapsed = now.valueOf() - new Date(match.kickoff).valueOf();
+  return match.status === "FINISHED" && elapsed >= 0 && elapsed <= RECENT_FINISHED_RETENTION_MS;
+};
+const hasCurrentLiveState = (match: Match) => match.homeScore != null && match.awayScore != null || match.minute != null;
+export const byLivePriority = (a: Match, b: Match) => Number(b.playableLive === true && hasCurrentLiveState(b)) - Number(a.playableLive === true && hasCurrentLiveState(a)) || Number(b.playableLive === true) - Number(a.playableLive === true) || competitionPriority(competitionSlug(a.competition)) - competitionPriority(competitionSlug(b.competition)) || Number(b.popular) - Number(a.popular) || byKickoff(a, b);
+export const shouldLeadWithLive = (matches: Match[]) => matches.some((match) => match.status === "LIVE" && match.playableLive === true);
 const sameLocalDay = (value: string, now: Date) => {
   const date = new Date(value);
   return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
 };
 
 export const competitionSlug = (name: string) => canonicalCompetition(name).slug;
+export const matchesCompetition = (match: Match, competition?: string) => !competition || competition === "football" || competitionSlug(match.competition) === competition;
+const fixtureIdentityConnectors = new Set(["a", "de", "del", "el", "la", "los", "las"]);
+export const fixtureTeamIdentity = (name: string) => {
+  const tokens = plainSlug(name).split("-").filter(Boolean);
+  if (tokens.length < 2) return tokens.join("-");
+  return tokens.filter((token) => !fixtureIdentityConnectors.has(token) && !["fc", "cf", "afc"].includes(token)).join("-");
+};
+export const fixtureIdentity = (match: Match) => `${fixtureTeamIdentity(match.home.name)}:${fixtureTeamIdentity(match.away.name)}:${new Date(match.kickoff).toISOString()}`;
+
+export function mergeMatch(previous: Match, incoming: Match): Match {
+  const staleAfterFinished = previous.status === "FINISHED" && incoming.status !== "FINISHED";
+  const status = staleAfterFinished ? "FINISHED" : previous.status === "LIVE" && incoming.status === "UPCOMING" ? "LIVE" : incoming.status;
+  const incomingHasScore = !staleAfterFinished && incoming.homeScore != null && incoming.awayScore != null;
+  return {
+    ...previous,
+    ...incoming,
+    id: previous.id,
+    status,
+    stage: staleAfterFinished ? previous.stage : incoming.stage,
+    competition: incoming.competition === "Football" && previous.competition !== "Football" ? previous.competition : incoming.competition,
+    competitionCountry: incoming.competitionCountry ?? previous.competitionCountry,
+    posterUrl: incoming.posterUrl ?? previous.posterUrl,
+    home: { ...previous.home, ...incoming.home, crestUrl: incoming.home.crestUrl ?? previous.home.crestUrl },
+    away: { ...previous.away, ...incoming.away, crestUrl: incoming.away.crestUrl ?? previous.away.crestUrl },
+    homeScore: incomingHasScore ? incoming.homeScore : previous.homeScore,
+    awayScore: incomingHasScore ? incoming.awayScore : previous.awayScore,
+    minute: status === "FINISHED" ? undefined : incoming.minute ?? previous.minute,
+    playableLive: status === "LIVE" ? incoming.playableLive ?? previous.playableLive : undefined,
+  };
+}
+
+export function mergeFixtureCollection(matches: Match[], previous: ReadonlyMap<string, Match> = new Map()) {
+  const merged = new Map<string, Match>();
+  for (const incoming of matches) {
+    const key = fixtureIdentity(incoming);
+    const known = merged.get(key) ?? previous.get(key);
+    merged.set(key, known ? mergeMatch(known, incoming) : incoming);
+  }
+  return [...merged.values()];
+}
 const teamsFrom = (matches: Match[]): Team[] => {
   const teams = new Map<string, Team>();
   for (const team of matches.flatMap((match) => [match.home, match.away])) {
@@ -47,6 +95,8 @@ export function competitionsFrom(matches: Match[]): Competition[] {
   }).sort((a, b) => b.liveCount - a.liveCount || b.fixtureCount - a.fixtureCount || a.name.localeCompare(b.name));
 }
 
+export const footballCompetition = (matches: Match[]): Competition => ({ id: "football", slug: "football", name: "Football", region: "Worldwide", fixtureCount: matches.length, liveCount: matches.filter((match) => match.status === "LIVE").length, upcomingCount: matches.filter((match) => match.status === "UPCOMING").length, clubCount: teamsFrom(matches).length });
+
 const searchable = (value: string) => value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 export function searchScore(value: string, query: string) {
   const candidate = searchable(value);
@@ -59,13 +109,33 @@ export function searchScore(value: string, query: string) {
 }
 
 export class FootballService {
-  constructor(private readonly provider: FootballProvider, private readonly clock: () => Date = () => new Date(), private readonly competitionProvider: CompetitionMetadataProvider = disabledCompetitionMetadataProvider) {}
+  private readonly known = new Map<string, Match>();
+  private readonly knownCompetitions = new Map<string, Competition>();
+  constructor(private readonly provider: FootballProvider, private readonly clock: () => Date = () => new Date(), private readonly competitionProvider: CompetitionMetadataProvider = disabledCompetitionMetadataProvider, private readonly availability: Pick<StreamAvailabilityCache, "get"> = streamAvailability) {}
 
   private async matches() {
     const [primary, secondary] = await Promise.allSettled([this.provider.getMatches(), this.competitionProvider.getFixtures()]);
     if (primary.status === "rejected") throw primary.reason;
-    const enriched = enrichMatchesWithCompetitions(primary.value, secondary.status === "fulfilled" ? secondary.value : []);
-    return [...new Map(enriched.map((match) => [match.id, match])).values()];
+    if (secondary.status === "fulfilled") {
+      for (const fixture of secondary.value) {
+        const canonical = canonicalCompetition(fixture.competition, fixture.country);
+        const current = this.knownCompetitions.get(canonical.slug);
+        this.knownCompetitions.set(canonical.slug, current ?? { id: canonical.slug, slug: canonical.slug, name: canonical.name, region: canonical.region, fixtureCount: 0, liveCount: 0, upcomingCount: 0, clubCount: 0 });
+      }
+    }
+    const now = this.clock();
+    const primaryIdentities = new Set(primary.value.map(fixtureIdentity));
+    const retainedCandidates = [...this.known.entries()]
+      .filter(([identity, match]) => !primaryIdentities.has(identity) && (sameLocalDay(match.kickoff, now) || match.status === "UPCOMING" && new Date(match.kickoff) > now || isRecentFinished(match, now)))
+      .map(([, match]) => match);
+    const enriched = enrichMatchesWithCompetitions([...primary.value, ...retainedCandidates], secondary.status === "fulfilled" ? secondary.value : [])
+      .filter((match) => primaryIdentities.has(fixtureIdentity(match)) || isRecentFinished(match, now) || match.status === "UPCOMING" && new Date(match.kickoff) > now)
+      .map((match) => match.status === "LIVE" ? { ...match, playableLive: this.availability.get(match.id) } : { ...match, playableLive: undefined });
+    const unique = mergeFixtureCollection(enriched, this.known);
+    this.known.clear();
+    for (const match of unique) this.known.set(fixtureIdentity(match), match);
+    for (const competition of competitionsFrom(unique)) this.knownCompetitions.set(competition.slug, competition);
+    return unique;
   }
 
   async getDashboard(): Promise<FootballDashboardData> {
@@ -90,25 +160,37 @@ export class FootballService {
 
   async getMatchDiscovery(date: string, competition?: string): Promise<MatchDiscoveryData> {
     const all = await this.matches();
-    return { matches: all.filter((match) => match.kickoff.slice(0, 10) === date && (!competition || competitionSlug(match.competition) === competition)).sort(byKickoff), competitions: competitionsFrom(all) };
+    return { matches: all.filter((match) => match.kickoff.slice(0, 10) === date && matchesCompetition(match, competition)).sort(byKickoff), competitions: [footballCompetition(all), ...competitionsFrom(all).filter((item) => item.slug !== "football")] };
   }
 
   async getLiveDiscovery(competition?: string): Promise<MatchDiscoveryData> {
     const all = await this.matches();
-    return { matches: all.filter((match) => match.status === "LIVE" && (!competition || competitionSlug(match.competition) === competition)).sort(byLivePriority), competitions: competitionsFrom(all) };
+    const live = all.filter((match) => match.status === "LIVE");
+    const matches = live.filter((match) => matchesCompetition(match, competition)).sort(byLivePriority);
+    return { matches, competitions: [footballCompetition(live), ...competitionsFrom(live).filter((item) => item.slug !== "football")] };
   }
 
   async getMatchesByDate(date: string, competition?: string) { return (await this.getMatchDiscovery(date, competition)).matches; }
   async getLiveMatches(competition?: string) { return (await this.getLiveDiscovery(competition)).matches; }
-  async getCompetitions() { return competitionsFrom(await this.matches()); }
+  async getCompetitions() { await this.matches(); return [...this.knownCompetitions.values()].sort((a, b) => b.liveCount - a.liveCount || b.fixtureCount - a.fixtureCount || a.name.localeCompare(b.name)); }
 
   async getLeague(slug: string): Promise<LeagueData | null> {
     const all = await this.matches();
-    const competition = competitionsFrom(all).find((item) => item.slug === slug);
+    const competitions = [...this.knownCompetitions.values()];
+    const competition = competitions.find((item) => item.slug === slug);
     if (!competition) return null;
     const scoped = all.filter((match) => competitionSlug(match.competition) === slug).sort(byKickoff);
     const now = this.clock();
-    return { competition, live: scoped.filter((match) => match.status === "LIVE"), today: scoped.filter((match) => sameLocalDay(match.kickoff, now)), upcoming: scoped.filter((match) => match.status === "UPCOMING" && new Date(match.kickoff) > now), clubs: teamsFrom(scoped).sort((a, b) => a.name.localeCompare(b.name)) };
+    const live = scoped.filter((match) => match.status === "LIVE");
+    return {
+      competition,
+      competitions,
+      live,
+      results: scoped.filter((match) => match.status === "FINISHED" && sameLocalDay(match.kickoff, now)),
+      today: scoped.filter((match) => match.status === "UPCOMING" && sameLocalDay(match.kickoff, now)),
+      upcoming: scoped.filter((match) => match.status === "UPCOMING" && new Date(match.kickoff) > now && !sameLocalDay(match.kickoff, now)),
+      clubs: teamsFrom(scoped).sort((a, b) => a.name.localeCompare(b.name)),
+    };
   }
 
   async getClub(slug: string): Promise<ClubData | null> {
@@ -147,9 +229,7 @@ export function getFootballService() {
   if (!service) {
     const provider = createFootballProvider();
     const competitionProvider = createCompetitionMetadataProvider();
-    const getMatches = cache(() => provider.getMatches());
-    const getFixtures = cache(() => competitionProvider.getFixtures());
-    service = new FootballService({ getMatches }, undefined, { getFixtures });
+    service = new FootballService(provider, undefined, competitionProvider);
   }
   return service;
 }

@@ -19,6 +19,11 @@ const canonicalCompetitions: Record<string, CanonicalCompetition> = {
   "uefa-champions-league": { name: "UEFA Champions League", slug: "champions-league", region: "Europe" },
   "champions-league": { name: "UEFA Champions League", slug: "champions-league", region: "Europe" },
   ucl: { name: "UEFA Champions League", slug: "champions-league", region: "Europe" },
+  "uefa-europa-league": { name: "UEFA Europa League", slug: "europa-league", region: "Europe" },
+  "europa-league": { name: "UEFA Europa League", slug: "europa-league", region: "Europe" },
+  uel: { name: "UEFA Europa League", slug: "europa-league", region: "Europe" },
+  "uefa-conference-league": { name: "UEFA Conference League", slug: "conference-league", region: "Europe" },
+  "conference-league": { name: "UEFA Conference League", slug: "conference-league", region: "Europe" },
 };
 
 export const plainSlug = (value: string) => value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -47,13 +52,22 @@ export const FIXTURE_KICKOFF_TOLERANCE_MS = 15 * 60 * 1000;
 export function enrichMatchesWithCompetitions(matches: Match[], fixtures: CompetitionFixture[]): Match[] {
   return matches.map((match) => {
     const current = canonicalCompetition(match.competition, match.competitionCountry);
-    if (current.slug !== GENERIC_COMPETITION) return { ...match, competition: current.name, competitionCountry: current.region };
     const candidates = fixtures.filter((fixture) => teamKey(fixture.homeTeam) === teamKey(match.home.name)
       && teamKey(fixture.awayTeam) === teamKey(match.away.name)
       && Math.abs(new Date(fixture.kickoff).valueOf() - new Date(match.kickoff).valueOf()) <= FIXTURE_KICKOFF_TOLERANCE_MS);
-    if (candidates.length !== 1) return match;
-    const enriched = canonicalCompetition(candidates[0].competition, candidates[0].country);
-    if (!enriched.slug || enriched.slug === GENERIC_COMPETITION) return match;
-    return { ...match, competition: enriched.name, competitionCountry: enriched.region };
+    if (candidates.length !== 1) return current.slug !== GENERIC_COMPETITION ? { ...match, competition: current.name, competitionCountry: current.region } : match;
+    const fixture = candidates[0];
+    const enriched = canonicalCompetition(fixture.competition, fixture.country);
+    const competition = current.slug !== GENERIC_COMPETITION ? current : enriched;
+    const score = fixture.homeScore != null && fixture.awayScore != null ? { homeScore: fixture.homeScore, awayScore: fixture.awayScore } : {};
+    return {
+      ...match,
+      competition: competition.name,
+      competitionCountry: competition.region,
+      status: fixture.status ?? match.status,
+      stage: fixture.status === "LIVE" ? "Live coverage" : fixture.status === "FINISHED" ? "Full time" : match.stage,
+      ...(fixture.status === "LIVE" && fixture.minute != null ? { minute: fixture.minute } : fixture.status === "FINISHED" ? { minute: undefined } : {}),
+      ...score,
+    };
   });
 }

@@ -16,6 +16,8 @@ describe("competition enrichment", () => {
     expect(canonicalCompetition("Bundesliga").slug).toBe("bundesliga");
     expect(canonicalCompetition("Ligue 1").slug).toBe("ligue-1");
     expect(canonicalCompetition("UEFA Champions League")).toMatchObject({ slug: "champions-league", region: "Europe" });
+    expect(canonicalCompetition("UEFA Europa League")).toMatchObject({ name: "UEFA Europa League", slug: "europa-league" });
+    expect(canonicalCompetition("Conference League")).toMatchObject({ name: "UEFA Conference League", slug: "conference-league" });
   });
 
   it("enriches exact and curated alias matches", () => {
@@ -24,6 +26,14 @@ describe("competition enrichment", () => {
   });
 
   it("enriches the Fulham and Chelsea FC reproduction", () => expect(enrichMatchesWithCompetitions([fulhamMatch], [fulhamFixture])[0]).toMatchObject({ competition: "Premier League", competitionCountry: "England" }));
+
+  it("enriches an exact live fixture with score, minute, and status transitions", () => {
+    const live = enrichMatchesWithCompetitions([fulhamMatch], [{ ...fulhamFixture, status: "LIVE", minute: 42, homeScore: 1, awayScore: 2 }])[0];
+    expect(live).toMatchObject({ status: "LIVE", stage: "Live coverage", minute: 42, homeScore: 1, awayScore: 2 });
+    const finished = enrichMatchesWithCompetitions([live], [{ ...fulhamFixture, status: "FINISHED", homeScore: 1, awayScore: 3 }])[0];
+    expect(finished).toMatchObject({ status: "FINISHED", stage: "Full time", homeScore: 1, awayScore: 3 });
+    expect(finished.minute).toBeUndefined();
+  });
 
   it.each([
     ["Arsenal", "Arsenal FC"],
