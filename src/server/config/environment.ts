@@ -2,6 +2,7 @@ import "server-only";
 
 export type FootballProviderName = "mock" | "streamed";
 export type StreamProviderName = "mock" | "configured";
+export type EnvironmentSource = Readonly<Record<string, string | undefined>>;
 
 export interface ServerEnvironment {
   footballProvider: FootballProviderName;
@@ -19,7 +20,7 @@ const httpsUrl = (value: string, name: string) => {
   return url.toString().replace(/\/$/, "");
 };
 
-export function validateServerEnvironment(env: NodeJS.ProcessEnv = process.env): ServerEnvironment {
+export function validateServerEnvironment(env: EnvironmentSource = process.env): ServerEnvironment {
   const production = env.NODE_ENV === "production";
   const footballProvider = (env.FOOTBALL_PROVIDER ?? (production ? "streamed" : "mock")) as FootballProviderName;
   if (!(["mock", "streamed"] as string[]).includes(footballProvider)) throw new Error("FOOTBALL_PROVIDER must be mock or streamed.");

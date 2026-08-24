@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ninety-football",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "images": { "binding": "IMAGES" },
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "ratelimits": [
+    { "name": "SEARCH_RATE_LIMITER", "namespace_id": "8101", "simple": { "limit": 30, "period": 60 } },
+    { "name": "METADATA_RATE_LIMITER", "namespace_id": "8102", "simple": { "limit": 120, "period": 60 } },
+    { "name": "PLAYBACK_RATE_LIMITER", "namespace_id": "8103", "simple": { "limit": 20, "period": 60 } }
+  ]
+}

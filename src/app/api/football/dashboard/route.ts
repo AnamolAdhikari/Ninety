@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { FootballService } from "@/server/services/football.service";
 import { getFootballService } from "@/server/services/football.service";
+import { enforceRateLimit } from "@/server/http/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -14,4 +15,4 @@ export function createDashboardHandler(service: Pick<FootballService, "getDashbo
   };
 }
 
-export async function GET() { return createDashboardHandler(getFootballService())(); }
+export async function GET(request: Request) { return await enforceRateLimit(request, "metadata") ?? createDashboardHandler(getFootballService())(); }

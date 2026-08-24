@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { FootballService } from "@/server/services/football.service";
 import { getFootballService } from "@/server/services/football.service";
 import { isSafeOpaqueId } from "@/server/http/input";
+import { enforceRateLimit } from "@/server/http/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,9 @@ export function createMatchHandler(service: Pick<FootballService, "getMatchCente
   };
 }
 
-export async function GET(_request: Request, { params }: RouteContext<"/api/football/match/[matchId]">) {
+export async function GET(request: Request, { params }: RouteContext<"/api/football/match/[matchId]">) {
+  const limited = await enforceRateLimit(request, "metadata");
+  if (limited) return limited;
   const { matchId } = await params;
   return createMatchHandler(getFootballService())(matchId);
 }

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import type { Match, MatchStatus, Team } from "@/domain/football/types";
 import type { FootballProvider } from "./provider";
 import { FootballProviderError } from "./provider-error";
+import { logServerEvent } from "@/server/observability/logger";
 
 type UnknownRecord = Record<string, unknown>;
 interface StreamedMatch {
@@ -123,8 +124,13 @@ export class StreamedFootballProvider implements FootballProvider {
       const football = footballResult.value;
       const live = liveResult.status === "fulfilled" ? liveResult.value : [];
       const liveIds = new Set(live.flatMap((item) => item && typeof item === "object" && typeof (item as UnknownRecord).id === "string" ? [(item as UnknownRecord).id as string] : []));
-      return football.map((item) => normalizeStreamedMatch(item, liveIds, this.baseUrl)).filter((match): match is Match => match !== null);
+      const normalized = football.map((item) => normalizeStreamedMatch(item, liveIds, this.baseUrl));
+      const rejected = normalized.filter((match) => match === null).length;
+      if (rejected) logServerEvent("normalization_rejected", undefined, { count: rejected });
+      return normalized.filter((match): match is Match => match !== null);
     } catch (error) {
+      const timeout = error instanceof Error && (error.name === "TimeoutError" || (error.cause instanceof Error && error.cause.name === "TimeoutError"));
+      logServerEvent(timeout ? "provider_timeout" : "provider_unavailable");
       throw new FootballProviderError("Football data provider is unavailable.", { cause: error });
     }
   }

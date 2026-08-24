@@ -3,9 +3,9 @@ import type { FootballProvider } from "./provider";
 import { MockFootballProvider } from "./mock-football.provider";
 import { StreamedFootballProvider } from "./streamed.provider";
 import { FootballProviderError } from "./provider-error";
-import { validateServerEnvironment } from "@/server/config/environment";
+import { validateServerEnvironment, type EnvironmentSource } from "@/server/config/environment";
 
-export function createFootballProvider(env: NodeJS.ProcessEnv = process.env): FootballProvider {
+export function createFootballProvider(env: EnvironmentSource = process.env): FootballProvider {
   let config;
   try { config = validateServerEnvironment(env); } catch (error) { throw new FootballProviderError("Football provider configuration is invalid.", { cause: error }); }
   const selection = config.footballProvider;
