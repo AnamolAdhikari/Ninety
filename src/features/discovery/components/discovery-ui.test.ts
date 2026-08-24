@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Competition } from "@/domain/football/types";
-import { orderedCompetitions } from "./discovery-ui";
+import { orderedCompetitions } from "@/domain/football/competition-order";
 
 const competition = (slug: string, name = slug): Competition => ({ id: slug, slug, name, fixtureCount: 1, liveCount: 1, upcomingCount: 0, clubCount: 2 });
 

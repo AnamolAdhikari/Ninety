@@ -6,10 +6,11 @@ import { createCompetitionMetadataProvider } from "@/server/providers/competitio
 import { disabledCompetitionMetadataProvider, type CompetitionMetadataProvider } from "@/server/providers/competition/provider";
 import { canonicalCompetition, enrichMatchesWithCompetitions, plainSlug } from "./competition-enrichment";
 import { streamAvailability, type StreamAvailabilityCache } from "./stream-availability";
+import { competitionPriority } from "@/domain/football/competition-order";
 
 const byKickoff = (a: Match, b: Match) => new Date(a.kickoff).valueOf() - new Date(b.kickoff).valueOf();
 const hasCurrentLiveState = (match: Match) => match.homeScore != null && match.awayScore != null || match.minute != null;
-export const byLivePriority = (a: Match, b: Match) => Number(b.playableLive === true && hasCurrentLiveState(b)) - Number(a.playableLive === true && hasCurrentLiveState(a)) || Number(b.playableLive === true) - Number(a.playableLive === true) || Number(b.popular) - Number(a.popular) || byKickoff(a, b);
+export const byLivePriority = (a: Match, b: Match) => Number(b.playableLive === true && hasCurrentLiveState(b)) - Number(a.playableLive === true && hasCurrentLiveState(a)) || Number(b.playableLive === true) - Number(a.playableLive === true) || competitionPriority(competitionSlug(a.competition)) - competitionPriority(competitionSlug(b.competition)) || Number(b.popular) - Number(a.popular) || byKickoff(a, b);
 export const shouldLeadWithLive = (matches: Match[]) => matches.some((match) => match.status === "LIVE" && match.playableLive === true);
 const sameLocalDay = (value: string, now: Date) => {
   const date = new Date(value);
@@ -157,7 +158,8 @@ export class FootballService {
     if (!competition) return null;
     const scoped = all.filter((match) => competitionSlug(match.competition) === slug).sort(byKickoff);
     const now = this.clock();
-    return { competition, live: scoped.filter((match) => match.status === "LIVE"), today: scoped.filter((match) => sameLocalDay(match.kickoff, now)), upcoming: scoped.filter((match) => match.status === "UPCOMING" && new Date(match.kickoff) > now), clubs: teamsFrom(scoped).sort((a, b) => a.name.localeCompare(b.name)) };
+    const live = scoped.filter((match) => match.status === "LIVE");
+    return { competition, live, today: scoped.filter((match) => match.status !== "LIVE" && sameLocalDay(match.kickoff, now)), upcoming: scoped.filter((match) => match.status === "UPCOMING" && new Date(match.kickoff) > now), clubs: teamsFrom(scoped).sort((a, b) => a.name.localeCompare(b.name)) };
   }
 
   async getClub(slug: string): Promise<ClubData | null> {

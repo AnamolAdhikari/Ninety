@@ -19,6 +19,11 @@ const canonicalCompetitions: Record<string, CanonicalCompetition> = {
   "uefa-champions-league": { name: "UEFA Champions League", slug: "champions-league", region: "Europe" },
   "champions-league": { name: "UEFA Champions League", slug: "champions-league", region: "Europe" },
   ucl: { name: "UEFA Champions League", slug: "champions-league", region: "Europe" },
+  "uefa-europa-league": { name: "UEFA Europa League", slug: "europa-league", region: "Europe" },
+  "europa-league": { name: "UEFA Europa League", slug: "europa-league", region: "Europe" },
+  uel: { name: "UEFA Europa League", slug: "europa-league", region: "Europe" },
+  "uefa-conference-league": { name: "UEFA Conference League", slug: "conference-league", region: "Europe" },
+  "conference-league": { name: "UEFA Conference League", slug: "conference-league", region: "Europe" },
 };
 
 export const plainSlug = (value: string) => value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");

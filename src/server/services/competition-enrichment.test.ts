@@ -16,6 +16,8 @@ describe("competition enrichment", () => {
     expect(canonicalCompetition("Bundesliga").slug).toBe("bundesliga");
     expect(canonicalCompetition("Ligue 1").slug).toBe("ligue-1");
     expect(canonicalCompetition("UEFA Champions League")).toMatchObject({ slug: "champions-league", region: "Europe" });
+    expect(canonicalCompetition("UEFA Europa League")).toMatchObject({ name: "UEFA Europa League", slug: "europa-league" });
+    expect(canonicalCompetition("Conference League")).toMatchObject({ name: "UEFA Conference League", slug: "conference-league" });
   });
 
   it("enriches exact and curated alias matches", () => {

@@ -148,6 +148,20 @@ describe("FootballService", () => {
     expect(shouldLeadWithLive([unknown, playable])).toBe(true);
   });
 
+  it("ranks major live competitions before popular generic provider fixtures", () => {
+    const genericPopular = { ...base, id: "generic", slug: "generic", competition: "Football", status: "LIVE" as const, popular: true };
+    const premierLeague = { ...base, id: "premier", slug: "premier", status: "LIVE" as const, popular: false };
+    expect([genericPopular, premierLeague].sort(byLivePriority).map((match) => match.id)).toEqual(["premier", "generic"]);
+  });
+
+  it("keeps live fixtures out of the league Today section", async () => {
+    const live = { ...base, id: "live", slug: "live", status: "LIVE" as const };
+    const scheduled = { ...base, id: "scheduled", slug: "scheduled", kickoff: "2026-08-23T14:00:00Z" };
+    const league = await new FootballService({ getMatches: async () => [live, scheduled] }, () => new Date("2026-08-23T09:00:00Z")).getLeague("premier-league");
+    expect(league?.live.map((match) => match.id)).toEqual(["live"]);
+    expect(league?.today.map((match) => match.id)).toEqual(["scheduled"]);
+  });
+
   it("deduplicates the Málaga and Deportivo naming aliases without collapsing distinct fixtures", () => {
     const malaga = { ...base, id: "malaga-one", slug: "malaga-v-deportivo-la-coruna", status: "LIVE" as const, home: { ...base.home, name: "Málaga", slug: "malaga" }, away: { ...base.away, name: "Deportivo La Coruna", slug: "deportivo-la-coruna" } };
     const alias = { ...malaga, id: "malaga-two", slug: "malaga-v-deportivo-de-a-coruna", away: { ...malaga.away, name: "Deportivo de A Coruña", slug: "deportivo-de-a-coruna" }, homeScore: 1, awayScore: 0 };

@@ -3,20 +3,7 @@ import type { ClubData, Competition, Match } from "@/domain/football/types";
 import { MatchCard } from "@/features/football/components/match-card";
 import { TeamCrest } from "@/features/football/components/team-crest";
 import { LocalKickoff } from "@/features/football/components/local-kickoff";
-
-const competitionOrder = new Map([
-  ["premier-league", 0],
-  ["la-liga", 1],
-  ["bundesliga", 2],
-  ["serie-a", 3],
-  ["ligue-1", 4],
-  ["champions-league", 5],
-  ["football", 7],
-]);
-
-export function orderedCompetitions(competitions: Competition[]) {
-  return [...competitions].sort((a, b) => (competitionOrder.get(a.slug) ?? 6) - (competitionOrder.get(b.slug) ?? 6) || a.name.localeCompare(b.name));
-}
+import { orderedCompetitions } from "@/domain/football/competition-order";
 
 export function PageIntro({ eyebrow, title, detail }: { eyebrow?: string; title: string; detail?: string }) { return <div className="mb-8">{eyebrow&&<p className="mb-2 text-xs font-bold uppercase tracking-[.18em] text-[#c7ff4a]">{eyebrow}</p>}<h1 className="text-3xl font-semibold tracking-[-.05em] sm:text-5xl">{title}</h1>{detail&&<p className="mt-3 text-sm text-[#818891]">{detail}</p>}</div>; }
 export function CompetitionChips({ competitions, active, base }: { competitions: Competition[]; active?: string; base: string }) { return <div className="hide-scrollbar mb-8 flex gap-2 overflow-x-auto pb-1">{orderedCompetitions(competitions).map((competition)=><Link key={competition.id} href={`${base}${base.includes("?")?"&":"?"}competition=${competition.slug}`} className={`flex min-w-fit items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold ${active===competition.slug?"border-[#c7ff4a]/40 bg-[#c7ff4a]/10 text-[#c7ff4a]":"border-white/10 text-[#9299a1]"}`}>{competition.name}{competition.liveCount > 0 && <span className="rounded-full bg-[#ff5b68]/15 px-1.5 py-0.5 font-mono text-[9px] text-[#ff6b77]">{competition.liveCount} live</span>}</Link>)}<Link href={base} className={`min-w-fit rounded-full border px-4 py-2 text-xs font-semibold ${!active?"border-white/20 bg-white text-black":"border-white/10 text-[#9299a1]"}`}>All</Link></div>; }
