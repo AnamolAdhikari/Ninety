@@ -11,7 +11,7 @@ export interface Team {
 
 export interface Competition { id: string; slug: string; name: string; region?: string; fixtureCount: number; liveCount: number; upcomingCount: number; clubCount: number; }
 export interface ClubData { team: Team; matches: Match[]; live: Match[]; upcoming: Match[]; competitions: Competition[]; }
-export interface LeagueData { competition: Competition; live: Match[]; today: Match[]; upcoming: Match[]; clubs: Team[]; }
+export interface LeagueData { competition: Competition; competitions: Competition[]; live: Match[]; results: Match[]; today: Match[]; upcoming: Match[]; clubs: Team[]; }
 export interface MatchDiscoveryData { matches: Match[]; competitions: Competition[]; }
 export interface FootballSearchData { clubs: Team[]; matches: Match[]; competitions: Competition[]; }
 

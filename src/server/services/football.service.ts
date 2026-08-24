@@ -9,6 +9,11 @@ import { streamAvailability, type StreamAvailabilityCache } from "./stream-avail
 import { competitionPriority } from "@/domain/football/competition-order";
 
 const byKickoff = (a: Match, b: Match) => new Date(a.kickoff).valueOf() - new Date(b.kickoff).valueOf();
+const RECENT_FINISHED_RETENTION_MS = 2 * 24 * 60 * 60 * 1000;
+const isRecentFinished = (match: Match, now: Date) => {
+  const elapsed = now.valueOf() - new Date(match.kickoff).valueOf();
+  return match.status === "FINISHED" && elapsed >= 0 && elapsed <= RECENT_FINISHED_RETENTION_MS;
+};
 const hasCurrentLiveState = (match: Match) => match.homeScore != null && match.awayScore != null || match.minute != null;
 export const byLivePriority = (a: Match, b: Match) => Number(b.playableLive === true && hasCurrentLiveState(b)) - Number(a.playableLive === true && hasCurrentLiveState(a)) || Number(b.playableLive === true) - Number(a.playableLive === true) || competitionPriority(competitionSlug(a.competition)) - competitionPriority(competitionSlug(b.competition)) || Number(b.popular) - Number(a.popular) || byKickoff(a, b);
 export const shouldLeadWithLive = (matches: Match[]) => matches.some((match) => match.status === "LIVE" && match.playableLive === true);
@@ -105,22 +110,31 @@ export function searchScore(value: string, query: string) {
 
 export class FootballService {
   private readonly known = new Map<string, Match>();
+  private readonly knownCompetitions = new Map<string, Competition>();
   constructor(private readonly provider: FootballProvider, private readonly clock: () => Date = () => new Date(), private readonly competitionProvider: CompetitionMetadataProvider = disabledCompetitionMetadataProvider, private readonly availability: Pick<StreamAvailabilityCache, "get"> = streamAvailability) {}
 
   private async matches() {
     const [primary, secondary] = await Promise.allSettled([this.provider.getMatches(), this.competitionProvider.getFixtures()]);
     if (primary.status === "rejected") throw primary.reason;
+    if (secondary.status === "fulfilled") {
+      for (const fixture of secondary.value) {
+        const canonical = canonicalCompetition(fixture.competition, fixture.country);
+        const current = this.knownCompetitions.get(canonical.slug);
+        this.knownCompetitions.set(canonical.slug, current ?? { id: canonical.slug, slug: canonical.slug, name: canonical.name, region: canonical.region, fixtureCount: 0, liveCount: 0, upcomingCount: 0, clubCount: 0 });
+      }
+    }
     const now = this.clock();
     const primaryIdentities = new Set(primary.value.map(fixtureIdentity));
-    const sameDayCandidates = [...this.known.entries()]
-      .filter(([identity, match]) => !primaryIdentities.has(identity) && sameLocalDay(match.kickoff, now))
+    const retainedCandidates = [...this.known.entries()]
+      .filter(([identity, match]) => !primaryIdentities.has(identity) && (sameLocalDay(match.kickoff, now) || match.status === "UPCOMING" && new Date(match.kickoff) > now || isRecentFinished(match, now)))
       .map(([, match]) => match);
-    const enriched = enrichMatchesWithCompetitions([...primary.value, ...sameDayCandidates], secondary.status === "fulfilled" ? secondary.value : [])
-      .filter((match) => primaryIdentities.has(fixtureIdentity(match)) || match.status === "FINISHED")
+    const enriched = enrichMatchesWithCompetitions([...primary.value, ...retainedCandidates], secondary.status === "fulfilled" ? secondary.value : [])
+      .filter((match) => primaryIdentities.has(fixtureIdentity(match)) || isRecentFinished(match, now) || match.status === "UPCOMING" && new Date(match.kickoff) > now)
       .map((match) => match.status === "LIVE" ? { ...match, playableLive: this.availability.get(match.id) } : { ...match, playableLive: undefined });
     const unique = mergeFixtureCollection(enriched, this.known);
     this.known.clear();
     for (const match of unique) this.known.set(fixtureIdentity(match), match);
+    for (const competition of competitionsFrom(unique)) this.knownCompetitions.set(competition.slug, competition);
     return unique;
   }
 
@@ -158,16 +172,25 @@ export class FootballService {
 
   async getMatchesByDate(date: string, competition?: string) { return (await this.getMatchDiscovery(date, competition)).matches; }
   async getLiveMatches(competition?: string) { return (await this.getLiveDiscovery(competition)).matches; }
-  async getCompetitions() { return competitionsFrom(await this.matches()); }
+  async getCompetitions() { await this.matches(); return [...this.knownCompetitions.values()].sort((a, b) => b.liveCount - a.liveCount || b.fixtureCount - a.fixtureCount || a.name.localeCompare(b.name)); }
 
   async getLeague(slug: string): Promise<LeagueData | null> {
     const all = await this.matches();
-    const competition = competitionsFrom(all).find((item) => item.slug === slug);
+    const competitions = [...this.knownCompetitions.values()];
+    const competition = competitions.find((item) => item.slug === slug);
     if (!competition) return null;
     const scoped = all.filter((match) => competitionSlug(match.competition) === slug).sort(byKickoff);
     const now = this.clock();
     const live = scoped.filter((match) => match.status === "LIVE");
-    return { competition, live, today: scoped.filter((match) => match.status !== "LIVE" && sameLocalDay(match.kickoff, now)), upcoming: scoped.filter((match) => match.status === "UPCOMING" && new Date(match.kickoff) > now), clubs: teamsFrom(scoped).sort((a, b) => a.name.localeCompare(b.name)) };
+    return {
+      competition,
+      competitions,
+      live,
+      results: scoped.filter((match) => match.status === "FINISHED" && sameLocalDay(match.kickoff, now)),
+      today: scoped.filter((match) => match.status === "UPCOMING" && sameLocalDay(match.kickoff, now)),
+      upcoming: scoped.filter((match) => match.status === "UPCOMING" && new Date(match.kickoff) > now && !sameLocalDay(match.kickoff, now)),
+      clubs: teamsFrom(scoped).sort((a, b) => a.name.localeCompare(b.name)),
+    };
   }
 
   async getClub(slug: string): Promise<ClubData | null> {

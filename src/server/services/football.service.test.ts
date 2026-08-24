@@ -53,7 +53,8 @@ describe("FootballService", () => {
     const service = new FootballService({ getMatches: async () => aliases }, () => new Date("2026-08-23T09:00:00Z"));
     expect(await service.getCompetitions()).toEqual([{ id: "premier-league", slug: "premier-league", name: "Premier League", region: "England", fixtureCount: 2, liveCount: 0, upcomingCount: 2, clubCount: 2 }]);
     expect(await service.getMatchesByDate("2026-08-23", "premier-league")).toHaveLength(2);
-    expect((await service.getLeague("premier-league"))?.upcoming).toHaveLength(2);
+    expect((await service.getLeague("premier-league"))?.today).toHaveLength(2);
+    expect((await service.getLeague("premier-league"))?.upcoming).toHaveLength(0);
   });
 
   it("derives competition intelligence without fabricating provider metadata", () => {
@@ -91,6 +92,16 @@ describe("FootballService", () => {
     expect((await service.getLiveDiscovery("premier-league")).matches).toEqual([]);
     expect((await service.getLeague("premier-league"))?.competition.slug).toBe("premier-league");
     expect((await service.getLeague("premier-league"))?.clubs.map((club) => club.slug)).toEqual(["a", "b"]);
+  });
+
+  it("keeps authoritative secondary competitions navigable without fabricating fixtures", async () => {
+    const service = new FootballService(
+      { getMatches: async () => [] },
+      () => new Date("2026-08-23T09:00:00Z"),
+      { getFixtures: async () => [{ homeTeam: "Arsenal FC", awayTeam: "Chelsea FC", kickoff: base.kickoff, competition: "Premier League", country: "England", status: "UPCOMING" }] },
+    );
+    expect(await service.getCompetitions()).toEqual([{ id: "premier-league", slug: "premier-league", name: "Premier League", region: "England", fixtureCount: 0, liveCount: 0, upcomingCount: 0, clubCount: 0 }]);
+    expect(await service.getLeague("premier-league")).toMatchObject({ competition: { slug: "premier-league" }, clubs: [], results: [], live: [], today: [], upcoming: [] });
   });
 
   it("enriches the Fulham and Chelsea dashboard fixture from FC-suffixed metadata", async () => {
@@ -156,7 +167,9 @@ describe("FootballService", () => {
     expect(dashboard.live).toEqual([]);
     expect(dashboard.today).toEqual([expect.objectContaining({ id: "fulham-chelsea", competition: "Premier League", status: "FINISHED", stage: "Full time", homeScore: 2, awayScore: 3, minute: undefined, playableLive: undefined })]);
     expect(dashboard.matches).toHaveLength(1);
-    expect((await service.getLeague("premier-league"))?.today).toHaveLength(1);
+    const league = await service.getLeague("premier-league");
+    expect(league?.results).toEqual([expect.objectContaining({ status: "FINISHED", homeScore: 2, awayScore: 3 })]);
+    expect(league?.today).toEqual([]);
     expect(await service.getLiveMatches()).toEqual([]);
     expect(await service.getMatchesByDate("2026-08-23")).toEqual([expect.objectContaining({ status: "FINISHED", homeScore: 2, awayScore: 3 })]);
   });
@@ -169,6 +182,35 @@ describe("FootballService", () => {
     primary = [];
     now = new Date("2026-08-24T12:00:00Z");
     expect((await service.getDashboard()).matches).toEqual([]);
+    expect((await service.getLeague("premier-league"))?.results).toEqual([]);
+  });
+
+  it("keeps a recently represented league navigable without resurfacing an old result", async () => {
+    let primary: Match[] = [{ ...base, status: "FINISHED", stage: "Full time", homeScore: 2, awayScore: 3 }];
+    const service = new FootballService({ getMatches: async () => primary }, () => new Date("2026-08-24T12:00:00Z"));
+    expect((await service.getLeague("premier-league"))?.results).toEqual([]);
+    primary = [];
+    const league = await service.getLeague("premier-league");
+    expect(league?.competition.slug).toBe("premier-league");
+    expect(league?.results).toEqual([]);
+  });
+
+  it("retains a previously normalized future fixture across a weaker primary snapshot", async () => {
+    let primary: Match[] = [{ ...base, competition: "Premier League", kickoff: "2026-08-24T14:00:00Z" }];
+    const service = new FootballService({ getMatches: async () => primary }, () => new Date("2026-08-23T12:00:00Z"));
+    expect((await service.getLeague("premier-league"))?.upcoming).toHaveLength(1);
+    primary = [];
+    expect((await service.getLeague("premier-league"))?.upcoming).toEqual([expect.objectContaining({ id: "base", competition: "Premier League" })]);
+  });
+
+  it("keeps normalized competition navigation stable without retaining a missing live fixture", async () => {
+    let primary: Match[] = [{ ...base, status: "LIVE", competition: "Premier League" }];
+    const service = new FootballService({ getMatches: async () => primary }, () => new Date("2026-08-23T12:00:00Z"));
+    expect((await service.getCompetitions()).map((competition) => competition.slug)).toEqual(["premier-league"]);
+    primary = [];
+    expect(await service.getLiveMatches()).toEqual([]);
+    expect((await service.getCompetitions()).map((competition) => competition.slug)).toEqual(["premier-league"]);
+    expect((await service.getLeague("premier-league"))?.live).toEqual([]);
   });
 
   it("deduplicates stable fixture identity while preserving the strongest score", () => {
@@ -209,6 +251,21 @@ describe("FootballService", () => {
     const league = await new FootballService({ getMatches: async () => [live, scheduled] }, () => new Date("2026-08-23T09:00:00Z")).getLeague("premier-league");
     expect(league?.live.map((match) => match.id)).toEqual(["live"]);
     expect(league?.today.map((match) => match.id)).toEqual(["scheduled"]);
+  });
+
+  it("returns disjoint league Results, Live, Today, and future Upcoming groups", async () => {
+    const matches: Match[] = [
+      { ...base, id: "result", status: "FINISHED", stage: "Full time", homeScore: 2, awayScore: 3 },
+      { ...base, id: "live", status: "LIVE", kickoff: "2026-08-23T13:00:00Z" },
+      { ...base, id: "today", kickoff: "2026-08-23T14:00:00Z" },
+      { ...base, id: "future", kickoff: "2026-08-24T14:00:00Z" },
+    ];
+    const league = await new FootballService({ getMatches: async () => matches }, () => new Date("2026-08-23T09:00:00Z")).getLeague("premier-league");
+    expect(league?.results.map((match) => match.id)).toEqual(["result"]);
+    expect(league?.live.map((match) => match.id)).toEqual(["live"]);
+    expect(league?.today.map((match) => match.id)).toEqual(["today"]);
+    expect(league?.upcoming.map((match) => match.id)).toEqual(["future"]);
+    expect(new Set([...(league?.results ?? []), ...(league?.live ?? []), ...(league?.today ?? []), ...(league?.upcoming ?? [])].map((match) => match.id)).size).toBe(4);
   });
 
   it("deduplicates the Málaga and Deportivo naming aliases without collapsing distinct fixtures", () => {
