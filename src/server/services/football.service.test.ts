@@ -8,9 +8,9 @@ describe("FootballService", () => {
   it("deduplicates and sorts live, today, and upcoming matches", async () => {
     const matches: Match[] = [{ ...base, id: "later", kickoff: "2026-08-23T15:00:00Z" }, { ...base, id: "live-low", status: "LIVE", kickoff: "2026-08-23T10:00:00Z" }, { ...base, id: "live-popular", status: "LIVE", popular: true, kickoff: "2026-08-23T11:00:00Z" }, { ...base, id: "later", kickoff: "2026-08-23T15:00:00Z" }];
     const dashboard = await new FootballService({ getMatches: async () => matches }, () => new Date("2026-08-23T09:00:00Z")).getDashboard();
-    expect(dashboard.live.map((match) => match.id)).toEqual(["live-popular", "live-low"]);
-    expect(dashboard.today.map((match) => match.id)).toEqual(["live-low", "live-popular", "later"]);
-    expect(dashboard.upcoming.map((match) => match.id)).toEqual(["later"]);
+    expect(dashboard.live.map((match) => match.id)).toEqual(["live-low"]);
+    expect(dashboard.today.map((match) => match.id)).toEqual(["later"]);
+    expect(dashboard.upcoming).toEqual([]);
     expect(dashboard.featured?.id).toBe("live-popular");
   });
 
@@ -130,7 +130,7 @@ describe("FootballService", () => {
   it("keeps an enriched score across dashboard refresh and Football filtering", async () => {
     let response: Match[] = [{ ...base, status: "LIVE", homeScore: 2, awayScore: 3 }];
     const service = new FootballService({ getMatches: async () => response });
-    expect((await service.getDashboard()).live[0]).toMatchObject({ homeScore: 2, awayScore: 3 });
+    expect((await service.getDashboard()).featured).toMatchObject({ homeScore: 2, awayScore: 3 });
     response = [{ ...base, status: "LIVE" }];
     expect((await service.getLiveDiscovery("football")).matches[0]).toMatchObject({ homeScore: 2, awayScore: 3 });
   });
@@ -159,7 +159,7 @@ describe("FootballService", () => {
       { getFixtures: async () => [{ homeTeam: "Fulham FC", awayTeam: "Chelsea FC", kickoff: fulhamChelsea.kickoff, competition: "Premier League", country: "England", status, homeScore: 2, awayScore: 3 }] },
     );
 
-    expect((await service.getDashboard()).live).toHaveLength(1);
+    expect((await service.getDashboard()).featured).toMatchObject({ id: "fulham-chelsea" });
     primary = [];
     status = "FINISHED";
 

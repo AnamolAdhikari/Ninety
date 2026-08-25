@@ -7,11 +7,11 @@ import type { FootballSearchData } from "@/domain/football/types";
 import { LeagueMark } from "@/features/football/components/league-mark";
 import { TeamCrest } from "@/features/football/components/team-crest";
 
-const links = [["/matches", "Matches"], ["/live", "Live"], ["/leagues", "Leagues"]] as const;
-const mobileLinks = [["/matches", "Matches"], ["/live", "Live"], ["/leagues", "Leagues"], ["/favorites", "Favorites"]] as const;
+const links = [["/live", "Live"], ["/matches", "Today"], ["/leagues", "Leagues"]] as const;
+const mobileLinks = [["/", "Home"], ["/live", "Live"], ["/matches", "Matches"], ["/favorites", "Favorites"]] as const;
 const emptyData: FootballSearchData = { clubs: [], matches: [], competitions: [] };
 const suggestions = ["Arsenal", "Real Madrid", "Champions League"];
-export const isNavActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`) || href === "/leagues" && pathname.startsWith("/league/");
+export const isNavActive = (pathname: string, href: string) => pathname === href || href !== "/" && pathname.startsWith(`${href}/`) || href === "/leagues" && pathname.startsWith("/league/");
 
 export function AppHeader() {
   const pathname = usePathname();

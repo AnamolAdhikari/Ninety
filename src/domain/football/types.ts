@@ -37,6 +37,7 @@ export interface FootballDashboardData {
   generatedAt: string;
   featured: Match | null;
   live: Match[];
+  startingSoon: Match[];
   today: Match[];
   upcoming: Match[];
   matches: Match[];

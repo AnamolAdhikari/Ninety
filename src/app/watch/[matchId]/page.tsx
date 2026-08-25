@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { MatchCard } from "@/features/football/components/match-card";
 import { LiveMatchScore } from "@/features/football/components/live-match-score";
-import { MatchTabs } from "@/features/football/components/match-tabs";
 import { SecurePlayerLauncher } from "@/features/stream/components/secure-player-launcher";
 import { getMatchCenterData } from "@/features/football/server/match-center-data";
 import { RecentTracker } from "@/features/personalization/components/recent-tracker";
@@ -25,5 +23,5 @@ export default async function MatchPage({ params }: PageProps<"/watch/[matchId]"
   const { matchId } = await params;
   const data = await getMatchCenterData(matchId);
   if (!data) notFound();
-  return <div className="noise min-h-screen"><RecentTracker matchId={data.match.id}/><main className="mx-auto max-w-[1320px] px-4 pb-16 pt-6 sm:px-8 sm:pt-8"><Link href="/" className="mb-6 inline-flex items-center gap-2 rounded-lg px-1 py-2 text-sm font-medium text-[#8d949d] outline-none transition hover:text-white focus-visible:ring-2 focus-visible:ring-[#c7ff4a]"><ArrowLeft size={17}/> Back to matches</Link><SecurePlayerLauncher match={data.match} isolatedPlayerOrigin={process.env.NINETY_PLAYER_ORIGIN}/><LiveMatchScore initialMatch={data.match}/><div className="mx-auto max-w-4xl"><MatchTabs match={data.match}/></div>{data.related.length > 0 && <section className="mt-12 border-t border-white/[.08] pt-10"><div className="mb-5"><p className="text-xs font-semibold uppercase tracking-[.16em] text-[#c7ff4a]">Keep watching</p><h2 className="mt-2 text-2xl font-semibold tracking-[-.04em]">Other matches</h2></div><div className="hide-scrollbar flex gap-4 overflow-x-auto pb-2">{data.related.map((match) => <MatchCard key={match.id} match={match}/>)}</div></section>}</main></div>;
+  return <div className="noise min-h-screen"><RecentTracker matchId={data.match.id}/><main className="mx-auto max-w-[1180px] px-3 pb-12 pt-3 sm:px-8 sm:pt-6"><Link href="/" className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-[#8d949d] outline-none transition hover:text-white focus-visible:ring-2 focus-visible:ring-[#c7ff4a]"><ArrowLeft size={17}/> Live football</Link><div className="mb-3 overflow-hidden rounded-2xl border border-white/[.07] bg-[#0f1216]"><LiveMatchScore initialMatch={data.match}/></div><SecurePlayerLauncher match={data.match} isolatedPlayerOrigin={process.env.NINETY_PLAYER_ORIGIN}/><div className="mx-auto mt-5 max-w-3xl rounded-2xl border border-white/[.07] bg-white/[.025] p-4 text-sm text-white/55"><span className="font-semibold text-white">{data.match.competition}</span> · {data.match.stage}</div></main></div>;
 }

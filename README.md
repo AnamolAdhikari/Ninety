@@ -192,3 +192,10 @@ Public APIs validate calendar dates, slugs, opaque IDs, search size, and favorit
 - The in-memory/process-level deployment does not implement distributed rate limiting; use platform controls when needed.
 - Live scores require connectivity and are intentionally not available from offline cache.
 - Authorized third-party embed behavior remains subject to that operator’s browser and CSP compatibility.
+# Homepage discovery performance
+
+The `/` route is a static Next.js shell. It hydrates once from the same-origin `/api/football/dashboard` endpoint, so opening the homepage does not execute a dynamic React Server Component render or duplicate the provider normalization pass. The endpoint uses a 10-second shared cache while football is live, 60 seconds when fixtures are upcoming, and five minutes when the feed is empty.
+
+One dashboard request takes one primary football snapshot plus the existing competition metadata request in parallel. It reads playable state from the in-memory availability cache and performs no per-fixture stream listing or embed resolution. Stream sources and embed URLs are requested only after the user enters `/watch/[matchId]`; raw provider identifiers and provider base URLs remain server-side.
+
+This reduces Cloudflare Worker CPU risk by moving homepage UI rendering to the browser, normalizing/grouping the feed once per cache fill, avoiding RSC work for repeated homepage navigations, and preserving short stale-while-revalidate edge caching.

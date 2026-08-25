@@ -7,6 +7,7 @@ import { disabledCompetitionMetadataProvider, type CompetitionMetadataProvider }
 import { canonicalCompetition, enrichMatchesWithCompetitions, plainSlug } from "./competition-enrichment";
 import { streamAvailability, type StreamAvailabilityCache } from "./stream-availability";
 import { competitionPriority } from "@/domain/football/competition-order";
+import { groupHomepageMatches } from "@/domain/football/discovery-ranking";
 
 const byKickoff = (a: Match, b: Match) => new Date(a.kickoff).valueOf() - new Date(b.kickoff).valueOf();
 const RECENT_FINISHED_RETENTION_MS = 2 * 24 * 60 * 60 * 1000;
@@ -141,11 +142,9 @@ export class FootballService {
   async getDashboard(): Promise<FootballDashboardData> {
     const now = this.clock();
     const unique = await this.matches();
-    const live = unique.filter((match) => match.status === "LIVE").sort(byLivePriority);
-    const today = unique.filter((match) => sameLocalDay(match.kickoff, now)).sort(byKickoff);
-    const upcoming = unique.filter((match) => match.status === "UPCOMING" && new Date(match.kickoff) > now).sort(byKickoff);
-    const matches = [...live, ...today.filter((match) => !live.some((liveMatch) => liveMatch.id === match.id)), ...upcoming.filter((match) => !today.some((todayMatch) => todayMatch.id === match.id))];
-    return { generatedAt: now.toISOString(), featured: live[0] ?? upcoming.find((match) => match.popular) ?? upcoming[0] ?? today[0] ?? null, live, today, upcoming, matches, competitions: competitionsFrom(unique) };
+    const groups = groupHomepageMatches(unique, now, competitionSlug);
+    const matches = [groups.featured, ...groups.live, ...groups.startingSoon, ...groups.today, ...groups.upcoming].filter((match): match is Match => match !== null);
+    return { generatedAt: now.toISOString(), ...groups, matches, competitions: competitionsFrom(unique) };
   }
 
   async getMatchById(matchId: string) { return (await this.matches()).find((match) => match.id === matchId) ?? null; }
