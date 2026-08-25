@@ -3,7 +3,7 @@ import { createDashboardHandler, dashboardCacheControl } from "./route";
 
 describe("GET /api/football/dashboard", () => {
   it("returns normalized dashboard data with short-lived caching", async () => {
-    const data = { generatedAt: "2026-08-23T00:00:00.000Z", featured: null, live: [], startingSoon: [], today: [], upcoming: [], matches: [], competitions: [] };
+    const data = { generatedAt: "2026-08-23T00:00:00.000Z", featured: null, live: [], startingSoon: [], today: [], upcoming: [], matches: [], competitions: [], competitionSections: [], otherFootball: [] };
     const response = await createDashboardHandler({ getDashboard: async () => data })();
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toContain("s-maxage=300");

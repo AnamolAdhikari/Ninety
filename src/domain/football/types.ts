@@ -42,7 +42,13 @@ export interface FootballDashboardData {
   upcoming: Match[];
   matches: Match[];
   competitions: Competition[];
+  competitionSections: CompetitionMatchSection[];
+  otherFootball: Match[];
 }
+
+export interface CompetitionMatchSection { competition: Competition; matches: Match[]; }
+export interface MatchScheduleGroup { slug: string; name: string; matches: Match[]; }
+export interface MatchScheduleData { date: string; matches: Match[]; competitions: Competition[]; groups: MatchScheduleGroup[]; }
 
 export interface FootballMatchCenterData {
   match: Match;

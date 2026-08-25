@@ -1,2 +1,3 @@
-import type { FootballDashboardData } from "@/domain/football/types";
+import type { FootballDashboardData, MatchScheduleData } from "@/domain/football/types";
 export async function getFootballDashboard(signal?: AbortSignal): Promise<FootballDashboardData> { const response = await fetch("/api/football/dashboard", { signal }); if (!response.ok) throw new Error("Unable to load football data"); return response.json() as Promise<FootballDashboardData>; }
+export async function getMatchSchedule(date: string, competition?: string, signal?: AbortSignal): Promise<MatchScheduleData> { const query = new URLSearchParams({ date }); if (competition) query.set("competition", competition); const response = await fetch(`/api/football/matches?${query}`, { signal }); if (!response.ok) throw new Error("Unable to load match schedule"); return response.json() as Promise<MatchScheduleData>; }

@@ -16,4 +16,6 @@ button { font: inherit; }
 .page-shell { margin-inline: auto; width: 100%; max-width: var(--page-width); padding-inline: var(--page-gutter); }
 .skeleton { animation: pulse 1.8s ease-in-out infinite; background: rgba(255,255,255,.05); }
 @keyframes pulse { 50% { opacity: .45; } }
+.live-dot { animation: live-pulse 1.8s ease-in-out infinite; box-shadow: 0 0 0 0 rgba(255,64,84,.45); }
+@keyframes live-pulse { 50% { opacity: .7; box-shadow: 0 0 0 4px rgba(255,64,84,0); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }

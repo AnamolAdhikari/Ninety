@@ -8,6 +8,9 @@ describe("StreamedFootballProvider normalization", () => {
   it("builds badge image URLs from opaque badge identifiers", () => {
     expect(buildStreamedBadgeUrl("https://streamed.pk", "arsenal-badge")).toBe("https://streamed.pk/api/images/badge/arsenal-badge.webp");
     expect(buildStreamedBadgeUrl("https://streamed.pk/", "club badge/ä")).toBe("https://streamed.pk/api/images/badge/club%20badge%2F%C3%A4.webp");
+    expect(buildStreamedBadgeUrl("https://streamed.pk", "https://streamed.pk/api/images/badge/arsenal.webp")).toBe("https://streamed.pk/api/images/badge/arsenal.webp");
+    expect(buildStreamedBadgeUrl("https://streamed.pk", "/api/images/badge/arsenal.webp")).toBe("https://streamed.pk/api/images/badge/arsenal.webp");
+    expect(buildStreamedBadgeUrl("https://streamed.pk", "https://untrusted.example/arsenal.webp")).toBeUndefined();
     expect(buildStreamedBadgeUrl("https://streamed.pk", "")).toBeUndefined();
     expect(buildStreamedBadgeUrl("https://streamed.pk", undefined)).toBeUndefined();
     expect(buildStreamedBadgeUrl("http://streamed.pk", "arsenal-badge")).toBeUndefined();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Match } from "@/domain/football/types";
-import { byLivePriority, competitionsFrom, fixtureIdentity, fixtureTeamIdentity, FootballService, matchesCompetition, mergeFixtureCollection, mergeMatch, searchScore, shouldLeadWithLive } from "./football.service";
+import { byLivePriority, competitionsFrom, fixtureIdentity, fixtureTeamIdentity, FootballService, matchesCompetition, mergeFixtureCollection, mergeMatch, searchScore, shouldLeadWithLive, strongestCrestUrl } from "./football.service";
 
 const base: Match = { id: "base", slug: "a-v-b", competition: "Premier League", stage: "Scheduled", status: "UPCOMING", popular: false, kickoff: "2026-08-23T12:00:00Z", home: { id: "a", slug: "a", name: "A", shortName: "A", colors: ["#000", "#fff"] }, away: { id: "b", slug: "b", name: "B", shortName: "B", colors: ["#000", "#fff"] } };
 
@@ -18,6 +18,12 @@ describe("FootballService", () => {
     const dashboard = await new FootballService({ getMatches: async () => [] }).getDashboard();
     expect(dashboard.featured).toBeNull();
     expect(dashboard.matches).toEqual([]);
+  });
+
+  it("uses the best upcoming fixture as the hero when nothing is live", async () => {
+    const dashboard = await new FootballService({ getMatches: async () => [{ ...base, id: "ordinary" }, { ...base, id: "popular", popular: true, kickoff: "2026-08-23T14:00:00Z" }] }, () => new Date("2026-08-23T09:00:00Z")).getDashboard();
+    expect(dashboard.featured?.id).toBe("popular");
+    expect(dashboard.competitionSections.flatMap((section) => section.matches).map((match) => match.id)).not.toContain("popular");
   });
 
   it("preserves real crest URLs through a fresh service snapshot", async () => {
@@ -69,6 +75,20 @@ describe("FootballService", () => {
     expect(discovery.matches).toHaveLength(1);
     expect(discovery.competitions.map((item) => item.slug)).toEqual(["football", "premier-league"]);
     expect(calls).toBe(1);
+  });
+
+  it("keeps the strongest crest through null or malformed refresh metadata", () => {
+    expect(strongestCrestUrl("https://images.example/real.webp", undefined)).toBe("https://images.example/real.webp");
+    expect(strongestCrestUrl("https://images.example/real.webp", "not-a-url")).toBe("https://images.example/real.webp");
+    expect(strongestCrestUrl(undefined, "/teams/local.svg")).toBe("/teams/local.svg");
+  });
+
+  it("prepares the exhaustive schedule from one normalized provider snapshot", async () => {
+    let calls = 0;
+    const service = new FootballService({ getMatches: async () => { calls += 1; return [base]; } });
+    const schedule = await service.getMatchSchedule("2026-08-23");
+    expect(calls).toBe(1);
+    expect(schedule.groups).toEqual([expect.objectContaining({ slug: "premier-league", name: "Premier League", matches: [expect.objectContaining({ id: "base" })] })]);
   });
 
   it("ranks exact and prefix search results above loose matches", () => {

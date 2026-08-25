@@ -1,23 +1,27 @@
 import type { Competition } from "./types";
 
-const preferredCompetitionOrder = new Map([
-  ["premier-league", 0],
-  ["la-liga", 1],
-  ["bundesliga", 2],
-  ["serie-a", 3],
-  ["ligue-1", 4],
-  ["champions-league", 5],
+export const competitionPriorityMap = new Map([
+  ["champions-league", 1],
+  ["premier-league", 2],
+  ["la-liga", 3],
+  ["serie-a", 4],
+  ["bundesliga", 5],
+  ["ligue-1", 6],
+  ["europa-league", 7],
+  ["conference-league", 8],
+  ["mls", 9],
+  ["saudi-pro-league", 10],
+  ["championship", 11],
+  ["copa-libertadores", 12],
 ]);
 
 const worldCompetitionOrder = new Map([
-  ...preferredCompetitionOrder,
-  ["europa-league", 6],
-  ["conference-league", 7],
-  ["football", 8],
+  ...competitionPriorityMap,
+  ["football", 1_000],
 ]);
 
-export const competitionPriority = (slug: string) => slug === "football" ? 1_000 : preferredCompetitionOrder.get(slug) ?? 100;
-const filterCompetitionPriority = (slug: string) => slug === "football" ? 6 : preferredCompetitionOrder.get(slug) ?? 100;
+export const competitionPriority = (slug: string) => slug === "football" ? 1_000 : competitionPriorityMap.get(slug) ?? 100;
+const filterCompetitionPriority = (slug: string) => competitionPriority(slug);
 export function orderedCompetitions(competitions: Competition[]) {
   return [...competitions].sort((a, b) => filterCompetitionPriority(a.slug) - filterCompetitionPriority(b.slug) || a.name.localeCompare(b.name));
 }

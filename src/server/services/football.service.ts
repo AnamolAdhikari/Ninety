@@ -1,5 +1,5 @@
 import "server-only";
-import type { ClubData, Competition, FootballDashboardData, FootballMatchCenterData, FootballSearchData, LeagueData, Match, MatchDiscoveryData, Team } from "@/domain/football/types";
+import type { ClubData, Competition, FootballDashboardData, FootballMatchCenterData, FootballSearchData, LeagueData, Match, MatchDiscoveryData, MatchScheduleData, Team } from "@/domain/football/types";
 import { createFootballProvider } from "@/server/providers/football/provider.factory";
 import type { FootballProvider } from "@/server/providers/football/provider";
 import { createCompetitionMetadataProvider } from "@/server/providers/competition/provider.factory";
@@ -7,7 +7,7 @@ import { disabledCompetitionMetadataProvider, type CompetitionMetadataProvider }
 import { canonicalCompetition, enrichMatchesWithCompetitions, plainSlug } from "./competition-enrichment";
 import { streamAvailability, type StreamAvailabilityCache } from "./stream-availability";
 import { competitionPriority } from "@/domain/football/competition-order";
-import { groupHomepageMatches } from "@/domain/football/discovery-ranking";
+import { buildCompetitionSections, groupHomepageMatches, groupScheduleByCompetition } from "@/domain/football/discovery-ranking";
 
 const byKickoff = (a: Match, b: Match) => new Date(a.kickoff).valueOf() - new Date(b.kickoff).valueOf();
 const RECENT_FINISHED_RETENTION_MS = 2 * 24 * 60 * 60 * 1000;
@@ -32,6 +32,8 @@ export const fixtureTeamIdentity = (name: string) => {
   return tokens.filter((token) => !fixtureIdentityConnectors.has(token) && !["fc", "cf", "afc"].includes(token)).join("-");
 };
 export const fixtureIdentity = (match: Match) => `${fixtureTeamIdentity(match.home.name)}:${fixtureTeamIdentity(match.away.name)}:${new Date(match.kickoff).toISOString()}`;
+export const isUsableCrestUrl = (value?: string) => { if (!value) return false; if (value.startsWith("/")) return true; try { return new URL(value).protocol === "https:"; } catch { return false; } };
+export const strongestCrestUrl = (previous?: string, incoming?: string) => isUsableCrestUrl(incoming) ? incoming : isUsableCrestUrl(previous) ? previous : undefined;
 
 export function mergeMatch(previous: Match, incoming: Match): Match {
   const staleAfterFinished = previous.status === "FINISHED" && incoming.status !== "FINISHED";
@@ -46,8 +48,8 @@ export function mergeMatch(previous: Match, incoming: Match): Match {
     competition: incoming.competition === "Football" && previous.competition !== "Football" ? previous.competition : incoming.competition,
     competitionCountry: incoming.competitionCountry ?? previous.competitionCountry,
     posterUrl: incoming.posterUrl ?? previous.posterUrl,
-    home: { ...previous.home, ...incoming.home, crestUrl: incoming.home.crestUrl ?? previous.home.crestUrl },
-    away: { ...previous.away, ...incoming.away, crestUrl: incoming.away.crestUrl ?? previous.away.crestUrl },
+    home: { ...previous.home, ...incoming.home, crestUrl: strongestCrestUrl(previous.home.crestUrl, incoming.home.crestUrl) },
+    away: { ...previous.away, ...incoming.away, crestUrl: strongestCrestUrl(previous.away.crestUrl, incoming.away.crestUrl) },
     homeScore: incomingHasScore ? incoming.homeScore : previous.homeScore,
     awayScore: incomingHasScore ? incoming.awayScore : previous.awayScore,
     minute: status === "FINISHED" ? undefined : incoming.minute ?? previous.minute,
@@ -144,7 +146,11 @@ export class FootballService {
     const unique = await this.matches();
     const groups = groupHomepageMatches(unique, now, competitionSlug);
     const matches = [groups.featured, ...groups.live, ...groups.startingSoon, ...groups.today, ...groups.upcoming].filter((match): match is Match => match !== null);
-    return { generatedAt: now.toISOString(), ...groups, matches, competitions: competitionsFrom(unique) };
+    const competitions = competitionsFrom(unique);
+    const featured = groups.featured ?? groups.startingSoon[0] ?? groups.today[0] ?? groups.upcoming[0] ?? null;
+    const heroId = featured?.id;
+    const shelves = buildCompetitionSections(unique.filter((match) => match.id !== heroId), competitions, now, competitionSlug);
+    return { generatedAt: now.toISOString(), ...groups, featured, ...shelves, matches, competitions };
   }
 
   async getMatchById(matchId: string) { return (await this.matches()).find((match) => match.id === matchId) ?? null; }
@@ -160,6 +166,11 @@ export class FootballService {
   async getMatchDiscovery(date: string, competition?: string): Promise<MatchDiscoveryData> {
     const all = await this.matches();
     return { matches: all.filter((match) => match.kickoff.slice(0, 10) === date && matchesCompetition(match, competition)).sort(byKickoff), competitions: [footballCompetition(all), ...competitionsFrom(all).filter((item) => item.slug !== "football")] };
+  }
+
+  async getMatchSchedule(date: string, competition?: string): Promise<MatchScheduleData> {
+    const discovery = await this.getMatchDiscovery(date, competition);
+    return { date, ...discovery, groups: groupScheduleByCompetition(discovery.matches, competitionSlug) };
   }
 
   async getLiveDiscovery(competition?: string): Promise<MatchDiscoveryData> {

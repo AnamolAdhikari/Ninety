@@ -10,7 +10,7 @@ const fulhamFixture: CompetitionFixture = { homeTeam: "Fulham FC", awayTeam: "Ch
 
 describe("competition enrichment", () => {
   it("canonicalizes supported league names and duplicate variants", () => {
-    expect(["Premier League", "premierleague", "england-premier-league"].map((name) => canonicalCompetition(name).slug)).toEqual(["premier-league", "premier-league", "premier-league"]);
+    expect(["Premier League", "premierleague", "england-premier-league", "English Premier League", "EPL"].map((name) => canonicalCompetition(name).slug)).toEqual(["premier-league", "premier-league", "premier-league", "premier-league", "premier-league"]);
     expect(canonicalCompetition("LaLiga")).toMatchObject({ name: "La Liga", slug: "la-liga", region: "Spain" });
     expect(canonicalCompetition("Serie A").slug).toBe("serie-a");
     expect(canonicalCompetition("Bundesliga").slug).toBe("bundesliga");
@@ -26,6 +26,21 @@ describe("competition enrichment", () => {
   });
 
   it("enriches the Fulham and Chelsea FC reproduction", () => expect(enrichMatchesWithCompetitions([fulhamMatch], [fulhamFixture])[0]).toMatchObject({ competition: "Premier League", competitionCountry: "England" }));
+
+  it.each([
+    ["Valencia", "Real Betis", "La Liga", "Spain", "La Liga"],
+    ["Al-Ettifaq", "Al-Nassr", "Saudi Professional League", "Saudi Arabia", "Saudi Pro League"],
+    ["Bayern", "Dortmund", "Bundesliga", "Germany", "Bundesliga"],
+    ["Inter", "Milan", "Serie A", "Italy", "Serie A"],
+  ])("uses exact fixture metadata for %s vs %s", (home, away, competition, country, expected) => {
+    const primary = { ...match, id: `${home}-${away}`, home: { ...match.home, name: home }, away: { ...match.away, name: away } };
+    const metadata = fixture({ homeTeam: home, awayTeam: away, competition, country });
+    expect(enrichMatchesWithCompetitions([primary], [metadata])[0].competition).toBe(expected);
+  });
+
+  it("keeps Football only when no exact trusted fixture metadata exists", () => {
+    expect(enrichMatchesWithCompetitions([match], [fixture({ awayTeam: "Different Club" })])[0].competition).toBe("Football");
+  });
 
   it("enriches an exact live fixture with score, minute, and status transitions", () => {
     const live = enrichMatchesWithCompetitions([fulhamMatch], [{ ...fulhamFixture, status: "LIVE", minute: 42, homeScore: 1, awayScore: 2 }])[0];

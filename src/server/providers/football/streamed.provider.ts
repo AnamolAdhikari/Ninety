@@ -61,7 +61,10 @@ export function buildStreamedBadgeUrl(baseUrl: string, badge: unknown): string |
   try {
     const provider = new URL(baseUrl);
     if (provider.protocol !== "https:") return undefined;
-    return `${provider.origin}/api/images/badge/${encodeURIComponent(badge.trim())}.webp`;
+    const value = badge.trim();
+    if (/^https?:\/\//i.test(value)) { const url = new URL(value); return url.protocol === "https:" && url.origin === provider.origin ? url.toString() : undefined; }
+    if (value.startsWith("/api/images/") || value.startsWith("/images/")) return new URL(value, provider.origin).toString();
+    return `${provider.origin}/api/images/badge/${encodeURIComponent(value)}.webp`;
   } catch { return undefined; }
 }
 
