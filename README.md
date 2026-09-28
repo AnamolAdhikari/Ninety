@@ -43,6 +43,19 @@ Create a production build with:
 pnpm build
 ```
 
+## Cloudflare deployment
+
+The production build generates a Cloudflare Worker configuration at `dist/server/wrangler.json` targeting the existing `ninety-football` Worker.
+
+For Cloudflare Workers Builds, use:
+
+- Production branch: `main`
+- Build command: `pnpm build`
+- Deploy command: `pnpm deploy:cloudflare`
+- Root directory: `/`
+
+The build requires Node.js 22 and pnpm 11. No application secrets are required by the current release.
+
 ## Project structure
 
 - `app/page.tsx` — match discovery, filtering, search, and match cards
