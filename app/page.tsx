@@ -1,6 +1,6 @@
 "use client";
 
-import { CirclePlay, Radio, RefreshCw, Search, Signal, X } from "lucide-react";
+import { CirclePlay, Radio, Search, Signal, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isEffectivelyLive, isMatchEnded } from "./match-lifecycle";
 
@@ -38,16 +38,15 @@ function countdown(timestamp:number,now:number){
 export default function Home(){
   const [matches,setMatches]=useState<Match[]>([]),[feedStatus,setFeedStatus]=useState<"loading"|"live"|"error">("loading");
   const [filter,setFilter]=useState<Filter>("all"),[query,setQuery]=useState(""),[now,setNow]=useState(Date.now());
-  const [scrolled,setScrolled]=useState(false),[refreshing,setRefreshing]=useState(false);
+  const [scrolled,setScrolled]=useState(false);
 
   const loadMatches=useCallback(async(silent=false)=>{
-    if(!silent)setFeedStatus("loading");else setRefreshing(true);
+    if(!silent)setFeedStatus("loading");
     try{
       const response=await fetch("/api/matches",{cache:"no-store"});if(!response.ok)throw new Error();
       const data=await response.json() as {matches?:Match[]};
       setMatches(data.matches??[]);setFeedStatus("live");
     }catch{setFeedStatus("error");}
-    finally{setRefreshing(false);}
   },[]);
 
   useEffect(()=>{void loadMatches();const refresh=window.setInterval(()=>void loadMatches(true),60000);const clock=window.setInterval(()=>setNow(Date.now()),30000);return()=>{window.clearInterval(refresh);window.clearInterval(clock);};},[loadMatches]);
@@ -76,13 +75,12 @@ export default function Home(){
     <header className={"site-header catalog-header "+(scrolled?"compact":"")}>
       <a className="brand" href="#top" aria-label="NINETY Live home"><span>N</span><strong>NINETY</strong><em>LIVE</em></a>
       <nav aria-label="Primary navigation"><a className="active" href="#matches">Matches</a><a href="#matches" onClick={()=>setFilter("live")}>Live</a></nav>
-      <span className="catalog-status"><i/>Live football</span>
     </header>
-    <section className="ticker" aria-label="Live event ticker"><span className="ticker-label"><Radio size={16}/>{counts.live?counts.live+" LIVE":"FOOTBALL"}</span><div className="ticker-track">{matches.filter(match=>!isMatchEnded(match,now)).slice(0,8).map(match=><a key={match.id} href={"/watch?match="+encodeURIComponent(match.id)}><b>{match.homeCode}</b><span>{match.home+" vs "+match.away+" · "+(isEffectivelyLive(match,now)?"LIVE":match.time)}</span></a>)}</div><span className="local-time">Auto-refresh on</span></section>
+    <section className="ticker" aria-label="Live event ticker"><span className="ticker-label"><Radio size={16}/>{counts.live?counts.live+" LIVE":"FOOTBALL"}</span><div className="ticker-track">{matches.filter(match=>!isMatchEnded(match,now)).slice(0,8).map(match=><a key={match.id} href={"/watch?match="+encodeURIComponent(match.id)}><b>{match.homeCode}</b><span>{match.home+" vs "+match.away+" · "+(isEffectivelyLive(match,now)?"LIVE":match.time)}</span></a>)}</div></section>
 
     <div className="page-wrap catalog-page" id="top">
       <section className="match-catalog" id="matches">
-        <div className="catalog-title"><div><span className="eyebrow"><i/> LIVE &amp; UPCOMING</span><h1>Football</h1><p>Choose a match and start watching.</p></div><button className="feed-refresh" onClick={()=>void loadMatches(true)} disabled={refreshing} aria-label="Refresh matches"><RefreshCw className={refreshing?"spin":""} size={16}/>{refreshing?"Refreshing…":"Refresh"}</button></div>
+        <div className="catalog-title"><div><span className="eyebrow"><i/> LIVE &amp; UPCOMING</span><h1>Football</h1><p>Choose a match and start watching.</p></div></div>
 
         <div className="catalog-tools">
           <div className="catalog-tabs" role="tablist" aria-label="Match filters">
@@ -102,9 +100,7 @@ export default function Home(){
       </section>
     </div>
     <footer className="site-footer">
-      <div className="footer-main"><a className="brand small" href="#top"><span>N</span><strong>NINETY</strong><em>LIVE</em></a><p>Live football, made simple.</p></div>
-      <div className="footer-rule"/>
-      <div className="footer-bottom"><span>© 2026 NINETY Live. All rights reserved.</span><span>Independent football viewing platform.</span></div>
+      <div className="footer-row"><div className="footer-identity"><a className="brand small" href="#top"><span>N</span><strong>NINETY</strong><em>LIVE</em></a><span>© 2026 NINETY Live. All rights reserved.</span></div><span>Independent football viewing platform.</span></div>
     </footer>
   </main>;
 }
