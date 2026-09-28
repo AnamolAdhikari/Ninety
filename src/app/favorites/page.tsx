@@ -1,1 +1,0 @@
-import type{Metadata}from"next";import{FavoritesContent}from"@/features/personalization/components/favorites-content";export const metadata:Metadata={title:"Favorite Clubs | NINETY",description:"Keep your favorite football clubs and fixtures close."};export default function FavoritesPage(){return <><FavoritesContent/></>}

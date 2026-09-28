@@ -2,7 +2,6 @@
 
 # dependencies
 /node_modules
-/.pnpm-store/
 /.pnp
 .pnp.*
 .yarn/*
@@ -16,12 +15,8 @@
 
 # next.js
 /.next/
-/.open-next/
-/.wrangler/
+/.vinext/
 /out/
-
-# production
-/build
 
 # misc
 .DS_Store
@@ -35,12 +30,17 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-!.env.example
-.dev.vars*
 
 # vercel
 .vercel
 
 # typescript
-*.tsbuildinfo
 next-env.d.ts
+/dist/
+/.wrangler/
+# Checkout-local execution profile and tool state; never publish them.
+/.sites-runtime/
+/.agents/
+/.codex/
+/outputs/
+/work/

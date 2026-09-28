@@ -1,7 +1,0 @@
-import type { Metadata, Viewport } from "next";
-import "./globals.css";
-import { ServiceWorkerRegistration } from "@/features/pwa/service-worker-registration";
-import { AppHeader } from "@/features/shell/app-header";
-export const metadata: Metadata = { metadataBase: new URL(process.env.NINETY_SITE_URL ?? "http://localhost:3000"), title: { default: "NINETY — Football, beautifully covered", template: "%s — NINETY" }, description: "Live football, fixtures, clubs and match coverage in one premium experience.", applicationName: "NINETY", manifest: "/manifest.webmanifest", alternates: { canonical: "/" }, robots: { index: true, follow: true }, openGraph: { type: "website", siteName: "NINETY", title: "NINETY — Football, beautifully covered", description: "Live football, fixtures, clubs and match coverage in one premium experience." }, twitter: { card: "summary", title: "NINETY — Football, beautifully covered", description: "Live football, fixtures, clubs and match coverage in one premium experience." } };
-export const viewport: Viewport = { colorScheme: "dark", themeColor: "#080a0d", width: "device-width", initialScale: 1, viewportFit: "cover" };
-export default function RootLayout({ children }: LayoutProps<"/">) { return <html lang="en"><body><a href="#main-content" className="skip-link">Skip to content</a><AppHeader/><div id="main-content" tabIndex={-1}>{children}</div><ServiceWorkerRegistration/></body></html>; }

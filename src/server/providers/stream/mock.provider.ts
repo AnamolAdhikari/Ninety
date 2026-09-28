@@ -1,2 +1,0 @@
-import type { StreamProvider } from "./provider";
-export class MockStreamProvider implements StreamProvider { async getStreamsForMatch(matchId: string) { return [{ id: `stream-${matchId.slice(-8)}-primary`, language: "English", quality: "HD", hd: true, streamNumber: 1, embedUrl: "/player-preview?source=primary" }, { id: `stream-${matchId.slice(-8)}-backup`, language: "English", quality: "SD", hd: false, streamNumber: 2, embedUrl: "/player-preview?source=backup" }]; } }

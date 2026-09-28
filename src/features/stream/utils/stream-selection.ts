@@ -1,3 +1,0 @@
-import type { StreamOption } from "@/domain/stream/types";
-export function orderStreams(streams: StreamOption[], preferredId?: string | null) { return [...streams].sort((a, b) => Number(b.id === preferredId) - Number(a.id === preferredId) || Number(Boolean(b.hd && b.language?.toLowerCase().startsWith("en"))) - Number(Boolean(a.hd && a.language?.toLowerCase().startsWith("en"))) || Number(Boolean(b.hd)) - Number(Boolean(a.hd)) || (a.streamNumber ?? 999) - (b.streamNumber ?? 999)); }
-export function nextUntriedStream(streams: StreamOption[], attempted: ReadonlySet<string>) { return streams.find((stream) => !attempted.has(stream.id)); }
