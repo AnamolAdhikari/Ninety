@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowLeft, ChevronRight, CirclePlay, ExternalLink, Maximize, RefreshCw, ShieldAlert, Signal } from "lucide-react";
+import { ArrowLeft, ChevronRight, CirclePlay, ExternalLink, Maximize, RefreshCw, Share2, ShieldAlert, Signal, Star } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { isMatchEnded } from "../match-lifecycle";
 
 type ApiSource={source:string;id:string};
@@ -17,6 +18,7 @@ function countdown(target:number,now:number){
 export default function WatchPage(){
   const [match,setMatch]=useState<Match|null>(null),[streams,setStreams]=useState<ApiStream[]>([]),[selected,setSelected]=useState(0);
   const [status,setStatus]=useState<"loading"|"ready"|"error"|"scheduled"|"ended">("loading"),[playerKey,setPlayerKey]=useState(0),[retryKey,setRetryKey]=useState(0),[now,setNow]=useState(Date.now());
+  const [saved,setSaved]=useState(false);
 
   useEffect(()=>{
     let cancelled=false;
@@ -28,7 +30,7 @@ export default function WatchPage(){
         const response=await fetch("/api/matches");if(!response.ok)throw new Error();
         const data=await response.json() as {matches?:Match[]};
         const found=data.matches?.find(item=>item.id===id);if(!found)throw new Error();
-        if(cancelled)return;setMatch(found);
+        if(cancelled)return;setMatch(found);try{setSaved((JSON.parse(window.localStorage.getItem("ninety-favorites")||"[]") as string[]).includes(found.id));}catch{}
         if(isMatchEnded(found,Date.now())){setStreams([]);setStatus("ended");return;}
         if(found.date&&found.date>Date.now()){setStreams([]);setStatus("scheduled");return;}
         const results=await Promise.allSettled((found.apiSources??[]).map(async ref=>{
@@ -65,10 +67,12 @@ export default function WatchPage(){
   useEffect(()=>{if(match&&stream)window.localStorage.setItem("ninety-source:"+match.id,stream.source+"|"+stream.streamNo);},[match,stream]);
   const chooseStream=(index:number)=>{setSelected(index);setPlayerKey(key=>key+1);};
   const tryNext=()=>{if(streams.length)chooseStream((selected+1)%streams.length);};
+  const toggleSaved=()=>{if(!match)return;let ids:string[]=[];try{ids=JSON.parse(window.localStorage.getItem("ninety-favorites")||"[]");}catch{}const next=ids.includes(match.id)?ids.filter(id=>id!==match.id):[...ids,match.id];window.localStorage.setItem("ninety-favorites",JSON.stringify(next));setSaved(next.includes(match.id));toast.success(next.includes(match.id)?"Match saved":"Removed from saved matches");};
+  const share=async()=>{if(!match)return;try{if(navigator.share)await navigator.share({title:`${match.home} vs ${match.away} | NINETY Live`,url:window.location.href});else{await navigator.clipboard.writeText(window.location.href);toast.success("Match link copied");}}catch(error){if((error as Error).name!=="AbortError")toast.error("Could not share this match");}};
   return <main className="watch-page">
     <header className="watch-header"><a className="brand" href="/" aria-label="Back to NINETY Live"><span>N</span><strong>NINETY</strong><em>LIVE</em></a><a className="back-link" href="/"><ArrowLeft size={17}/>All football matches</a></header>
     <div className="watch-wrap">
-      <div className="watch-title"><div><span className="eyebrow"><i/> {ended?"FULL TIME":"FOOTBALL LIVE"}</span><h1>{match?`${match.home} vs ${match.away}`:"Loading match…"}</h1>{match&&<p>{match.date?new Date(match.date).toLocaleString([], {weekday:"long",hour:"numeric",minute:"2-digit"}):match.time}</p>}</div><div className="watch-badges">{match?.homeBadge&&<img src={match.homeBadge} alt={match.home} decoding="async"/>}<strong>VS</strong>{match?.awayBadge&&<img src={match.awayBadge} alt={match.away} decoding="async"/>}</div></div>
+      <div className="watch-title"><div><span className="eyebrow"><i/> {ended?"FULL TIME":"FOOTBALL LIVE"}</span><h1>{match?`${match.home} vs ${match.away}`:"Loading match…"}</h1>{match&&<p>{match.date?new Date(match.date).toLocaleString([], {weekday:"long",hour:"numeric",minute:"2-digit"}):match.time}</p>}<div className="watch-title-actions"><button className={saved?"active":""} onClick={toggleSaved}><Star size={15} fill={saved?"currentColor":"none"}/>{saved?"Saved":"Save match"}</button><button onClick={()=>void share()}><Share2 size={15}/>Share</button></div></div><div className="watch-badges">{match?.homeBadge&&<img src={match.homeBadge} alt={match.home} decoding="async"/>}<strong>VS</strong>{match?.awayBadge&&<img src={match.awayBadge} alt={match.away} decoding="async"/>}</div></div>
       {!ended&&<div className="provider-notice" role="note" aria-label="Advertisement warning">
         <ShieldAlert size={23}/>
         <div>
