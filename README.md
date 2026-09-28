@@ -45,7 +45,7 @@ pnpm build
 
 ## Cloudflare deployment
 
-The production build generates a Cloudflare Worker configuration at `dist/server/wrangler.json` targeting the existing `ninety-football` Worker.
+The production build generates a Cloudflare Worker configuration at `dist/server/wrangler.json` targeting the existing `live` Worker at `live.n90.workers.dev`.
 
 For Cloudflare Workers Builds, use:
 
