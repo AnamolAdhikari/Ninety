@@ -54,6 +54,7 @@ export default function WatchPage(){
   },[retryKey]);
 
   const ended=Boolean(match&&isMatchEnded(match,now));
+  const scheduled=Boolean(match?.date&&match.date>now);
   useEffect(()=>{
     if((status!=="error"&&status!=="scheduled")||!match||ended)return;
     const timer=window.setTimeout(()=>setRetryKey(key=>key+1),60000);
@@ -72,8 +73,8 @@ export default function WatchPage(){
   return <main className="watch-page">
     <header className="watch-header"><a className="brand" href="/" aria-label="Back to NINETY Live"><span>N</span><strong>NINETY</strong><em>LIVE</em></a><a className="back-link" href="/"><ArrowLeft size={17}/>All football matches</a></header>
     <div className="watch-wrap">
-      <div className="watch-title"><div><span className="eyebrow"><i/> {ended?"FULL TIME":"FOOTBALL LIVE"}</span><h1>{match?`${match.home} vs ${match.away}`:"Loading match…"}</h1>{match&&<p>{match.date?new Date(match.date).toLocaleString([], {weekday:"long",hour:"numeric",minute:"2-digit"}):match.time}</p>}<div className="watch-title-actions"><button className={saved?"active":""} onClick={toggleSaved}><Star size={15} fill={saved?"currentColor":"none"}/>{saved?"Saved":"Save match"}</button><button onClick={()=>void share()}><Share2 size={15}/>Share</button></div></div><div className="watch-badges">{match?.homeBadge&&<img src={match.homeBadge} alt={match.home} decoding="async"/>}<strong>VS</strong>{match?.awayBadge&&<img src={match.awayBadge} alt={match.away} decoding="async"/>}</div></div>
-      {!ended&&<div className="provider-notice" role="note" aria-label="Advertisement warning">
+      <div className="watch-title"><div><span className="eyebrow"><i/> {ended?"FULL TIME":scheduled?"UPCOMING MATCH":"FOOTBALL LIVE"}</span><h1>{match?`${match.home} vs ${match.away}`:"Loading match…"}</h1>{match&&<p>{match.date?new Date(match.date).toLocaleString([], {weekday:"long",hour:"numeric",minute:"2-digit"}):match.time}</p>}<div className="watch-title-actions"><button className={saved?"active":""} onClick={toggleSaved}><Star size={15} fill={saved?"currentColor":"none"}/>{saved?"Saved":"Save match"}</button><button onClick={()=>void share()}><Share2 size={15}/>Share</button></div></div><div className="watch-badges">{match?.homeBadge&&<img src={match.homeBadge} alt={match.home} decoding="async"/>}<strong>VS</strong>{match?.awayBadge&&<img src={match.awayBadge} alt={match.away} decoding="async"/>}</div></div>
+      {!ended&&!scheduled&&status==="ready"&&<div className="provider-notice" role="note" aria-label="Advertisement warning">
         <ShieldAlert size={23}/>
         <div>
           <strong>Before you press Play</strong>
@@ -89,7 +90,7 @@ export default function WatchPage(){
         </div>:<div className="watch-loading"><RefreshCw className="spin" size={40}/><strong>Finding available broadcast</strong><span>Checking match sources…</span></div>}
       </div>
       {!ended&&<div className="watch-toolbar"><div><strong>Broadcast sources</strong><span>{streams.length?`${streams.length} available · ${stream?.language||"Select a source"}`:status==="scheduled"?"Preparing for kick-off":"Searching for a broadcast"}</span></div><div className="watch-actions">{streams.map((item,index)=><button key={`${item.source}-${item.id}-${index}`} aria-pressed={selected===index} className={selected===index?"active":""} onClick={()=>chooseStream(index)}><Signal size={14}/><span>{item.language||`Stream ${item.streamNo}`}</span><b>{item.hd?"HD":"SD"}</b></button>)}{stream&&<button className="utility-source" onClick={tryNext}><ChevronRight size={15}/>Try next source</button>}{stream&&<button className="utility-source" onClick={()=>setPlayerKey(key=>key+1)}><RefreshCw size={14}/>Reload</button>}{stream&&<button className="utility-source" onClick={()=>document.querySelector<HTMLElement>(".watch-player")?.requestFullscreen()}><Maximize size={14}/>Fullscreen</button>}</div></div>}
-      {!ended&&<p className="external-note"><ExternalLink size={14}/>If an advertisement opens, close the new tab and return to the match.</p>}
+      {!ended&&!scheduled&&stream&&<p className="external-note"><ExternalLink size={14}/>If an advertisement opens, close the new tab and return to the match.</p>}
     </div>
   </main>;
 }
