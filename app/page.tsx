@@ -11,6 +11,7 @@ type Match={
   colorA:string;colorB:string;apiSources?:ApiSource[];homeBadge?:string;awayBadge?:string;
 };
 type Filter="all"|"live"|"today"|"upcoming";
+type TickerStatus="live"|"today"|"upcoming"|"ended";
 
 const palettes=[
   ["#776600","#006b91"],["#075b34","#082f21"],["#90142c","#8b7400"],
@@ -33,6 +34,13 @@ function countdown(timestamp:number,now:number){
   if(days>0)return days+"d "+hours+"h";
   if(hours>0)return hours+"h "+mins+"m";
   return Math.max(1,mins)+"m";
+}
+
+function tickerStatus(match:Match,now:number):TickerStatus{
+  if(isMatchEnded(match,now))return "ended";
+  if(isEffectivelyLive(match,now))return "live";
+  if(match.date&&sameLocalDay(match.date,now))return "today";
+  return "upcoming";
 }
 
 export default function Home(){
@@ -71,12 +79,22 @@ export default function Home(){
     });
   },[matches,filter,query,now]);
 
+  const tickerMatches=useMemo(()=>[...matches].sort((a,b)=>{
+    const priority:Record<TickerStatus,number>={live:0,today:1,upcoming:2,ended:3};
+    return priority[tickerStatus(a,now)]-priority[tickerStatus(b,now)]||(a.date??0)-(b.date??0);
+  }),[matches,now]);
+
+  const tickerGroup=(duplicate=false)=><div className="ticker-group" aria-hidden={duplicate||undefined}>{tickerMatches.map(match=>{
+    const status=tickerStatus(match,now),label=status.toUpperCase();
+    return <a className={"ticker-item "+status} key={(duplicate?"duplicate-":"")+match.id} href={"/watch?match="+encodeURIComponent(match.id)} tabIndex={duplicate?-1:undefined}><small>{label}</small><b>{match.homeCode}</b><span>{match.home+" vs "+match.away}</span><time>{isEffectivelyLive(match,now)?"Now":match.time}</time></a>;
+  })}</div>;
+
   return <main>
     <header className={"site-header catalog-header "+(scrolled?"compact":"")}>
       <a className="brand" href="#top" aria-label="NINETY Live home"><span>N</span><strong>NINETY</strong><em>LIVE</em></a>
       <nav aria-label="Primary navigation"><a className="active" href="#matches">Matches</a><a href="#matches" onClick={()=>setFilter("live")}>Live</a></nav>
     </header>
-    <section className="ticker" aria-label="Live event ticker"><span className="ticker-label"><Radio size={16}/>{counts.live?counts.live+" LIVE":"FOOTBALL"}</span><div className="ticker-track">{matches.filter(match=>!isMatchEnded(match,now)).slice(0,8).map(match=><a key={match.id} href={"/watch?match="+encodeURIComponent(match.id)}><b>{match.homeCode}</b><span>{match.home+" vs "+match.away+" · "+(isEffectivelyLive(match,now)?"LIVE":match.time)}</span></a>)}</div></section>
+    <section className="ticker" aria-label="Scrolling match schedule"><a className="ticker-summary" href="#matches" onClick={()=>setFilter("all")}><Radio size={15}/><span><small>ALL</small><strong>{counts.all} MATCHES</strong></span></a><div className="ticker-window"><div className="ticker-marquee">{tickerGroup()}{tickerGroup(true)}</div></div></section>
 
     <div className="page-wrap catalog-page" id="top">
       <section className="match-catalog" id="matches">
