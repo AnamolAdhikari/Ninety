@@ -71,3 +71,9 @@
 @media(max-width:1000px){.catalog-actions{width:100%;justify-content:space-between;margin-left:0}.match-search{width:min(420px,55vw)}}
 @media(max-width:780px){.catalog-actions{align-items:stretch}.match-search{width:100%}.display-controls{flex:0 0 auto}.featured-match-grid.compact .featured-match-card{grid-template-columns:1fr}.featured-match-grid.compact .featured-match-art{height:190px;min-height:0}.featured-match-grid.compact .featured-match-info{min-height:158px;padding:19px 20px}}
 @media(max-width:520px){.catalog-actions{flex-direction:column}.display-controls{justify-content:space-between}.spoiler-toggle{flex:1}.match-search kbd{display:none}}
+
+/* Release 22: prominent centered filters with title-row utilities */
+.catalog-title{align-items:center;margin-bottom:18px}.catalog-title>.catalog-actions{width:auto;justify-content:flex-end;margin-left:auto}.catalog-title .match-search{width:min(360px,29vw)}.catalog-tools{justify-content:center;margin-bottom:28px;padding:12px 8px}.catalog-tools .catalog-tabs{min-width:0;flex:0 1 auto;justify-content:center;gap:9px}.catalog-tools .catalog-tabs button{padding:11px 16px;border-radius:8px;font-size:.86rem}.catalog-tools .catalog-tabs button b{min-width:23px;padding:3px 6px;font-size:.7rem}
+@media(max-width:1080px){.catalog-title{align-items:flex-start}.catalog-title>.catalog-actions{width:min(600px,58vw)}.catalog-title .match-search{width:100%}}
+@media(max-width:780px){.catalog-title{flex-direction:column;gap:18px}.catalog-title>.catalog-actions{width:100%;margin-left:0}.catalog-tools{align-items:center;margin:0 -14px 22px;padding:11px 14px 13px}.catalog-tools .catalog-tabs{justify-content:flex-start}.catalog-tools .catalog-tabs button{padding:10px 14px}}
+@media(max-width:520px){.catalog-title>.catalog-actions{flex-direction:column}.catalog-tools .catalog-tabs{width:100%}}
