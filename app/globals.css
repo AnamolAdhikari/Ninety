@@ -105,16 +105,12 @@
 @media(max-width:640px){.match-spotlight{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:22px 18px}.spotlight-copy{width:100%;max-width:none}.spotlight-copy h2{line-height:1.12;overflow-wrap:anywhere}.spotlight-copy>div{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:22px}.spotlight-copy a{flex:1 1 150px;min-width:0;min-height:44px;white-space:nowrap}.spotlight-copy button{flex:0 0 44px;width:44px;height:44px}.spotlight-arrows{position:static;align-self:flex-start;margin-top:18px;padding:3px}.spotlight-arrows button{width:40px;height:36px}.spotlight-arrows span{min-width:42px;font-size:.75rem}.card-quick-actions{top:12px;right:12px;gap:6px}.card-quick-actions button{width:42px;height:42px}.active-filter-reset{margin:-14px 0 20px}}
 @media(prefers-reduced-motion:reduce){.match-spotlight{animation:none}.ticker-window{overflow-x:auto;scrollbar-width:none}}
 
-/* Release 28: compact mobile rotation independent of CSS motion settings. */
+/* Compact match ticker. */
 .ticker-summary{background:#db2940;color:#fff;box-shadow:12px 0 28px rgb(0 0 0 / 28%)}
 .ticker-summary:hover{background:#ed3449}
-.mobile-ticker{display:none}
-@media(max-width:640px){.ticker-summary{min-width:112px;padding:0 10px;gap:6px}.ticker-summary small{font-size:.52rem}.ticker-summary strong{font-size:.68rem}.ticker-window{display:none}.mobile-ticker{display:flex;flex:1;min-width:0;overflow:hidden;padding:0 10px;gap:7px}.mobile-ticker small,.mobile-ticker time{flex:none}.mobile-ticker span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.72rem}}
-
-/* Release 29: clear highlights actions and a soft transition between mobile fixtures. */
-@media(max-width:640px){.mobile-ticker{animation:mobile-ticker-enter .42s cubic-bezier(.2,.75,.25,1) both}}
-@keyframes mobile-ticker-enter{from{opacity:0;transform:translate3d(20px,0,0)}to{opacity:1;transform:translate3d(0,0,0)}}
-@media(prefers-reduced-motion:reduce){.mobile-ticker{animation:none}}
+@media(max-width:640px){.ticker-summary{min-width:112px;padding:0 10px;gap:6px}.ticker-summary small{font-size:.52rem}.ticker-summary strong{font-size:.68rem}.ticker-window{display:block;overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 12px),transparent)}.ticker-marquee{animation:ticker-scroll 52s linear infinite}.ticker-window:hover .ticker-marquee,.ticker-window:focus-within .ticker-marquee{animation-play-state:running}.ticker-item{padding:0 12px;gap:7px}.ticker-item b{display:none}}
+@media(max-width:640px) and (prefers-reduced-motion:reduce){.ticker-window{overflow-x:auto;mask-image:none;scrollbar-width:none}.ticker-marquee{animation:none}.ticker-group[aria-hidden="true"]{display:none}}
+/* Clear highlights actions. */
 .highlights-card-link{position:relative;z-index:4;text-decoration:none;white-space:nowrap}
 .highlights-card-link:hover{color:#fff;text-decoration:underline}
 .fallback-actions{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap}
