@@ -40,12 +40,31 @@ export default function Home(){
   const [scrolled,setScrolled]=useState(false),[favorites,setFavorites]=useState<string[]>([]),[installPrompt,setInstallPrompt]=useState<InstallPrompt|null>(null),[viewMode,setViewMode]=useState<ViewMode>("cards");
   const [preferredTeams,setPreferredTeams]=useState<string[]>([]),[reminders,setReminders]=useState<string[]>([]),[panel,setPanel]=useState<HeaderPanel>(null),[teamSearch,setTeamSearch]=useState(""),[teamGroup,setTeamGroup]=useState<(typeof teamGroups)[number]>("All"),[spotlightIndex,setSpotlightIndex]=useState(0),[menuOpen,setMenuOpen]=useState(false);
   const searchRef=useRef<HTMLInputElement>(null);
-  const loadMatches=useCallback(async(silent=false)=>{if(!silent)setFeedStatus("loading");try{const response=await fetch("/api/matches",{cache:"no-store"});if(!response.ok)throw new Error();const data=await response.json() as {matches?:Match[]};setMatches(data.matches??[]);setFeedStatus("live")}catch{setFeedStatus("error")}},[]);
+  const loadMatches=useCallback(async(silent=false)=>{if(!silent)setFeedStatus("loading");try{const response=await fetch("/api/matches",{cache:"no-store"});if(!response.ok)throw new Error();const data=await response.json() as {matches?:Match[]};if(!Array.isArray(data.matches))throw new Error("Invalid match feed");setMatches(data.matches);setFeedStatus("live")}catch{setFeedStatus("error")}},[]);
 
   useEffect(()=>{void loadMatches();const refresh=window.setInterval(()=>void loadMatches(true),60000);const clock=window.setInterval(()=>setNow(Date.now()),30000);return()=>{window.clearInterval(refresh);window.clearInterval(clock)}},[loadMatches]);
   useEffect(()=>{const onScroll=()=>setScrolled(window.scrollY>24);onScroll();window.addEventListener("scroll",onScroll,{passive:true});return()=>window.removeEventListener("scroll",onScroll)},[]);
   useEffect(()=>{try{setFavorites(JSON.parse(window.localStorage.getItem("ninety-favorites")||"[]"));setPreferredTeams(JSON.parse(window.localStorage.getItem("ninety-teams")||"[]"));setReminders(JSON.parse(window.localStorage.getItem("ninety-reminders")||"[]"))}catch{}const onInstall=(event:Event)=>{event.preventDefault();setInstallPrompt(event as InstallPrompt)};window.addEventListener("beforeinstallprompt",onInstall);return()=>window.removeEventListener("beforeinstallprompt",onInstall)},[]);
   useEffect(()=>{setViewMode(window.localStorage.getItem("ninety-view")==="compact"?"compact":"cards");const focusSearch=(event:KeyboardEvent)=>{const target=event.target as HTMLElement|null;if(event.key==="/"&&!target?.matches("input, textarea, [contenteditable=true]")){event.preventDefault();searchRef.current?.focus()}};window.addEventListener("keydown",focusSearch);return()=>window.removeEventListener("keydown",focusSearch)},[]);
+
+  // Only prune against a successfully loaded feed, never the initial empty state or an outage.
+  useEffect(()=>{
+    if(feedStatus!=="live")return;
+    const available=new Set(matches.map(match=>match.id));
+    const reminderEligible=new Set(matches.filter(match=>!isMatchEnded(match,now)).map(match=>match.id));
+    const prune=(current:string[],ids:Set<string>,key:string)=>{
+      const next=current.filter(id=>ids.has(id));
+      if(next.length===current.length)return current;
+      try{window.localStorage.setItem(key,JSON.stringify(next));}catch{}
+      return next;
+    };
+    setFavorites(current=>prune(current,available,"ninety-favorites"));
+    setReminders(current=>prune(current,reminderEligible,"ninety-reminders"));
+    try{
+      const notified=JSON.parse(window.localStorage.getItem("ninety-notified")||"[]");
+      if(Array.isArray(notified)){const next=notified.filter(id=>available.has(id));if(next.length!==notified.length)window.localStorage.setItem("ninety-notified",JSON.stringify(next));}
+    }catch{}
+  },[matches,feedStatus,now]);
 
   const favoriteSet=useMemo(()=>new Set(favorites),[favorites]);
   const preferredSet=useMemo(()=>new Set(preferredTeams.map(normalizedTeam)),[preferredTeams]);
