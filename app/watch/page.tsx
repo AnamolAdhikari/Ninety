@@ -89,7 +89,7 @@ export default function WatchPage(){
     const load=async()=>{
       setLineupLoading(true);
       try{
-        const params=new URLSearchParams({home:match.home,away:match.away,date:String(match.date)});
+        const params=new URLSearchParams({home:match.home,away:match.away,date:String(match.date),v:"2"});
         const response=await fetch(`/api/lineups?${params}`);
         if(!response.ok)throw new Error();
         const result=await response.json() as LineupResult;
