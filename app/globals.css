@@ -136,3 +136,5 @@
 .lineup-image img{display:block;width:100%;height:100%;object-fit:contain}.lineup-image-team img{padding:4px}.lineup-image-player img{object-fit:cover;object-position:center top}.lineup-image-fallback{font-size:.72rem;font-weight:800;color:#c4d2df}
 .lineup-team li{min-height:60px;gap:10px;transition:background .18s ease}.lineup-team li:hover{background:#152331}.lineup-team li b{flex:none;width:26px;text-align:center}.lineup-player-name{min-width:0;overflow-wrap:anywhere;line-height:1.35}.lineup-team li small{flex:none}
 @media(max-width:640px){.lineup-team li{gap:8px;min-height:58px}.lineup-image-player{width:36px;height:36px}.lineup-team-identity{gap:10px}.lineup-image-team{width:42px;height:42px}}
+
+.match-presence{display:inline-flex;align-items:center;gap:7px;min-height:30px;padding:5px 10px;border:1px solid #304239;border-radius:20px;background:#13251d;color:#b7d9c2;font-size:.78rem;font-weight:600;white-space:nowrap}.match-presence svg{color:#71c891}

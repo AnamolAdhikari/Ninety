@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight, CirclePlay, ExternalLink, Maximize, RefreshCw,
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { isMatchEnded } from "../match-lifecycle";
+import { MatchPresenceBadge } from "./match-presence";
 import { highlightsSearchUrl } from "../highlights";
 
 type ApiSource={source:string;id:string};
@@ -121,7 +122,7 @@ export default function WatchPage(){
   return <main className="watch-page">
     <header className="watch-header"><a className="brand" href="/" aria-label="Back to NINETY Live"><img className="brand-mark" src="/ninety-mark.svg" alt="" aria-hidden="true"/><strong>NINETY</strong><em>LIVE</em></a><a className="back-link" href="/"><ArrowLeft size={17}/>All football matches</a></header>
     <div className="watch-wrap">
-      <div className="watch-title"><div><span className="eyebrow"><i/> {ended?"FULL TIME":scheduled?"UPCOMING MATCH":"MATCHDAY"}</span><h1>{match?`${match.home} vs ${match.away}`:"Loading match…"}</h1>{match&&<p>Kick-off · {match.date?new Date(match.date).toLocaleString([], {weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"}):match.time} <span className="local-time-note">· Your local time</span></p>}<div className="watch-title-actions"><button className={saved?"active":""} onClick={toggleSaved}><Star size={15} fill={saved?"currentColor":"none"}/>{saved?"Saved":"Save match"}</button><button onClick={()=>void share()}><Share2 size={15}/>Share</button></div></div><div className="watch-badges">{match?.homeBadge&&<img src={match.homeBadge} alt={match.home} decoding="async"/>}<strong>VS</strong>{match?.awayBadge&&<img src={match.awayBadge} alt={match.away} decoding="async"/>}</div></div>
+      <div className="watch-title"><div><span className="eyebrow"><i/> {ended?"FULL TIME":scheduled?"UPCOMING MATCH":"MATCHDAY"}</span><h1>{match?`${match.home} vs ${match.away}`:"Loading match…"}</h1>{match&&<p>Kick-off · {match.date?new Date(match.date).toLocaleString([], {weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"}):match.time} <span className="local-time-note">· Your local time</span></p>}<div className="watch-title-actions">{match&&<MatchPresenceBadge matchId={match.id}/>}<button className={saved?"active":""} onClick={toggleSaved}><Star size={15} fill={saved?"currentColor":"none"}/>{saved?"Saved":"Save match"}</button><button onClick={()=>void share()}><Share2 size={15}/>Share</button></div></div><div className="watch-badges">{match?.homeBadge&&<img src={match.homeBadge} alt={match.home} decoding="async"/>}<strong>VS</strong>{match?.awayBadge&&<img src={match.awayBadge} alt={match.away} decoding="async"/>}</div></div>
       {!ended&&!scheduled&&status==="ready"&&<div className="provider-notice" role="note" aria-label="Advertisement warning">
         <ShieldAlert size={23}/>
         <div>
