@@ -1,4 +1,4 @@
-const CACHE="ninety-shell-v25";
+const CACHE="ninety-shell-v26";
 const SHELL=["/","/favicon.svg","/icon-192.png","/icon-512.png","/manifest.webmanifest"];
 self.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
