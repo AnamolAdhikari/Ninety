@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight, CirclePlay, ExternalLink, Maximize, RefreshCw,
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { isMatchEnded } from "../match-lifecycle";
+import { highlightsSearchUrl } from "../highlights";
 
 type ApiSource={source:string;id:string};
 type Match={id:string;home:string;away:string;time:string;date?:number;live?:boolean;homeBadge?:string;awayBadge?:string;apiSources?:ApiSource[]};
@@ -18,7 +19,8 @@ function countdown(target:number,now:number){
 export default function WatchPage(){
   const [match,setMatch]=useState<Match|null>(null),[streams,setStreams]=useState<ApiStream[]>([]),[selected,setSelected]=useState(0);
   const [status,setStatus]=useState<"loading"|"ready"|"error"|"scheduled"|"ended">("loading"),[playerKey,setPlayerKey]=useState(0),[retryKey,setRetryKey]=useState(0),[now,setNow]=useState(Date.now());
-  const [saved,setSaved]=useState(false);
+  const [saved,setSaved]=useState(false),[online,setOnline]=useState(true);
+  useEffect(()=>{const sync=()=>setOnline(navigator.onLine);sync();window.addEventListener("online",sync);window.addEventListener("offline",sync);return()=>{window.removeEventListener("online",sync);window.removeEventListener("offline",sync)}},[]);
 
   useEffect(()=>{
     let cancelled=false;
@@ -82,11 +84,12 @@ export default function WatchPage(){
           <span>For fewer pop-ups, enable a trusted browser ad blocker before starting the stream.</span>
         </div>
       </div>}
+      <div className={"watch-availability "+(!online?"offline":ended?"ended":status)} role="status"><Signal size={15}/><strong>{!online?"You are offline":ended?"Broadcast finished":scheduled?"Waiting for kick-off":status==="ready"?`${streams.length} broadcast ${streams.length===1?"source":"sources"} found`:status==="loading"?"Checking broadcast sources":"No playable source yet"}</strong><span>{!online?"Reconnect to check for broadcasts.":ended?"Look for match highlights below.":status==="ready"?"Select a source if playback does not start.":scheduled?"We will check again as kick-off approaches.":status==="error"?"Checking again every 60 seconds.":"This may take a moment."}</span></div>
       <div className="watch-player">
         {stream?<iframe key={`${stream.embedUrl}-${playerKey}`} src={stream.embedUrl} title={match?`${match.home} versus ${match.away} live stream`:"Live football stream"} allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowFullScreen/>:ended||status==="error"||status==="scheduled"?<div className="broadcast-fallback">
           <div className="animated-pitch" aria-hidden="true"><div className="pitch-midline"/><div className="pitch-circle"/><div className="pitch-box left"/><div className="pitch-box right"/><div className="player p1"/><div className="player p2"/><div className="player p3"/><div className="player p4"/><div className="player p5"/><div className="player p6"/><div className="player p7"/><div className="player p8"/><div className="animated-ball"/></div>
           <div className="stadium-lights" aria-hidden="true"/>
-          <div className="fallback-content"><CirclePlay size={48}/><span className="fallback-label">{ended?"FULL TIME":"MATCHDAY WARM-UP"}</span><strong>{ended?"This broadcast has ended":status==="scheduled"?"Broadcast starts closer to kick-off":"Broadcast temporarily unavailable"}</strong>{ended?<p>The match has finished.</p>:status==="scheduled"&&match?.date?<div className="kickoff-countdown"><small>KICK-OFF IN</small><b>{countdown(match.date,now)}</b></div>:<p>We continue checking for a playable broadcast every 60 seconds.</p>}{ended?<a className="fallback-return" href="/">Return to matches</a>:<button onClick={()=>setRetryKey(key=>key+1)}><RefreshCw size={15}/>Check broadcast now</button>}</div>
+          <div className="fallback-content"><CirclePlay size={48}/><span className="fallback-label">{ended?"FULL TIME":"MATCHDAY WARM-UP"}</span><strong>{ended?"This broadcast has ended":status==="scheduled"?"Broadcast starts closer to kick-off":"Broadcast temporarily unavailable"}</strong>{ended?<p>The broadcast has finished. Official highlights may become available on YouTube.</p>:status==="scheduled"&&match?.date?<div className="kickoff-countdown"><small>KICK-OFF IN</small><b>{countdown(match.date,now)}</b></div>:<p>We continue checking for a playable broadcast every 60 seconds.</p>}{ended&&match?<div className="fallback-actions"><a className="fallback-highlights" href={highlightsSearchUrl(match)} target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/>Find highlights on YouTube</a><a className="fallback-return" href="/">Return to matches</a></div>:<button onClick={()=>setRetryKey(key=>key+1)}><RefreshCw size={15}/>Check broadcast now</button>}</div>
         </div>:<div className="watch-loading"><RefreshCw className="spin" size={40}/><strong>Finding available broadcast</strong><span>Checking match sources…</span></div>}
       </div>
       {!ended&&<div className="watch-toolbar"><div><strong>Broadcast sources</strong><span>{streams.length?`${streams.length} available · ${stream?.language||"Select a source"}`:status==="scheduled"?"Preparing for kick-off":"Searching for a broadcast"}</span></div><div className="watch-actions">{streams.map((item,index)=><button key={`${item.source}-${item.id}-${index}`} aria-pressed={selected===index} className={selected===index?"active":""} onClick={()=>chooseStream(index)}><Signal size={14}/><span>{item.language||`Stream ${item.streamNo}`}</span><b>{item.hd?"HD":"SD"}</b></button>)}{stream&&<button className="utility-source" onClick={tryNext}><ChevronRight size={15}/>Try next source</button>}{stream&&<button className="utility-source" onClick={()=>setPlayerKey(key=>key+1)}><RefreshCw size={14}/>Reload</button>}{stream&&<button className="utility-source" onClick={()=>document.querySelector<HTMLElement>(".watch-player")?.requestFullscreen()}><Maximize size={14}/>Fullscreen</button>}</div></div>}

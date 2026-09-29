@@ -110,3 +110,18 @@
 .ticker-summary:hover{background:#ed3449}
 .mobile-ticker{display:none}
 @media(max-width:640px){.ticker-summary{min-width:112px;padding:0 10px;gap:6px}.ticker-summary small{font-size:.52rem}.ticker-summary strong{font-size:.68rem}.ticker-window{display:none}.mobile-ticker{display:flex;flex:1;min-width:0;overflow:hidden;padding:0 10px;gap:7px}.mobile-ticker small,.mobile-ticker time{flex:none}.mobile-ticker span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.72rem}}
+
+/* Release 29: clear highlights actions and a soft transition between mobile fixtures. */
+@media(max-width:640px){.mobile-ticker{animation:mobile-ticker-enter .42s cubic-bezier(.2,.75,.25,1) both}}
+@keyframes mobile-ticker-enter{from{opacity:0;transform:translate3d(20px,0,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+@media(prefers-reduced-motion:reduce){.mobile-ticker{animation:none}}
+.highlights-card-link{position:relative;z-index:4;text-decoration:none;white-space:nowrap}
+.highlights-card-link:hover{color:#fff;text-decoration:underline}
+.fallback-actions{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap}
+.fallback-highlights{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:5px;background:var(--lime);color:#080b0e;padding:11px 15px;font-size:.82rem;font-weight:900;text-decoration:none}
+.fallback-highlights:hover{background:#ebff83}
+.catalog-empty .choose-teams{display:inline-flex;align-items:center;gap:7px;border-color:#879e32;background:#1b2812;color:var(--lime)}
+.watch-availability{display:flex;align-items:center;gap:8px;min-height:42px;padding:8px 12px;border:1px solid #283644;border-bottom:0;background:#111923;color:#adb9c7;font-size:.75rem}
+.watch-availability svg{flex:none;color:#7c9aa9}.watch-availability strong{color:#e8edf2}.watch-availability span{margin-left:auto;color:#94a2b0}
+.watch-availability.ready svg{color:var(--lime)}.watch-availability.error svg,.watch-availability.offline svg{color:#ff7280}
+@media(max-width:640px){.watch-availability{flex-wrap:wrap;gap:5px 8px}.watch-availability span{flex-basis:100%;margin:0 0 0 23px;font-size:.7rem}}
