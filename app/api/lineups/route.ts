@@ -1,3 +1,5 @@
+import { env } from "cloudflare:workers";
+
 type Player = { id?: number; name?: string; number?: number; pos?: string };
 type TeamLineup = { team?: { id?: number; name?: string }; formation?: string; startXI?: Array<{ player?: Player }> };
 type Fixture = { fixture?: { id?: number; date?: string }; teams?: { home?: { name?: string; id?: number }; away?: { name?: string; id?: number } } };
@@ -16,8 +18,8 @@ export async function GET(request: Request) {
   if (!home || !away || home.length > 100 || away.length > 100 || !Number.isFinite(date) || Math.abs(Date.now() - date) > 7 * 86400000) {
     return Response.json({ error: "Invalid match" }, { status: 400 });
   }
-  const key = process.env.API_FOOTBALL_KEY;
-  if (!key) return unavailable("Confirmed lineups are not available for this match yet.");
+  const key = (env as unknown as { API_FOOTBALL_KEY?: string }).API_FOOTBALL_KEY;
+  if (!key) return unavailable("Lineup data is being connected. Please check back soon.");
   try {
     const headers = { "x-apisports-key": key };
     const matchDate = new Date(date).toISOString().slice(0, 10);
@@ -27,7 +29,7 @@ export async function GET(request: Request) {
     const matches = (fixtures.response ?? []).filter(item =>
       sameTeam(home, item.teams?.home?.name ?? "") && sameTeam(away, item.teams?.away?.name ?? "") &&
       Math.abs(Date.parse(item.fixture?.date ?? "") - date) <= 90 * 60000);
-    if (matches.length !== 1 || !matches[0].fixture?.id) return unavailable("Confirmed lineups are not available for this match yet.");
+    if (matches.length !== 1 || !matches[0].fixture?.id) return unavailable("No matching fixture was found in our lineup data source for this match.");
     const fixture = matches[0];
     const lineupsResponse = await fetch(`${base}/fixtures/lineups?fixture=${fixture.fixture!.id}`, { headers, next: { revalidate: 600 } });
     if (!lineupsResponse.ok) throw new Error("Lineup lookup failed");
