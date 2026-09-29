@@ -104,3 +104,9 @@
 .active-filter-reset{display:flex;justify-content:flex-end;margin:-21px 0 24px}.active-filter-reset button{display:inline-flex;align-items:center;gap:6px;border:1px solid #39485a;border-radius:7px;background:#15202d;color:#c9d3df;padding:7px 10px;font-size:.8rem;font-weight:750;cursor:pointer}.active-filter-reset button:hover{border-color:var(--lime);color:white}
 @media(max-width:640px){.match-spotlight{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:22px 18px}.spotlight-copy{width:100%;max-width:none}.spotlight-copy h2{line-height:1.12;overflow-wrap:anywhere}.spotlight-copy>div{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:22px}.spotlight-copy a{flex:1 1 150px;min-width:0;min-height:44px;white-space:nowrap}.spotlight-copy button{flex:0 0 44px;width:44px;height:44px}.spotlight-arrows{position:static;align-self:flex-start;margin-top:18px;padding:3px}.spotlight-arrows button{width:40px;height:36px}.spotlight-arrows span{min-width:42px;font-size:.75rem}.card-quick-actions{top:12px;right:12px;gap:6px}.card-quick-actions button{width:42px;height:42px}.active-filter-reset{margin:-14px 0 20px}}
 @media(prefers-reduced-motion:reduce){.match-spotlight{animation:none}.ticker-window{overflow-x:auto;scrollbar-width:none}}
+
+/* Release 28: compact mobile rotation independent of CSS motion settings. */
+.ticker-summary{background:#db2940;color:#fff;box-shadow:12px 0 28px rgb(0 0 0 / 28%)}
+.ticker-summary:hover{background:#ed3449}
+.mobile-ticker{display:none}
+@media(max-width:640px){.ticker-summary{min-width:112px;padding:0 10px;gap:6px}.ticker-summary small{font-size:.52rem}.ticker-summary strong{font-size:.68rem}.ticker-window{display:none}.mobile-ticker{display:flex;flex:1;min-width:0;overflow:hidden;padding:0 10px;gap:7px}.mobile-ticker small,.mobile-ticker time{flex:none}.mobile-ticker span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.72rem}}
