@@ -11,7 +11,7 @@ import { teamCatalog, teamGroups, type TeamGroup } from "./team-catalog";
 import teamBadges from "./team-badges.json";
 
 type ApiSource={source:string;id:string};
-type Match={id:string;sport:string;league:string;home:string;away:string;homeCode:string;awayCode:string;time:string;date?:number;live?:boolean;popular?:boolean;colorA:string;colorB:string;apiSources?:ApiSource[];homeBadge?:string;awayBadge?:string};
+type Match={id:string;sport:string;league:string;home:string;away:string;homeCode:string;awayCode:string;time:string;date?:number;live?:boolean;matchStatus?:string;popular?:boolean;colorA:string;colorB:string;apiSources?:ApiSource[];homeBadge?:string;awayBadge?:string};
 type Filter="all"|"matchday"|"live"|"today"|"upcoming"|"favorites";
 type ViewMode="cards"|"compact";
 type TickerStatus="live"|"today"|"upcoming"|"ended";
