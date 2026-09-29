@@ -9,8 +9,17 @@ import { highlightsSearchUrl } from "../highlights";
 type ApiSource={source:string;id:string};
 type Match={id:string;home:string;away:string;time:string;date?:number;live?:boolean;matchStatus?:string;homeBadge?:string;awayBadge?:string;apiSources?:ApiSource[]};
 type ApiStream={id:string;streamNo:number;language:string;hd:boolean;embedUrl:string;source:string};
-type LineupTeam={name:string;formation:string|null;players:Array<{id?:number;name:string;number?:number|null;pos?:string}>};
+type LineupTeam={name:string;logo?:string;formation:string|null;players:Array<{id?:number;name:string;photo?:string;number?:number|null;pos?:string}>};
 type LineupResult={status:"confirmed"|"unavailable";message?:string;source?:string;home?:LineupTeam;away?:LineupTeam};
+
+function LineupImage({src,name,kind}:{src?:string;name:string;kind:"team"|"player"}){
+  const [failed,setFailed]=useState(false);
+  useEffect(()=>setFailed(false),[src]);
+  const initials=name.trim().split(/\s+/).map(word=>word[0]).slice(0,2).join("").toUpperCase();
+  return <span className={`lineup-image lineup-image-${kind}`}>
+    {src&&!failed?<img src={src} alt={kind==="team"?`${name} badge`:`${name} portrait`} width={kind==="team"?44:40} height={kind==="team"?44:40} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={()=>setFailed(true)}/>:<span className="lineup-image-fallback" aria-label={kind==="team"?`${name} badge unavailable`:`${name} photo unavailable`}>{initials}</span>}
+  </span>;
+}
 
 function countdown(target:number,now:number){
   const seconds=Math.max(0,Math.floor((target-now)/1000)),days=Math.floor(seconds/86400),hours=Math.floor(seconds%86400/3600),minutes=Math.floor(seconds%3600/60),secs=seconds%60;
@@ -89,7 +98,7 @@ export default function WatchPage(){
     const load=async()=>{
       setLineupLoading(true);
       try{
-        const params=new URLSearchParams({home:match.home,away:match.away,date:String(match.date),v:"2"});
+        const params=new URLSearchParams({home:match.home,away:match.away,date:String(match.date),v:"3"});
         const response=await fetch(`/api/lineups?${params}`);
         if(!response.ok)throw new Error();
         const result=await response.json() as LineupResult;
@@ -132,7 +141,7 @@ export default function WatchPage(){
       {!ended&&<div className="watch-toolbar"><div><strong>Broadcast sources</strong><span>{streams.length?`${streams.length} available · ${stream?.language||"Select a source"}`:status==="scheduled"?"Preparing for kick-off":"Searching for a broadcast"}</span></div><div className="watch-actions">{streams.map((item,index)=><button key={`${item.source}-${item.id}-${index}`} aria-pressed={selected===index} className={selected===index?"active":""} onClick={()=>chooseStream(index)}><Signal size={14}/><span>{item.language||`Stream ${item.streamNo}`}</span><b>{item.hd?"HD":"SD"}</b></button>)}{stream&&<button className="utility-source" onClick={tryNext}><ChevronRight size={15}/>Try next source</button>}{stream&&<button className="utility-source" onClick={()=>setPlayerKey(key=>key+1)}><RefreshCw size={14}/>Reload</button>}{stream&&<button className="utility-source" onClick={()=>document.querySelector<HTMLElement>(".watch-player")?.requestFullscreen()}><Maximize size={14}/>Fullscreen</button>}</div></div>}
       {!ended&&!scheduled&&stream&&<p className="external-note"><ExternalLink size={14}/>If an advertisement opens, close the new tab and return to the match.</p>}
       {match&&<section className="lineup-section" aria-labelledby="lineup-heading"><div className="lineup-heading"><div><span className="eyebrow">MATCH DETAILS</span><h2 id="lineup-heading">Starting lineups</h2></div>{lineup?.status==="confirmed"&&<span className="lineup-confirmed">Confirmed starting XIs</span>}</div>
-        {lineup?.status==="confirmed"&&lineup.home&&lineup.away?<><div className="lineup-teams">{[lineup.home,lineup.away].map(team=><div className="lineup-team" key={team.name}><div className="lineup-team-heading"><h3>{team.name}</h3>{team.formation&&<span>{team.formation}</span>}</div><ol>{team.players.map((player,index)=><li key={player.id??`${player.number}-${index}`}><b>{player.number??"—"}</b><span>{player.name}</span>{player.pos&&<small>{player.pos}</small>}</li>)}</ol></div>)}</div><p className="lineup-credit">Lineup data: {lineup.source}. Teams and kick-off are matched before lineups appear.</p></>:<div className="lineup-pending"><span className="lineup-pending-icon" aria-hidden="true">XI</span><div><strong>{lineupLoading&&!lineup?"Checking for confirmed lineups…":"Lineup availability"}</strong><p>{lineup?.message??"Starting XIs usually become available nearer kick-off. We only display confirmed squads."}</p></div></div>}
+        {lineup?.status==="confirmed"&&lineup.home&&lineup.away?<><div className="lineup-teams">{[lineup.home,lineup.away].map(team=><div className="lineup-team" key={team.name}><div className="lineup-team-heading"><div className="lineup-team-identity"><LineupImage src={team.logo??(team.name===match.home?match.homeBadge:match.awayBadge)} name={team.name} kind="team"/><h3>{team.name}</h3></div>{team.formation&&<span>{team.formation}</span>}</div><ol>{team.players.map((player,index)=><li key={player.id??`${player.number}-${index}`}><LineupImage src={player.photo} name={player.name} kind="player"/><b>{player.number??"—"}</b><span className="lineup-player-name">{player.name}</span>{player.pos&&<small>{player.pos}</small>}</li>)}</ol></div>)}</div><p className="lineup-credit">Lineup data: {lineup.source}. Teams and kick-off are matched before lineups appear.</p></>:<div className="lineup-pending"><span className="lineup-pending-icon" aria-hidden="true">XI</span><div><strong>{lineupLoading&&!lineup?"Checking for confirmed lineups…":"Lineup availability"}</strong><p>{lineup?.message??"Starting XIs usually become available nearer kick-off. We only display confirmed squads."}</p></div></div>}
       </section>}
     </div>
   </main>;

@@ -1,7 +1,7 @@
 import { footballData, findFixture, FootballDataError, type Fixture } from "../../football-data";
 
-type Player = { id?: number; name?: string; number?: number | null; pos?: string };
-type TeamLineup = { team?: { id?: number; name?: string }; formation?: string; startXI?: Array<{ player?: Player }> };
+type Player = { id?: number; name?: string; photo?: string; number?: number | null; pos?: string };
+type TeamLineup = { team?: { id?: number; name?: string; logo?: string }; formation?: string; startXI?: Array<{ player?: Player }> };
 const unavailable = (message: string) => Response.json({ status: "unavailable", message }, { headers: { "Cache-Control": "public, max-age=180, s-maxage=600" } });
 
 export async function GET(request: Request) {
@@ -23,7 +23,9 @@ export async function GET(request: Request) {
     const players = (team: TeamLineup | undefined) => team?.startXI?.map(entry => entry.player).filter((player): player is Player => Boolean(player?.name));
     const homePlayers = players(homeData), awayPlayers = players(awayData);
     if (homePlayers?.length !== 11 || awayPlayers?.length !== 11) return unavailable("Starting XIs have not been confirmed by the lineup provider yet.");
-    return Response.json({ status: "confirmed", source: "API-Football", home: { name: home, formation: homeData?.formation ?? null, players: homePlayers }, away: { name: away, formation: awayData?.formation ?? null, players: awayPlayers } }, { headers: { "Cache-Control": "public, max-age=180, s-maxage=600" } });
+    const portrait = (player: Player) => ({ ...player, photo: player.id && Number.isInteger(player.id) && player.id > 0 ? `https://media.api-sports.io/football/players/${player.id}.png` : undefined });
+    const logo = (team: TeamLineup | undefined) => team?.team?.id && Number.isInteger(team.team.id) && team.team.id > 0 ? `https://media.api-sports.io/football/teams/${team.team.id}.png` : undefined;
+    return Response.json({ status: "confirmed", source: "API-Football", home: { name: home, logo: logo(homeData), formation: homeData?.formation ?? null, players: homePlayers.map(portrait) }, away: { name: away, logo: logo(awayData), formation: awayData?.formation ?? null, players: awayPlayers.map(portrait) } }, { headers: { "Cache-Control": "public, max-age=180, s-maxage=600" } });
   } catch (error) {
     return unavailable(error instanceof FootballDataError ? error.message : "Lineup information is temporarily unavailable. Please try again later.");
   }
