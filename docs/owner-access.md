@@ -1,17 +1,17 @@
-# Owner-only access to NINETY
+# NINETY owner login
 
-The application does not store login passwords. Configure Cloudflare Access on the `live` Worker before treating the website as private.
+The Worker now requires authentication before serving pages, static assets or API routes. Missing credentials fail closed with a setup message.
 
-1. Enable Cloudflare Zero Trust on the Free plan if it is not already enabled.
-2. Create an **Allow** Access policy named **NINETY Owner Only**, with **Include > Emails > your exact email address**. Do not use Everyone, an entire email domain, or a broader account-members rule.
-3. Open **Workers & Pages > live > Access > Protect this Worker behind Access**.
-4. Choose **All traffic**, covering production and previews, and select the owner-only policy. Apply Access. Worker-level protection covers all domains and all routes, including APIs and static assets.
-5. Review the application's policies in Zero Trust. Remove any other Allow/Bypass policy that would permit others. Set a session duration such as 24 hours.
-6. Use one-time email PIN login, or configure Google as an identity provider if you prefer your existing account login. Do not share your password or login codes in chat.
-7. Test in a private browser window: the homepage, watch page, and `/api/matches` must require login. Sign in using your allowed email. Test an unlisted email to confirm it cannot enter. Check any hostname-specific Access apps too, because they take precedence over Worker-level protection.
+In Cloudflare > Workers & Pages > live > Settings > Variables and Secrets, add these as Secret:
 
-Until these settings are enabled and verified, the Cloudflare deployment remains public. Code publication does not activate Access.
+- NINETY_USERNAME: your chosen username.
+- NINETY_PASSWORD: a unique long password (use your password manager).
+- NINETY_SESSION_SECRET: a cryptographically random secret of at least 32 characters (generate a 64-character password in your password manager).
 
-The video provider's iframe URL remains visible to an authorized browser. Authentication protects access to NINETY; it does not make the third-party media URL secret or invalidate copied provider links.
+Save/deploy changes. Never put these values in GitHub or chat. The build supplies LOGIN_RATE_LIMITER (namespace 90002), five login attempts per minute per IP per Cloudflare location. Confirm the binding appears after deployment. All assets must run the Worker first; this is configured in Vite.
 
-Official guide: https://developers.cloudflare.com/workers/configuration/cloudflare-access/
+Sessions expire after 12 hours; Secure/HttpOnly/SameSite=Strict cookies hold signed tokens, not credentials. Changing username, password or session secret invalidates existing sessions. Sign out clears this browser session; a copied session remains valid until expiry or credential rotation. There is no public signup or friend access.
+
+Test in a private browser: home redirects to login; API requests return 401; wrong password fails; your login works; logout blocks access again. Missing secrets return 503 even on API routes. Do not enable caching rules that bypass the Worker.
+
+Cloudflare Access can additionally protect this Worker, but is optional for this built-in login. Authentication does not conceal provider iframe addresses from the authenticated browser or restrict access at the provider.

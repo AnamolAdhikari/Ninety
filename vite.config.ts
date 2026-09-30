@@ -15,8 +15,10 @@ const managedLinux = readExecutionProfile() === "managed-linux";
 
 const localBindingConfig = {
   main: "./workers/entry.ts",
+  assets: { run_worker_first: true },
   durable_objects: { bindings: [{ name: "MATCH_PRESENCE", class_name: "MatchPresence" }] },
   migrations: [{ tag: "match-presence-v1", new_sqlite_classes: ["MatchPresence"] }],
+  ratelimits: [{ name: "LOGIN_RATE_LIMITER", namespace_id: "90002", simple: { limit: 5, period: 60 as const } }],
   compatibility_flags: ["nodejs_compat"],
   d1_databases: d1
     ? [
