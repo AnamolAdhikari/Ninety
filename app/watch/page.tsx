@@ -1,9 +1,9 @@
 "use client";
 
-import { ArrowLeft, ChevronRight, CirclePlay, ExternalLink, Maximize, RefreshCw, Share2, ShieldAlert, Signal, Star } from "lucide-react";
+import { ArrowLeft, ChevronRight, CirclePlay, ExternalLink, Maximize, RefreshCw, Share2, ShieldAlert, Signal, Star, Monitor, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { isMatchEnded } from "../match-lifecycle";
+import { isMatchEnded, isEffectivelyLive } from "../match-lifecycle";
 import { MatchPresenceBadge } from "./match-presence";
 import { highlightsSearchUrl } from "../highlights";
 
@@ -31,6 +31,7 @@ function countdown(target:number,now:number){
 export default function WatchPage(){
   const [match,setMatch]=useState<Match|null>(null),[streams,setStreams]=useState<ApiStream[]>([]),[selected,setSelected]=useState(0);
   const [status,setStatus]=useState<"loading"|"ready"|"error"|"scheduled"|"ended">("loading"),[playerKey,setPlayerKey]=useState(0),[retryKey,setRetryKey]=useState(0),[now,setNow]=useState(Date.now());
+  const [fixtures,setFixtures]=useState<Match[]>([]),[cinema,setCinema]=useState(false),[detailsTab,setDetailsTab]=useState<"lineups"|"highlights">("lineups");
   const [saved,setSaved]=useState(false),[online,setOnline]=useState(true);
   const [lineup,setLineup]=useState<LineupResult|null>(null),[lineupLoading,setLineupLoading]=useState(false);
   useEffect(()=>{const sync=()=>setOnline(navigator.onLine);sync();window.addEventListener("online",sync);window.addEventListener("offline",sync);return()=>{window.removeEventListener("online",sync);window.removeEventListener("offline",sync)}},[]);
@@ -45,7 +46,7 @@ export default function WatchPage(){
         const response=await fetch("/api/matches");if(!response.ok)throw new Error();
         const data=await response.json() as {matches?:Match[]};
         const found=data.matches?.find(item=>item.id===id);if(!found)throw new Error();
-        if(cancelled)return;setMatch(found);try{setSaved((JSON.parse(window.localStorage.getItem("ninety-favorites")||"[]") as string[]).includes(found.id));}catch{}
+        if(cancelled)return;setFixtures(data.matches??[]);setMatch(found);try{setSaved((JSON.parse(window.localStorage.getItem("ninety-favorites")||"[]") as string[]).includes(found.id));}catch{}
         if(isMatchEnded(found,Date.now())){setStreams([]);setStatus("ended");return;}
         if(found.date&&found.date>Date.now()){setStreams([]);setStatus("scheduled");return;}
         const results=await Promise.allSettled((found.apiSources??[]).map(async ref=>{
@@ -76,13 +77,15 @@ export default function WatchPage(){
       if(document.hidden)return;
       try { const response=await fetch("/api/matches",{cache:"no-store"}); if(!response.ok)return;
         const data=await response.json() as {matches?:Match[]}; const updated=data.matches?.find(item=>item.id===match.id);
-        if(!cancelled&&updated)setMatch(updated);
+        if(!cancelled){setFixtures(data.matches??[]);if(updated)setMatch(updated);}
       } catch {}
     };
     const timer=window.setInterval(()=>void refresh(),60000);
     return()=>{cancelled=true;window.clearInterval(timer);};
   },[match?.id]);
 
+  useEffect(()=>{if(!cinema)return;const escape=(event:KeyboardEvent)=>{if(event.key==="Escape")setCinema(false);};window.addEventListener("keydown",escape);return()=>window.removeEventListener("keydown",escape);},[cinema]);
+  const otherLive=fixtures.filter(item=>item.id!==match?.id&&isEffectivelyLive(item,now));
   const ended=Boolean(match&&isMatchEnded(match,now));
   const scheduled=Boolean(match?.date&&match.date>now);
   useEffect(()=>{
@@ -119,7 +122,7 @@ export default function WatchPage(){
   const tryNext=()=>{if(streams.length)chooseStream((selected+1)%streams.length);};
   const toggleSaved=()=>{if(!match)return;let ids:string[]=[];try{ids=JSON.parse(window.localStorage.getItem("ninety-favorites")||"[]");}catch{}const next=ids.includes(match.id)?ids.filter(id=>id!==match.id):[...ids,match.id];window.localStorage.setItem("ninety-favorites",JSON.stringify(next));setSaved(next.includes(match.id));toast.success(next.includes(match.id)?"Match saved":"Removed from saved matches");};
   const share=async()=>{if(!match)return;try{if(navigator.share)await navigator.share({title:`${match.home} vs ${match.away} | NINETY Live`,url:window.location.href});else{await navigator.clipboard.writeText(window.location.href);toast.success("Match link copied");}}catch(error){if((error as Error).name!=="AbortError")toast.error("Could not share this match");}};
-  return <main className="watch-page">
+  return <main className={"watch-page"+(cinema?" cinema-mode":"")}>
     <header className="watch-header"><a className="brand" href="/" aria-label="Back to NINETY Live"><img className="brand-mark" src="/ninety-mark.svg" alt="" aria-hidden="true"/><strong>NINETY</strong><em>LIVE</em></a><a className="back-link" href="/"><ArrowLeft size={17}/>All football matches</a></header>
     <div className="watch-wrap">
       <div className="watch-title"><div><span className="eyebrow"><i/> {ended?"FULL TIME":scheduled?"UPCOMING MATCH":"MATCHDAY"}</span><h1>{match?`${match.home} vs ${match.away}`:"Loading match…"}</h1>{match&&<p>Kick-off · {match.date?new Date(match.date).toLocaleString([], {weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"}):match.time} <span className="local-time-note">· Your local time</span></p>}<div className="watch-title-actions">{match&&<MatchPresenceBadge matchId={match.id}/>}<button className={saved?"active":""} onClick={toggleSaved}><Star size={15} fill={saved?"currentColor":"none"}/>{saved?"Saved":"Save match"}</button><button onClick={()=>void share()}><Share2 size={15}/>Share</button></div></div><div className="watch-badges">{match?.homeBadge&&<img src={match.homeBadge} alt={match.home} decoding="async"/>}<strong>VS</strong>{match?.awayBadge&&<img src={match.awayBadge} alt={match.away} decoding="async"/>}</div></div>
@@ -132,6 +135,7 @@ export default function WatchPage(){
         </div>
       </div>}
       <div className={"watch-availability "+(!online?"offline":ended?"ended":status)} role="status"><Signal size={15}/><strong>{!online?"You are offline":ended?"Broadcast finished":scheduled?"Broadcast not live yet":status==="ready"?`${streams.length} broadcast ${streams.length===1?"link":"links"} found`:status==="loading"?"Checking broadcast sources":"No playable source yet"}</strong><span>{!online?"Reconnect to check for broadcasts.":ended?"Look for match highlights below.":status==="ready"?"Select a source if playback does not start.":scheduled?"We will check again as kick-off approaches.":status==="error"?"Checking again every 60 seconds.":"This may take a moment."}</span></div>
+      <div className="watch-view-controls"><div>{otherLive.length>0&&<label className="quick-match-switch"><span>Other live games</span><select aria-label="Switch to another live match" value="" onChange={event=>{if(event.target.value)window.location.assign(`/watch?match=${encodeURIComponent(event.target.value)}`);}}><option value="">Choose a game ({otherLive.length})</option>{otherLive.map(item=><option key={item.id} value={item.id}>{item.home} vs {item.away}</option>)}</select></label>}</div><button className={cinema?"cinema-toggle active":"cinema-toggle"} aria-pressed={cinema} onClick={()=>setCinema(value=>!value)}>{cinema?<X size={16}/>:<Monitor size={16}/>}<span>{cinema?"Exit cinema":"Cinema mode"}</span></button></div>
       <div className="watch-player">
         {stream?<iframe key={`${stream.embedUrl}-${playerKey}`} src={stream.embedUrl} title={match?`${match.home} versus ${match.away} live stream`:"Live football stream"} allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowFullScreen/>:ended||status==="error"||status==="scheduled"?<div className="broadcast-fallback">
           <div className="animated-pitch" aria-hidden="true"><div className="pitch-midline"/><div className="pitch-circle"/><div className="pitch-box left"/><div className="pitch-box right"/><div className="player p1"/><div className="player p2"/><div className="player p3"/><div className="player p4"/><div className="player p5"/><div className="player p6"/><div className="player p7"/><div className="player p8"/><div className="animated-ball"/></div>
@@ -141,7 +145,9 @@ export default function WatchPage(){
       </div>
       {!ended&&<div className="watch-toolbar"><div><strong>Broadcast sources</strong><span>{streams.length?`${streams.length} available · ${stream?.language||"Select a source"}`:status==="scheduled"?"Preparing for kick-off":"Searching for a broadcast"}</span></div><div className="watch-actions">{streams.map((item,index)=><button key={`${item.source}-${item.id}-${index}`} aria-pressed={selected===index} className={selected===index?"active":""} onClick={()=>chooseStream(index)}><Signal size={14}/><span>{item.language||`Stream ${item.streamNo}`}</span><b>{item.hd?"HD":"SD"}</b></button>)}{stream&&<button className="utility-source" onClick={tryNext}><ChevronRight size={15}/>Try next source</button>}{stream&&<button className="utility-source" onClick={()=>setPlayerKey(key=>key+1)}><RefreshCw size={14}/>Reload</button>}{stream&&<button className="utility-source" onClick={()=>document.querySelector<HTMLElement>(".watch-player")?.requestFullscreen()}><Maximize size={14}/>Fullscreen</button>}</div></div>}
       {!ended&&!scheduled&&stream&&<p className="external-note"><ExternalLink size={14}/>If an advertisement opens, close the new tab and return to the match.</p>}
-      {match&&<section className="lineup-section" aria-labelledby="lineup-heading"><div className="lineup-heading"><div><span className="eyebrow">MATCH DETAILS</span><h2 id="lineup-heading">Starting lineups</h2></div>{lineup?.status==="confirmed"&&<span className="lineup-confirmed">Confirmed starting XIs</span>}</div>
+      {match&&<div className="match-detail-tabs" role="tablist" aria-label="Match details"><button id="lineups-tab" role="tab" aria-selected={detailsTab==="lineups"} aria-controls="lineups-panel" onClick={()=>setDetailsTab("lineups")} className={detailsTab==="lineups"?"active":""}>Lineups</button><button id="highlights-tab" role="tab" aria-selected={detailsTab==="highlights"} aria-controls="highlights-panel" onClick={()=>setDetailsTab("highlights")} className={detailsTab==="highlights"?"active":""}>Highlights</button></div>}
+      {match&&detailsTab==="highlights"&&<section id="highlights-panel" role="tabpanel" aria-labelledby="highlights-tab" className="match-highlights-panel"><ExternalLink size={24}/><div><h2>{ended?"Find match highlights":"Highlights after full time"}</h2><p>{ended?"Search YouTube for official highlights of this fixture. Availability depends on the broadcaster.":"Highlights may be available once the match finishes. This opens a YouTube search, rather than a verified video."}</p><a href={highlightsSearchUrl(match)} target="_blank" rel="noopener noreferrer">Search highlights on YouTube<ExternalLink size={15}/></a></div></section>}
+      {match&&detailsTab==="lineups"&&<section id="lineups-panel" role="tabpanel" className="lineup-section" aria-labelledby="lineups-tab"><div className="lineup-heading"><div><span className="eyebrow">MATCH DETAILS</span><h2 id="lineup-heading">Starting lineups</h2></div>{lineup?.status==="confirmed"&&<span className="lineup-confirmed">Confirmed starting XIs</span>}</div>
         {lineup?.status==="confirmed"&&lineup.home&&lineup.away?<><div className="lineup-teams">{[lineup.home,lineup.away].map(team=><div className="lineup-team" key={team.name}><div className="lineup-team-heading"><div className="lineup-team-identity"><LineupImage src={team.logo??(team.name===match.home?match.homeBadge:match.awayBadge)} name={team.name} kind="team"/><h3>{team.name}</h3></div>{team.formation&&<span>{team.formation}</span>}</div><ol>{team.players.map((player,index)=><li key={player.id??`${player.number}-${index}`}><LineupImage src={player.photo} name={player.name} kind="player"/><b>{player.number??"—"}</b><span className="lineup-player-name">{player.name}</span>{player.pos&&<small>{player.pos}</small>}</li>)}</ol></div>)}</div><p className="lineup-credit">Lineup data: {lineup.source}. Teams and kick-off are matched before lineups appear.</p></>:<div className="lineup-pending"><span className="lineup-pending-icon" aria-hidden="true">XI</span><div><strong>{lineupLoading&&!lineup?"Checking for confirmed lineups…":"Lineup availability"}</strong><p>{lineup?.message??"Starting XIs usually become available nearer kick-off. We only display confirmed squads."}</p></div></div>}
       </section>}
     </div>
