@@ -1,5 +1,7 @@
-export interface AuthEnv {
+import { accounts, type AccountEnv } from "./accounts";
+export interface AuthEnv extends AccountEnv {
   NINETY_USERNAME?: string;
+  API_FOOTBALL_KEY?: string;
   NINETY_PASSWORD?: string;
   NINETY_GUEST_USERNAME?: string;
   NINETY_GUEST_PASSWORD?: string;
@@ -23,6 +25,7 @@ function hex(buffer: ArrayBuffer) { return Array.from(new Uint8Array(buffer),b=>
 async function digest(value: string) { return hex(await crypto.subtle.digest("SHA-256",encoder.encode(value))); }
 async function equal(a: string,b: string) { const x=await digest(a),y=await digest(b);let difference=0;for(let i=0;i<x.length;i++)difference|=x.charCodeAt(i)^y.charCodeAt(i);return difference===0; }
 type Role = "owner" | "guest";
+type Identity={role:Role|"friend";storageId:string};
 function credentials(env: AuthEnv, role: Role) {
   if(role === "guest") {
     if(!env.NINETY_GUEST_USERNAME || !env.NINETY_GUEST_PASSWORD || env.NINETY_GUEST_USERNAME === env.NINETY_USERNAME) return null;
@@ -30,10 +33,21 @@ function credentials(env: AuthEnv, role: Role) {
   }
   return {username:env.NINETY_USERNAME!,password:env.NINETY_PASSWORD!};
 }
-async function valid(request: Request,env: AuthEnv): Promise<Role|null> {
+async function valid(request: Request,env: AuthEnv): Promise<Identity|null> {
   const token=request.headers.get("cookie")?.split(";").map(c=>c.trim()).find(c=>c.startsWith(cookieName+"="))?.slice(cookieName.length+1);
   if(!token || token.length>256)return null;
   const parts=token.split(".");
+  if(parts[0]==="friend") {
+    const [role,id,version,expiry,nonce,signature]=parts;
+    if(parts.length!==6||!/^([a-f0-9-]{36})$/.test(id)||!/^\d{1,8}$/.test(version)||!/^\d+$/.test(expiry)||!/^[a-f0-9]{32}$/.test(nonce)||!/^[a-f0-9]{64}$/.test(signature))return null;
+    const now=Math.floor(Date.now()/1000);if(Number(expiry)<=now||Number(expiry)>now+ttl)return null;
+    const bytes=new Uint8Array(signature.match(/../g)!.map(h=>parseInt(h,16)));
+    if(!await crypto.subtle.verify("HMAC",await key(env.NINETY_SESSION_SECRET!),bytes,encoder.encode(parts.slice(0,5).join("."))))return null;
+    const response=await accounts(env,"/session",{id,version:Number(version)});
+    if(!response.ok)return null;
+    const data=await response.json() as {account?:unknown};
+    return data.account?{role:"friend",storageId:"friend:"+id}:null;
+  }
   const legacy=parts.length===3;
   const role=legacy?"owner":parts[0];
   if((!legacy && parts.length!==4) || (role!=="owner" && role!=="guest"))return null;
@@ -44,7 +58,7 @@ async function valid(request: Request,env: AuthEnv): Promise<Role|null> {
   const prefix=legacy?`${expiry}.${nonce}`:`${role}.${expiry}.${nonce}`;
   const payload=`${prefix}.${await digest(account.username+"\0"+account.password)}`;
   const bytes=new Uint8Array(signature.match(/../g)!.map(h=>parseInt(h,16)));
-  return await crypto.subtle.verify("HMAC",await key(env.NINETY_SESSION_SECRET!),bytes,encoder.encode(payload))?role:null;
+  return await crypto.subtle.verify("HMAC",await key(env.NINETY_SESSION_SECRET!),bytes,encoder.encode(payload))?{role,storageId:role+":"+await digest(account.username)}:null;
 }
 export async function authenticate(request: Request,env: AuthEnv): Promise<Response|null> {
   const url=new URL(request.url);
@@ -64,7 +78,16 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
     const guest=credentials(env,"guest");
     const checks=await Promise.all([equal(username,env.NINETY_USERNAME),equal(password,env.NINETY_PASSWORD),equal(username,guest?.username??""),equal(password,guest?.password??"")]);
     const role:Role|null=checks[0]&&checks[1]?"owner":guest&&checks[2]&&checks[3]?"guest":null;
-    if(!role)return page("Incorrect username or password.",401);
+    if(!role) {
+      if(!env.NINETY_ACCOUNTS)return page("Incorrect username or password.",401);
+      const response=await accounts(env,"/verify",{username,password});
+      const data=await response.json() as {account?:{id:string;version:number}};
+      if(!data.account)return page("Incorrect username or password.",401);
+      const expiry=Math.floor(Date.now()/1000)+ttl,nonce=hex(crypto.getRandomValues(new Uint8Array(16)).buffer);
+      const prefix=`friend.${data.account.id}.${data.account.version}.${expiry}.${nonce}`;
+      const signature=hex(await crypto.subtle.sign("HMAC",await key(env.NINETY_SESSION_SECRET),encoder.encode(prefix)));
+      return new Response(null,{status:303,headers:{Location:"/","Set-Cookie":`${cookieName}=${prefix}.${signature}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${ttl}`,"Cache-Control":"no-store"}});
+    }
     const account=credentials(env,role)!;
     const expiry=Math.floor(Date.now()/1000)+ttl;const nonce=hex(crypto.getRandomValues(new Uint8Array(16)).buffer);
     const prefix=`${role}.${expiry}.${nonce}`;
@@ -72,10 +95,31 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
     const signature=hex(await crypto.subtle.sign("HMAC",await key(env.NINETY_SESSION_SECRET),encoder.encode(payload)));
     return new Response(null,{status:303,headers:{Location:"/","Set-Cookie":`${cookieName}=${prefix}.${signature}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${ttl}`,"Cache-Control":"no-store"}});
   }
-  const role=await valid(request,env);
-  if(role) {
-    if(url.pathname==="/api/account")return Response.json({role,storageId:role+":"+await digest(credentials(env,role)!.username)},{headers:{"Cache-Control":"private, no-store"}});
-    if(url.pathname==="/login")return new Response(null,{status:303,headers:{Location:"/","Cache-Control":"no-store"}});
+  const identity=await valid(request,env);
+  if(identity) {
+    const headers={"Cache-Control":"private, no-store"};
+    if(url.pathname==="/api/account")return Response.json({...identity,sync:!!env.NINETY_ACCOUNTS},{headers});
+    if(/^\/admin(?:\/|$)/.test(url.pathname) && identity.role!=="owner")return new Response("Owner access required",{status:403,headers});
+    if(url.pathname.startsWith("/api/admin/")||url.pathname==="/api/preferences"||url.pathname==="/api/playback-report") {
+      if(url.pathname.startsWith("/api/admin/")&&identity.role!=="owner")return Response.json({error:"Owner access required"},{status:403,headers});
+      if(!["GET","POST"].includes(request.method))return new Response(null,{status:405,headers});
+      if(request.method==="POST"&&request.headers.get("origin")!==url.origin)return new Response("Forbidden",{status:403,headers});
+      let body:Record<string,unknown>={};
+      if(request.method==="POST"){const raw=await request.text();if(raw.length>40000)return Response.json({error:"Request too large"},{status:413,headers});try{body=JSON.parse(raw);}catch{return Response.json({error:"Invalid request"},{status:400,headers});}if(!body||typeof body!=="object"||Array.isArray(body))return Response.json({error:"Invalid request"},{status:400,headers});}
+      let response:Response;
+      if(url.pathname==="/api/preferences")response=await accounts(env,"/preferences",{...body,account:identity.storageId});
+      else if(url.pathname==="/api/admin/accounts"&&request.method==="GET"){const result=await accounts(env,"/list",{});if(!result.ok)return result;const data=await result.json() as Record<string,unknown>;response=Response.json({...data,services:{accounts:!!env.NINETY_ACCOUNTS,footballData:!!env.API_FOOTBALL_KEY}});}
+      else if(url.pathname==="/api/admin/accounts"&&request.method==="POST") {
+        const username=String(body.username??"").trim().toLowerCase();
+        if([env.NINETY_USERNAME?.toLowerCase(),env.NINETY_GUEST_USERNAME?.toLowerCase()].includes(username))return Response.json({error:"That username is reserved."},{status:409,headers});
+        response=await accounts(env,"/create",body);
+      }
+      else if(url.pathname==="/api/admin/account"&&request.method==="POST")response=await accounts(env,"/update",body);
+      else if(url.pathname==="/api/playback-report"&&request.method==="POST"){const rate=await env.LOGIN_RATE_LIMITER.limit({key:"report:"+identity.storageId});if(!rate.success)return Response.json({ok:true},{headers});response=await accounts(env,"/health",{category:"source-retry"});}
+      else return new Response(null,{status:404,headers});
+      const protectedResponse=new Response(response.body,response);protectedResponse.headers.set("Cache-Control","private, no-store");return protectedResponse;
+    }
+    if(url.pathname==="/login")return new Response(null,{status:303,headers:{Location:"/",...headers}});
     return null;
   }
   if(url.pathname.startsWith("/api/"))return Response.json({error:"Authentication required"},{status:401,headers:{"Cache-Control":"no-store"}});

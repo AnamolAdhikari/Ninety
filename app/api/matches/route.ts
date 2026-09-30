@@ -1,3 +1,4 @@
+import { recordHealth } from "../../service-health";
 import { footballData, findFixture, type Fixture } from "../../football-data";
 const API = "https://streamed.pk";
 type RawMatch = { id?:unknown; title?:unknown; category?:unknown; date?:unknown; popular?:unknown; teams?:{home?:{name?:unknown;badge?:unknown};away?:{name?:unknown;badge?:unknown}}; sources?:Array<{source?:unknown;id?:unknown}> };
@@ -25,5 +26,5 @@ export async function GET(){
     try { fixtures = await footballData<Fixture>(`fixtures?date=${new Date(now).toISOString().slice(0,10)}`); } catch {}
     matches = matches.map(match => ({ ...match, matchStatus: findFixture(fixtures, match.home, match.away, match.date)?.fixture?.status?.short }));
     return Response.json({matches,sports:[{id:"football",name:"Football"}]},{headers:{"Cache-Control":"public, max-age=30, s-maxage=60"}});
-  }catch{return Response.json({error:"Live event feed is temporarily unavailable."},{status:502});}
+  }catch{await recordHealth("match-feed-error");return Response.json({error:"Live event feed is temporarily unavailable."},{status:502});}
 }

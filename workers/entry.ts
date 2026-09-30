@@ -1,6 +1,7 @@
 import handler from "vinext/server/fetch-handler";
 import { authenticate, type AuthEnv } from "./auth";
 export { MatchPresence } from "./presence";
+export { NinetyAccounts } from "./accounts";
 export default {
   async fetch(request: Request, env: AuthEnv & { ASSETS: Fetcher }, ctx: ExecutionContext) {
     // Public cleanup worker carries no app content and removes obsolete offline caches.
