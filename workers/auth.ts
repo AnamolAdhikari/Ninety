@@ -1,6 +1,8 @@
 export interface AuthEnv {
   NINETY_USERNAME?: string;
   NINETY_PASSWORD?: string;
+  NINETY_GUEST_USERNAME?: string;
+  NINETY_GUEST_PASSWORD?: string;
   NINETY_SESSION_SECRET?: string;
   LOGIN_RATE_LIMITER?: { limit(options: {key: string}): Promise<{success: boolean}> };
 }
@@ -20,15 +22,29 @@ async function key(secret: string) { return crypto.subtle.importKey("raw",encode
 function hex(buffer: ArrayBuffer) { return Array.from(new Uint8Array(buffer),b=>b.toString(16).padStart(2,"0")).join(""); }
 async function digest(value: string) { return hex(await crypto.subtle.digest("SHA-256",encoder.encode(value))); }
 async function equal(a: string,b: string) { const x=await digest(a),y=await digest(b);let difference=0;for(let i=0;i<x.length;i++)difference|=x.charCodeAt(i)^y.charCodeAt(i);return difference===0; }
-async function valid(request: Request,env: AuthEnv) {
+type Role = "owner" | "guest";
+function credentials(env: AuthEnv, role: Role) {
+  if(role === "guest") {
+    if(!env.NINETY_GUEST_USERNAME || !env.NINETY_GUEST_PASSWORD || env.NINETY_GUEST_USERNAME === env.NINETY_USERNAME) return null;
+    return {username:env.NINETY_GUEST_USERNAME,password:env.NINETY_GUEST_PASSWORD};
+  }
+  return {username:env.NINETY_USERNAME!,password:env.NINETY_PASSWORD!};
+}
+async function valid(request: Request,env: AuthEnv): Promise<Role|null> {
   const token=request.headers.get("cookie")?.split(";").map(c=>c.trim()).find(c=>c.startsWith(cookieName+"="))?.slice(cookieName.length+1);
-  if(!token || token.length>256)return false;
-  const [expiry,nonce,signature]=token.split(".");
-  if(!/^\d+$/.test(expiry)|| !/^[a-f0-9]{32}$/.test(nonce??"") || !/^[a-f0-9]{64}$/.test(signature??""))return false;
-  const now=Math.floor(Date.now()/1000);if(Number(expiry)<=now || Number(expiry)>now+ttl)return false;
-  const payload=`${expiry}.${nonce}.${await digest(env.NINETY_USERNAME!+"\0"+env.NINETY_PASSWORD!)}`;
+  if(!token || token.length>256)return null;
+  const parts=token.split(".");
+  const legacy=parts.length===3;
+  const role=legacy?"owner":parts[0];
+  if((!legacy && parts.length!==4) || (role!=="owner" && role!=="guest"))return null;
+  const [expiry,nonce,signature]=legacy?parts:parts.slice(1);
+  if(!/^\d+$/.test(expiry)|| !/^[a-f0-9]{32}$/.test(nonce??"") || !/^[a-f0-9]{64}$/.test(signature??""))return null;
+  const now=Math.floor(Date.now()/1000);if(Number(expiry)<=now || Number(expiry)>now+ttl)return null;
+  const account=credentials(env,role);if(!account)return null;
+  const prefix=legacy?`${expiry}.${nonce}`:`${role}.${expiry}.${nonce}`;
+  const payload=`${prefix}.${await digest(account.username+"\0"+account.password)}`;
   const bytes=new Uint8Array(signature.match(/../g)!.map(h=>parseInt(h,16)));
-  return crypto.subtle.verify("HMAC",await key(env.NINETY_SESSION_SECRET!),bytes,encoder.encode(payload));
+  return await crypto.subtle.verify("HMAC",await key(env.NINETY_SESSION_SECRET!),bytes,encoder.encode(payload))?role:null;
 }
 export async function authenticate(request: Request,env: AuthEnv): Promise<Response|null> {
   const url=new URL(request.url);
@@ -45,14 +61,20 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
     if(Number(request.headers.get("content-length")??0)>4096)return page("Invalid sign-in request.",400);
     const raw=await request.text();if(raw.length>4096)return page("Invalid sign-in request.",400);
     const form=new URLSearchParams(raw);const username=form.get("username")??"",password=form.get("password")??"";
-    const checks=await Promise.all([equal(username,env.NINETY_USERNAME),equal(password,env.NINETY_PASSWORD)]);
-    if(!checks.every(Boolean))return page("Incorrect username or password.",401);
+    const guest=credentials(env,"guest");
+    const checks=await Promise.all([equal(username,env.NINETY_USERNAME),equal(password,env.NINETY_PASSWORD),equal(username,guest?.username??""),equal(password,guest?.password??"")]);
+    const role:Role|null=checks[0]&&checks[1]?"owner":guest&&checks[2]&&checks[3]?"guest":null;
+    if(!role)return page("Incorrect username or password.",401);
+    const account=credentials(env,role)!;
     const expiry=Math.floor(Date.now()/1000)+ttl;const nonce=hex(crypto.getRandomValues(new Uint8Array(16)).buffer);
-    const payload=`${expiry}.${nonce}.${await digest(env.NINETY_USERNAME+"\0"+env.NINETY_PASSWORD)}`;
+    const prefix=`${role}.${expiry}.${nonce}`;
+    const payload=`${prefix}.${await digest(account.username+"\0"+account.password)}`;
     const signature=hex(await crypto.subtle.sign("HMAC",await key(env.NINETY_SESSION_SECRET),encoder.encode(payload)));
-    return new Response(null,{status:303,headers:{Location:"/","Set-Cookie":`${cookieName}=${expiry}.${nonce}.${signature}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${ttl}`,"Cache-Control":"no-store"}});
+    return new Response(null,{status:303,headers:{Location:"/","Set-Cookie":`${cookieName}=${prefix}.${signature}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${ttl}`,"Cache-Control":"no-store"}});
   }
-  if(await valid(request,env)) {
+  const role=await valid(request,env);
+  if(role) {
+    if(url.pathname==="/api/account")return Response.json({role,storageId:role+":"+await digest(credentials(env,role)!.username)},{headers:{"Cache-Control":"private, no-store"}});
     if(url.pathname==="/login")return new Response(null,{status:303,headers:{Location:"/","Cache-Control":"no-store"}});
     return null;
   }

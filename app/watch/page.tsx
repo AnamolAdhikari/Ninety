@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { isMatchEnded, isEffectivelyLive } from "../match-lifecycle";
 import { MatchPresenceBadge } from "./match-presence";
 import { highlightsSearchUrl } from "../highlights";
+import { accountStorage, initializeAccountStorage } from "../account-storage";
 
 type ApiSource={source:string;id:string};
 type Match={id:string;home:string;away:string;time:string;date?:number;live?:boolean;matchStatus?:string;homeBadge?:string;awayBadge?:string;apiSources?:ApiSource[]};
@@ -41,12 +42,13 @@ export default function WatchPage(){
     async function load(){
       try{
         setStatus("loading");
+        await initializeAccountStorage();
         const id=new URLSearchParams(window.location.search).get("match");
         if(!id)throw new Error();
         const response=await fetch("/api/matches");if(!response.ok)throw new Error();
         const data=await response.json() as {matches?:Match[]};
         const found=data.matches?.find(item=>item.id===id);if(!found)throw new Error();
-        if(cancelled)return;setFixtures(data.matches??[]);setMatch(found);try{setSaved((JSON.parse(window.localStorage.getItem("ninety-favorites")||"[]") as string[]).includes(found.id));}catch{}
+        if(cancelled)return;setFixtures(data.matches??[]);setMatch(found);try{setSaved((JSON.parse(accountStorage.getItem("ninety-favorites")||"[]") as string[]).includes(found.id));}catch{}
         if(isMatchEnded(found,Date.now())){setStreams([]);setStatus("ended");return;}
         if(found.date&&found.date>Date.now()){setStreams([]);setStatus("scheduled");return;}
         const results=await Promise.allSettled((found.apiSources??[]).map(async ref=>{
@@ -59,7 +61,7 @@ export default function WatchPage(){
         const available=results.flatMap(result=>result.status==="fulfilled"?result.value:[]).filter(item=>!seen.has(item.embedUrl)&&seen.add(item.embedUrl)).sort((a,b)=>Number(b.hd)-Number(a.hd)).slice(0,12);
         if(!cancelled&&isMatchEnded(found,Date.now())){setStreams([]);setStatus("ended");return;}
         if(!cancelled&&available.length){
-          const saved=window.localStorage.getItem("ninety-source:"+id);
+          const saved=accountStorage.getItem("ninety-source:"+id);
           const remembered=Math.max(0,available.findIndex(item=>item.source+"|"+item.streamNo===saved));
           setStreams(available);setSelected(remembered);setStatus("ready");return;
         }
@@ -117,10 +119,10 @@ export default function WatchPage(){
 
   const stream=ended?undefined:streams[selected];
   useEffect(()=>{if(ended&&status!=="ended"){setStreams([]);setStatus("ended");}},[ended,status]);
-  useEffect(()=>{if(match&&stream)window.localStorage.setItem("ninety-source:"+match.id,stream.source+"|"+stream.streamNo);},[match,stream]);
+  useEffect(()=>{if(match&&stream)accountStorage.setItem("ninety-source:"+match.id,stream.source+"|"+stream.streamNo);},[match,stream]);
   const chooseStream=(index:number)=>{setSelected(index);setPlayerKey(key=>key+1);};
   const tryNext=()=>{if(streams.length)chooseStream((selected+1)%streams.length);};
-  const toggleSaved=()=>{if(!match)return;let ids:string[]=[];try{ids=JSON.parse(window.localStorage.getItem("ninety-favorites")||"[]");}catch{}const next=ids.includes(match.id)?ids.filter(id=>id!==match.id):[...ids,match.id];window.localStorage.setItem("ninety-favorites",JSON.stringify(next));setSaved(next.includes(match.id));toast.success(next.includes(match.id)?"Match saved":"Removed from saved matches");};
+  const toggleSaved=()=>{if(!match)return;let ids:string[]=[];try{ids=JSON.parse(accountStorage.getItem("ninety-favorites")||"[]");}catch{}const next=ids.includes(match.id)?ids.filter(id=>id!==match.id):[...ids,match.id];accountStorage.setItem("ninety-favorites",JSON.stringify(next));setSaved(next.includes(match.id));toast.success(next.includes(match.id)?"Match saved":"Removed from saved matches");};
   const share=async()=>{if(!match)return;try{if(navigator.share)await navigator.share({title:`${match.home} vs ${match.away} | NINETY Live`,url:window.location.href});else{await navigator.clipboard.writeText(window.location.href);toast.success("Match link copied");}}catch(error){if((error as Error).name!=="AbortError")toast.error("Could not share this match");}};
   return <main className={"watch-page"+(cinema?" cinema-mode":"")}>
     <header className="watch-header"><a className="brand" href="/" aria-label="Back to NINETY Live"><img className="brand-mark" src="/ninety-mark.svg" alt="" aria-hidden="true"/><strong>NINETY</strong><em>LIVE</em></a><a className="back-link" href="/"><ArrowLeft size={17}/>All football matches</a></header>
