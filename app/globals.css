@@ -157,5 +157,3 @@
 .ticker-manual .ticker-group[aria-hidden="true"]{display:none}
 .ticker-window.ticker-automatic{overflow:hidden}
 .ticker-automatic .ticker-group[aria-hidden="true"]{display:flex}
-.ticker-mobile-resume{display:none}
-@media(max-width:780px){.ticker-mobile-resume{display:grid;place-items:center;flex:0 0 36px;border:0;border-left:1px solid #263442;background:#101b26;color:#b9c5d2;cursor:pointer}.ticker-mobile-resume:focus-visible{outline:2px solid var(--lime);outline-offset:-3px}}

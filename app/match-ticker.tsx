@@ -11,6 +11,7 @@ export function MatchTicker({ children }: { children: ReactNode }) {
   const focusedRef = useRef(false);
   const touchRef = useRef(false);
   const overrideRef = useRef(false);
+  const mobileRef = useRef(false);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export function MatchTicker({ children }: { children: ReactNode }) {
     const draw = (timestamp: number) => {
       const elapsed = previous ? Math.min(timestamp - previous, 64) : 0;
       previous = timestamp;
-      if (width && !pausedRef.current && !hoveredRef.current && !focusedRef.current) {
+      if (width && !pausedRef.current && (mobileRef.current || (!hoveredRef.current && !focusedRef.current))) {
         offset = (offset + elapsed * 0.032) % width;
         track.style.transform = `translate3d(${-offset}px,0,0)`;
       }
@@ -43,13 +44,16 @@ export function MatchTicker({ children }: { children: ReactNode }) {
       if (!document.hidden) frame = requestAnimationFrame(draw);
     };
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mobile = window.matchMedia("(max-width: 780px)");
     try { overrideRef.current = window.localStorage.getItem("ninety-ticker-motion") === "enabled"; } catch {}
     const respectMotion = () => {
-      pausedRef.current = motion.matches && !overrideRef.current;
+      mobileRef.current = mobile.matches;
+      pausedRef.current = !mobile.matches && motion.matches && !overrideRef.current;
       setPaused(pausedRef.current);
     };
     respectMotion();
     motion.addEventListener("change", respectMotion);
+    mobile.addEventListener("change", respectMotion);
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("pageshow", visibility);
     visibility();
@@ -57,13 +61,13 @@ export function MatchTicker({ children }: { children: ReactNode }) {
       cancelAnimationFrame(frame);
       observer.disconnect();
       motion.removeEventListener("change", respectMotion);
+      mobile.removeEventListener("change", respectMotion);
       document.removeEventListener("visibilitychange", visibility);
       window.removeEventListener("pageshow", visibility);
     };
   }, []);
 
-  return <>
-    <div className={"ticker-window " + (paused ? "ticker-manual" : "ticker-automatic")} ref={viewportRef}
+  return <div className={"ticker-window " + (paused ? "ticker-manual" : "ticker-automatic")} ref={viewportRef}
       onPointerDownCapture={event => {
         touchRef.current = event.pointerType !== "mouse";
         if (touchRef.current) { hoveredRef.current = false; focusedRef.current = false; }
@@ -73,14 +77,5 @@ export function MatchTicker({ children }: { children: ReactNode }) {
       onFocusCapture={() => { focusedRef.current = !touchRef.current; }}
       onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) focusedRef.current = false; }}>
       <div className="ticker-marquee" ref={trackRef}>{children}</div>
-    </div>
-    {paused && <button className="ticker-mobile-resume" type="button" aria-label="Enable scrolling match ticker" title="Enable scrolling" onClick={() => {
-      overrideRef.current = true;
-      pausedRef.current = false;
-      focusedRef.current = false;
-      hoveredRef.current = false;
-      setPaused(false);
-      try { window.localStorage.setItem("ninety-ticker-motion", "enabled"); } catch {}
-    }}><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>}
-  </>;
+    </div>;
 }
