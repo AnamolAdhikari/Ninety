@@ -150,6 +150,4 @@
 /* One frame-driven ticker on desktop and mobile; no CSS animation restarts. */
 .ticker-marquee{animation:none;transition:none;transform:translate3d(0,0,0)}
 .ticker-group{flex-shrink:0;min-width:var(--ticker-min-width,0px)}
-.ticker-motion-control{flex:0 0 44px;display:grid;place-items:center;border:0;border-left:1px solid #24303c;background:#0d1720;color:#b9c5d2;cursor:pointer}
-.ticker-motion-control:hover{color:#fff;background:#172430}
-.ticker-motion-control:focus-visible{outline:2px solid var(--lime);outline-offset:-4px}
+@media(prefers-reduced-motion:reduce){.ticker-window{overflow-x:auto;mask-image:none;scrollbar-width:none}.ticker-group[aria-hidden="true"]{display:none}}
