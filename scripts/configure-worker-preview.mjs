@@ -8,6 +8,8 @@ const config = JSON.parse(raw);
 // both Durable Objects through env, so declare same-worker bindings explicitly
 // for Previews. Omitting script_name is intentional: Cloudflare then provisions
 // isolated Durable Object namespaces/storage for each Preview.
+config.secrets = { required: ["NINETY_USERNAME", "NINETY_PASSWORD", "NINETY_SESSION_SECRET"] };
+
 config.previews = {
   ...(config.previews ?? {}),
   durable_objects: {
