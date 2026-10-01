@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { isMatchEnded, isEffectivelyLive } from "../match-lifecycle";
 import { MatchEvents } from "./match-events";
 import { MatchPresenceBadge } from "./match-presence";
-import { MatchTelemetry, telemetry } from "./match-telemetry";
+import { MatchTelemetry, WatchOpenTelemetry, telemetry } from "./match-telemetry";
 import { highlightsSearchUrl } from "../highlights";
 import { accountStorage, initializeAccountStorage } from "../account-storage";
 
@@ -132,7 +132,7 @@ export default function WatchPage(){
   useEffect(()=>{const refresh=()=>{if(match)try{setSaved((JSON.parse(accountStorage.getItem("ninety-favorites")||"[]") as string[]).includes(match.id));}catch{}};window.addEventListener("ninety-preferences",refresh);return()=>window.removeEventListener("ninety-preferences",refresh);},[match]);
   const toggleSaved=()=>{if(!match)return;let ids:string[]=[];try{ids=JSON.parse(accountStorage.getItem("ninety-favorites")||"[]");}catch{}const next=ids.includes(match.id)?ids.filter(id=>id!==match.id):[...ids,match.id];accountStorage.setItem("ninety-favorites",JSON.stringify(next));setSaved(next.includes(match.id));toast.success(next.includes(match.id)?"Match saved":"Removed from saved matches");};
   const share=async()=>{if(!match)return;try{if(navigator.share)await navigator.share({title:`${match.home} vs ${match.away} | NINETY Live`,url:window.location.href});else{await navigator.clipboard.writeText(window.location.href);toast.success("Match link copied");}}catch(error){if((error as Error).name!=="AbortError")toast.error("Could not share this match");}};
-  return <main className={"watch-page"+(cinema?" cinema-mode":"")}>
+  return <main className={"watch-page"+(cinema?" cinema-mode":"")}><WatchOpenTelemetry requestedMatchId={id}/>
     {match&&<MatchTelemetry matchId={match.id} home={match.home} away={match.away} playing={Boolean(stream&&!ended&&!scheduled&&status==="ready")} source={stream?`${stream.source}|${stream.streamNo}`:undefined}/>}
     <header className="watch-header"><a className="brand" href="/" aria-label="Back to NINETY Live"><img className="brand-mark" src="/ninety-mark.svg" alt="" aria-hidden="true"/><strong>NINETY</strong><em>LIVE</em></a><a className="back-link" href="/"><ArrowLeft size={17}/>All football matches</a></header>
     <div className="watch-wrap">
