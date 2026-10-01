@@ -100,14 +100,14 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
     const headers={"Cache-Control":"private, no-store"};
     if(url.pathname==="/api/account")return Response.json({...identity,sync:!!env.NINETY_ACCOUNTS},{headers});
     if(/^\/admin(?:\/|$)/.test(url.pathname) && identity.role!=="owner")return new Response("Owner access required",{status:403,headers});
-    if(url.pathname.startsWith("/api/admin/")||url.pathname==="/api/preferences"||url.pathname==="/api/playback-report") {
+    if(url.pathname.startsWith("/api/admin/")||url.pathname==="/api/preferences"||url.pathname==="/api/playback-report"||url.pathname==="/api/telemetry") {
       if(url.pathname.startsWith("/api/admin/")&&identity.role!=="owner")return Response.json({error:"Owner access required"},{status:403,headers});
       if(!["GET","POST"].includes(request.method))return new Response(null,{status:405,headers});
       if(request.method==="POST"&&request.headers.get("origin")!==url.origin)return new Response("Forbidden",{status:403,headers});
       let body:Record<string,unknown>={};
       if(request.method==="POST"){const raw=await request.text();if(raw.length>40000)return Response.json({error:"Request too large"},{status:413,headers});try{body=JSON.parse(raw);}catch{return Response.json({error:"Invalid request"},{status:400,headers});}if(!body||typeof body!=="object"||Array.isArray(body))return Response.json({error:"Invalid request"},{status:400,headers});}
       let response:Response;
-      if(url.pathname==="/api/preferences")response=await accounts(env,"/preferences",{...body,account:identity.storageId});
+      if(url.pathname==="/api/preferences")response=await accounts(env,"/preferences",{...body,account:identity.storageId});\n      else if(url.pathname==="/api/telemetry"&&request.method==="POST")response=await accounts(env,"/telemetry",{...body,account:identity.storageId});\n      else if(url.pathname==="/api/admin/telemetry"&&request.method==="GET")response=await accounts(env,"/telemetry-list",{});
       else if(url.pathname==="/api/admin/accounts"&&request.method==="GET"){const result=await accounts(env,"/list",{});if(!result.ok)return result;const data=await result.json() as Record<string,unknown>;response=Response.json({...data,services:{accounts:!!env.NINETY_ACCOUNTS,footballData:!!env.API_FOOTBALL_KEY}});}
       else if(url.pathname==="/api/admin/accounts"&&request.method==="POST") {
         const username=String(body.username??"").trim().toLowerCase();
