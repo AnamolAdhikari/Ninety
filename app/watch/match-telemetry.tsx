@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 
-type EventName="session-active"|"match-open"|"player-start"|"player-stop"|"source-change"|"source-failure";
+type EventName="session-active"|"watch-open"|"match-open"|"player-start"|"player-stop"|"source-change"|"source-failure";
 export function telemetry(event:EventName,detail:Record<string,unknown>={}){
   const body=JSON.stringify({event,detail});
   try{
@@ -9,7 +9,7 @@ export function telemetry(event:EventName,detail:Record<string,unknown>={}){
     void fetch("/api/telemetry",{method:"POST",headers:{"Content-Type":"application/json"},body,keepalive:true}).catch(()=>{});
   }catch{}
 }
-export function MatchTelemetry({matchId,home,away,playing,source}:{matchId:string;home:string;away:string;playing:boolean;source?:string}){
+export function WatchOpenTelemetry({requestedMatchId}:{requestedMatchId:string}){const sent=useRef(false);useEffect(()=>{if(sent.current)return;sent.current=true;telemetry("watch-open",{requestedMatchId});},[requestedMatchId]);return null;}\nexport function MatchTelemetry({matchId,home,away,playing,source}:{matchId:string;home:string;away:string;playing:boolean;source?:string}){
   const opened=useRef(false),lastSource=useRef<string|undefined>(undefined);
   useEffect(()=>{if(opened.current)return;opened.current=true;telemetry("match-open",{matchId,home,away});},[matchId,home,away]);
   useEffect(()=>{if(!playing)return;telemetry("player-start",{matchId,source});return()=>telemetry("player-stop",{matchId,source});},[matchId,playing]);
