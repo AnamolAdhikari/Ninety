@@ -14,7 +14,8 @@ export default function AdminPage(){
   for(const event of events){if(event.created<liveCutoff||event.event!=="session-active")continue;if(!watchingByAccount.has(event.account))watchingByAccount.set(event.account,event);}
   const activeAccounts=activeByAccount.size;
   const watchingAccounts=watchingByAccount.size;
-  const matchesWatching=new Set(Array.from(watchingByAccount.values()).map(event=>{try{const detail=event.detail?JSON.parse(event.detail):{};return typeof detail.matchId==="string"?detail.matchId:"";}catch{return "";}}).filter(Boolean)).size;\n  const activityEvents=events.filter(event=>event.event!=="session-active");
+  const matchesWatching=new Set(Array.from(watchingByAccount.values()).map(event=>{try{const detail=event.detail?JSON.parse(event.detail):{};return typeof detail.matchId==="string"?detail.matchId:"";}catch{return "";}}).filter(Boolean)).size;
+  const activityEvents=events.filter(event=>event.event!=="session-active");
   const label=(account:string)=>account.startsWith("friend:")?"friend":account.split(":")[0];
   const [services,setServices]=useState<{accounts:boolean;footballData:boolean}|null>(null);
   const [friends,setFriends]=useState<Friend[]>([]),[health,setHealth]=useState<Health[]>([]),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[resetId,setResetId]=useState<string|null>(null),[resetPassword,setResetPassword]=useState('');
