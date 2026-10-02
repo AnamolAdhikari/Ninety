@@ -5,6 +5,7 @@ type Friend={id:string;username:string;enabled:number;created:number;lastLogin:n
 type Health={day:string;category:string;count:number};
 type TelemetryEvent={id:string;account:string;event:string;detail:string|null;created:number};
 export default function AdminPage(){
+  const [events,setEvents]=useState<TelemetryEvent[]>([]);
   const now=Date.now();
   const liveCutoff=now-90_000;
   const activeByAccount=new Map<string,TelemetryEvent>();
@@ -16,7 +17,6 @@ export default function AdminPage(){
   const matchesWatching=new Set(Array.from(watchingByAccount.values()).map(event=>{try{const detail=event.detail?JSON.parse(event.detail):{};return typeof detail.matchId==="string"?detail.matchId:"";}catch{return "";}}).filter(Boolean)).size;
   const label=(account:string)=>account.startsWith("friend:")?"friend":account.split(":")[0];
   const [services,setServices]=useState<{accounts:boolean;footballData:boolean}|null>(null);
-  const [events,setEvents]=useState<TelemetryEvent[]>([]);
   const [friends,setFriends]=useState<Friend[]>([]),[health,setHealth]=useState<Health[]>([]),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[resetId,setResetId]=useState<string|null>(null),[resetPassword,setResetPassword]=useState('');
   const load=async()=>{const response=await fetch('/api/admin/accounts',{cache:'no-store'});const data=await response.json() as {accounts?:Friend[];health?:Health[];services?:{accounts:boolean;footballData:boolean};error?:string};if(!response.ok)throw new Error(data.error??'Dashboard unavailable');setFriends(data.accounts??[]);setHealth(data.health??[]);setServices(data.services??null);};
   useEffect(()=>{void load().catch(error=>setMessage(error.message));void fetch('/api/admin/telemetry',{cache:'no-store'}).then(async response=>{const data=await response.json() as {events?:TelemetryEvent[]};if(response.ok)setEvents(data.events??[]);}).catch(()=>{});},[]);
