@@ -53,6 +53,5 @@ export function MatchEvents({home,away,date,ended,active}:{home:string;away:stri
       <button disabled={loading||(!active&&!ended)} onClick={()=>setRetry(x=>x+1)}><RefreshCw size={15}/>{loading?'Checking…':'Refresh'}</button>
     </div>
     {data?.status==='available'&&events.length?<ol>{events.map((event,index)=>{const key=eventKey(event);return <li key={key||index} className={fresh.has(key)?'event-new':''}><time>{event.minute??'—'}{event.extra?'+'+event.extra:''}′</time><div><strong>{event.type==='subst'?'Substitution':event.detail||event.type}</strong><span>{event.player}{event.assist?(event.type==='subst'?' → ':' · Assist: ')+event.assist:''}</span><small>{event.team}</small></div></li>;})}</ol>:<p className="match-events-empty">{!data?'Checking live match reports…':data.message??'No match events have been reported by the connected provider yet.'}</p>}
-    <small className="match-events-credit">API-Football reports · Live updates are cached to protect the provider allowance.</small>
   </section>;
 }
