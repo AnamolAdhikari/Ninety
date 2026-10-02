@@ -6,12 +6,18 @@ type Health={day:string;category:string;count:number};
 type TelemetryEvent={id:string;account:string;event:string;detail:string|null;created:number};
 export default function AdminPage(){
   const [events,setEvents]=useState<TelemetryEvent[]>([]);
-  const now=Date.now();
+  const [now,setNow]=useState(()=>Date.now());
   const liveCutoff=now-90_000;
   const activeByAccount=new Map<string,TelemetryEvent>();
-  for(const event of events){if(event.created<liveCutoff)continue;if(!activeByAccount.has(event.account))activeByAccount.set(event.account,event);}
+  for(const event of events){if(event.created<liveCutoff||event.event!=="session-active")continue;if(!activeByAccount.has(event.account))activeByAccount.set(event.account,event);}
   const watchingByAccount=new Map<string,TelemetryEvent>();
-  for(const event of events){if(event.created<liveCutoff||event.event!=="session-active")continue;if(!watchingByAccount.has(event.account))watchingByAccount.set(event.account,event);}
+  for(const event of events){
+    if(event.created<liveCutoff||event.event!=="session-active")continue;
+    try{
+      const detail=event.detail?JSON.parse(event.detail):{};
+      if(detail.watching===true&&typeof detail.matchId==="string"&&!watchingByAccount.has(event.account))watchingByAccount.set(event.account,event);
+    }catch{}
+  }
   const activeAccounts=activeByAccount.size;
   const watchingAccounts=watchingByAccount.size;
   const matchesWatching=new Set(Array.from(watchingByAccount.values()).map(event=>{try{const detail=event.detail?JSON.parse(event.detail):{};return typeof detail.matchId==="string"?detail.matchId:"";}catch{return "";}}).filter(Boolean)).size;
@@ -20,7 +26,16 @@ export default function AdminPage(){
   const [services,setServices]=useState<{accounts:boolean;footballData:boolean}|null>(null);
   const [friends,setFriends]=useState<Friend[]>([]),[health,setHealth]=useState<Health[]>([]),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[resetId,setResetId]=useState<string|null>(null),[resetPassword,setResetPassword]=useState('');
   const load=async()=>{const response=await fetch('/api/admin/accounts',{cache:'no-store'});const data=await response.json() as {accounts?:Friend[];health?:Health[];services?:{accounts:boolean;footballData:boolean};error?:string};if(!response.ok)throw new Error(data.error??'Dashboard unavailable');setFriends(data.accounts??[]);setHealth(data.health??[]);setServices(data.services??null);};
-  useEffect(()=>{void load().catch(error=>setMessage(error.message));void fetch('/api/admin/telemetry',{cache:'no-store'}).then(async response=>{const data=await response.json() as {events?:TelemetryEvent[]};if(response.ok)setEvents(data.events??[]);}).catch(()=>{});},[]);
+  const loadTelemetry=async()=>{const response=await fetch('/api/admin/telemetry',{cache:'no-store'});const data=await response.json() as {events?:TelemetryEvent[]};if(!response.ok)throw new Error('Telemetry unavailable');setEvents(data.events??[]);setNow(Date.now());};
+  useEffect(()=>{
+    void load().catch(error=>setMessage(error.message));
+    void loadTelemetry().catch(()=>{});
+    const telemetryTimer=window.setInterval(()=>{if(!document.hidden)void loadTelemetry().catch(()=>{});},15_000);
+    const clockTimer=window.setInterval(()=>setNow(Date.now()),5_000);
+    const onVisibility=()=>{if(!document.hidden){setNow(Date.now());void loadTelemetry().catch(()=>{});}};
+    document.addEventListener('visibilitychange',onVisibility);
+    return()=>{window.clearInterval(telemetryTimer);window.clearInterval(clockTimer);document.removeEventListener('visibilitychange',onVisibility);};
+  },[]);
   const mutate=async(path:string,body:object)=>{setBusy(true);setMessage('');try{const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await response.json() as {error?:string};if(!response.ok)throw new Error(data.error??'Request failed');await load();setMessage('Changes saved.');return true;}catch(error){setMessage((error as Error).message);return false;}finally{setBusy(false);}};
   return <main className="admin-page"><header><a href="/"><ArrowLeft size={17}/>Back to matches</a><span><Shield size={18}/>Owner dashboard</span></header><div className="admin-intro"><span className="eyebrow">PRIVATE MATCHDAY</span><h1>Your circle. Your control.</h1><p>Create a separate login for each friend. Disabling an account or resetting its password signs it out.</p></div>
     <section className="admin-card"><h2><UserPlus size={21}/>Invite a friend</h2><form onSubmit={async event=>{event.preventDefault();if(await mutate('/api/admin/accounts',{username,password})){setUsername('');setPassword('');}}}><label>Username<input required pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{2,39}" maxLength={40} value={username} onChange={e=>setUsername(e.target.value)} autoComplete="off"/></label><label>Initial password<input required type="password" minLength={12} maxLength={200} value={password} onChange={e=>setPassword(e.target.value)} autoComplete="new-password"/></label><button disabled={busy}>Create account</button></form><p>Share the username and password privately. Friends sign in on the existing login page.</p></section>
