@@ -4,7 +4,7 @@ const path = "dist/server/wrangler.json";
 const raw = await readFile(path, "utf8");
 const config = JSON.parse(raw);
 
-// Cloudflare Worker Previews use Previews Base secrets and do not inherit production bindings. NINETY reads
+// Cloudflare Worker Previews use Preview-scoped configuration and do not inherit production bindings. NINETY reads
 // both Durable Objects through env, so declare same-worker bindings explicitly
 // for Previews. Omitting script_name is intentional: Cloudflare then provisions
 // isolated Durable Object namespaces/storage for each Preview.
