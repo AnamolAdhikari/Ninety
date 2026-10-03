@@ -7,7 +7,7 @@ export class FootballDataError extends Error {}
 const pending = new Map<string, Promise<{response:unknown[];checkedAt:number}>>();
 export async function footballDataWithMeta<T>(path: string, ttl = 1800): Promise<{response:T[];checkedAt:number}> {
   const key = (env as unknown as { API_FOOTBALL_KEY?: string }).API_FOOTBALL_KEY;
-  if (!key) throw new FootballDataError("Lineup data is not connected yet.");
+  if (!key) throw new FootballDataError("Detailed match data is currently unavailable.");
   const cacheKey = new Request(`https://ninety-cache.invalid/football-v3/${encodeURIComponent(path)}`);
   const cache = (caches as unknown as { default: Cache }).default;
   const cached = await cache?.match(cacheKey);
