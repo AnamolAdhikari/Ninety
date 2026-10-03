@@ -45,19 +45,21 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Wait for feature Preview
+      - name: Wait for hardened feature Preview
         shell: bash
         run: |
-          for attempt in {1..30}; do
-            status="$(curl -sS -o /dev/null -w '%{http_code}' "$NINETY_E2E_BASE_URL/login" || true)"
-            if [ "$status" = "200" ]; then
-              echo "Preview is ready."
+          for attempt in {1..36}; do
+            headers="$(curl -sS -D - -o /dev/null "$NINETY_E2E_BASE_URL/login" || true)"
+            status="$(printf '%s' "$headers" | awk 'toupper($1) ~ /^HTTP\\// {code=$2} END {print code}')"
+            hsts="$(printf '%s' "$headers" | tr -d '\\r' | awk 'BEGIN{IGNORECASE=1} /^strict-transport-security:/ {print $0}')"
+            if [ "$status" = "200" ] && [ -n "$hsts" ]; then
+              echo "Latest hardened Preview is ready."
               exit 0
             fi
-            echo "Preview not ready yet (HTTP $status); attempt $attempt/30."
+            echo "Preview not ready with expected security headers yet (HTTP $status); attempt $attempt/36."
             sleep 10
           done
-          echo "Feature Preview did not become ready in time."
+          echo "Feature Preview did not become ready with the expected hardened runtime in time."
           exit 1
 
       - name: Run security E2E suite
