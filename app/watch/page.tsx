@@ -52,7 +52,7 @@ export default function WatchPage(){
     async function load(){
       try{
         setStatus("loading");
-        failedSources.current.clear();setRecoveryMessage("");
+        failedSources.current.clear();if(!rejectedSources.current.size)setRecoveryMessage("");
         await initializeAccountStorage();
         const id=new URLSearchParams(window.location.search).get("match");
         if(!id)throw new Error();
@@ -69,14 +69,16 @@ export default function WatchPage(){
           return result.streams??[];
         }));
         const seen=new Set<string>();
-        const available=results.flatMap(result=>result.status==="fulfilled"?result.value:[]).filter(item=>!rejectedSources.current.has(item.embedUrl)&&!seen.has(item.embedUrl)&&seen.add(item.embedUrl)).sort((a,b)=>Number(b.hd)-Number(a.hd)).slice(0,12);
+        const returned=results.flatMap(result=>result.status==="fulfilled"?result.value:[]);
+        const available=returned.filter(item=>!rejectedSources.current.has(item.embedUrl)&&!seen.has(item.embedUrl)&&seen.add(item.embedUrl)).sort((a,b)=>Number(b.hd)-Number(a.hd)).slice(0,12);
+        const onlyRejected=returned.length>0&&available.length===0&&returned.every(item=>rejectedSources.current.has(item.embedUrl));
         if(!cancelled&&isMatchEnded(found,Date.now())){setStreams([]);setStatus("ended");return;}
         if(!cancelled&&available.length){
           const saved=accountStorage.getItem("ninety-source:"+id);
           const remembered=Math.max(0,available.findIndex(item=>item.source+"|"+item.streamNo===saved));
           setStreams(available);setSelected(remembered);setStatus("ready");return;
         }
-        if(!cancelled){setStreams([]);setStatus("error");}
+        if(!cancelled){setStreams([]);setStatus("error");if(onlyRejected)setRecoveryMessage("No replacement source is available yet. The provider is still returning only the stream you marked wrong. NINETY will check again automatically every 60 seconds.");}
       }catch{if(!cancelled)setStatus("error");}
     }
     void load();return()=>{cancelled=true;};
@@ -174,7 +176,7 @@ export default function WatchPage(){
         {stream?<iframe key={`${stream.embedUrl}-${playerKey}`} src={stream.embedUrl} title={match?`${match.home} versus ${match.away} live stream`:"Live football stream"} allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowFullScreen onError={frameError}/>:ended||status==="error"||status==="scheduled"?<div className={"broadcast-fallback"+(ended?" ended":"")}>
           <div className="animated-pitch" aria-hidden="true"><div className="pitch-midline"/><div className="pitch-circle"/><div className="pitch-box left"/><div className="pitch-box right"/><div className="player p1"/><div className="player p2"/><div className="player p3"/><div className="player p4"/><div className="player p5"/><div className="player p6"/><div className="player p7"/><div className="player p8"/><div className="animated-ball"/></div>
           <div className="stadium-lights" aria-hidden="true"/>
-          <div className="fallback-content">{ended&&match?<><span className="fallback-label">FULL TIME</span><div className="finished-summary"><div className="finished-team"><span>{match.home}</span>{match.homeBadge&&<img src={match.homeBadge} alt="" aria-hidden="true"/>}</div><div className="finished-score">{finishedDetails?.status==="available"&&finishedDetails.finalScore?.home!=null&&finishedDetails.finalScore?.away!=null?<><b>{finishedDetails.finalScore.home}</b><span>–</span><b>{finishedDetails.finalScore.away}</b></>:<small>Score unavailable</small>}</div><div className="finished-team away">{match.awayBadge&&<img src={match.awayBadge} alt="" aria-hidden="true"/>}<span>{match.away}</span></div></div><div className="finished-highlights-only"><a className="fallback-highlights" href={highlightsSearchUrl(match)} target="_blank" rel="noopener noreferrer"><YouTubeLogo size={19}/>Watch highlights on YouTube</a></div></>:<><CirclePlay size={48}/><span className="fallback-label">MATCHDAY WARM-UP</span><strong>{status==="scheduled"?"Broadcast starts closer to kick-off":"Broadcast temporarily unavailable"}</strong>{status==="scheduled"&&match?.date?<div className="kickoff-countdown"><small>KICK-OFF IN</small><b>{countdown(match.date,now)}</b></div>:<p>We continue checking for a playable broadcast every 60 seconds.</p>}<button onClick={()=>setRetryKey(key=>key+1)}><RefreshCw size={15}/>Check broadcast now</button></>}</div>
+          <div className="fallback-content">{ended&&match?<><span className="fallback-label">FULL TIME</span><div className="finished-summary"><div className="finished-team"><span>{match.home}</span>{match.homeBadge&&<img src={match.homeBadge} alt="" aria-hidden="true"/>}</div><div className="finished-score">{finishedDetails?.status==="available"&&finishedDetails.finalScore?.home!=null&&finishedDetails.finalScore?.away!=null?<><b>{finishedDetails.finalScore.home}</b><span>–</span><b>{finishedDetails.finalScore.away}</b></>:<small>Score unavailable</small>}</div><div className="finished-team away">{match.awayBadge&&<img src={match.awayBadge} alt="" aria-hidden="true"/>}<span>{match.away}</span></div></div><div className="finished-highlights-only"><a className="fallback-highlights" href={highlightsSearchUrl(match)} target="_blank" rel="noopener noreferrer"><YouTubeLogo size={19}/>Watch highlights on YouTube</a></div></>:<><CirclePlay size={48}/><span className="fallback-label">MATCHDAY WARM-UP</span><strong>{status==="scheduled"?"Broadcast starts closer to kick-off":rejectedSources.current.size?"No replacement broadcast yet":"Broadcast temporarily unavailable"}</strong>{status==="scheduled"&&match?.date?<div className="kickoff-countdown"><small>KICK-OFF IN</small><b>{countdown(match.date,now)}</b></div>:<p>{rejectedSources.current.size?"The only source returned is the one you marked wrong. We will keep checking for a corrected source every 60 seconds.":"We continue checking for a playable broadcast every 60 seconds."}</p>}<button onClick={()=>setRetryKey(key=>key+1)}><RefreshCw size={15}/>{rejectedSources.current.size?"Check for replacement":"Check broadcast now"}</button></>}</div>
         </div>:<div className="watch-loading"><RefreshCw className="spin" size={40}/><strong>Finding available broadcast</strong><span>Checking match sources…</span></div>}
       </div>
       {stream&&!ended&&!scheduled&&<details className="playback-recovery"><summary>Playback not starting?</summary><div><p>If the player is blank or buffering, try another listed source. Availability depends on the broadcaster.</p><div className="recovery-actions"><button onClick={tryNext}><ChevronRight size={16}/>{streams.length>1?"Try another source":"Refresh sources"}</button><button onClick={()=>{reportRetry();setPlayerKey(key=>key+1);setRecoveryMessage("Player reloaded. Press Play if needed.");}}><RefreshCw size={15}/>Reload player</button><button onClick={()=>setRetryKey(key=>key+1)}><Signal size={15}/>Check for new sources</button></div></div></details>}
