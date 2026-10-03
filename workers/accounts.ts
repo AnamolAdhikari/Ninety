@@ -13,7 +13,7 @@ function preference(key:string,value:unknown):string|null {
   return null;
 }
 export class NinetyAccounts extends DurableObject {
-  constructor(ctx:DurableObjectState,env:Record<string,unknown>){super(ctx,env);ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS accounts(id TEXT PRIMARY KEY,username TEXT UNIQUE NOT NULL,salt TEXT NOT NULL,hash TEXT NOT NULL,enabled INTEGER NOT NULL DEFAULT 1,version INTEGER NOT NULL DEFAULT 1,created INTEGER NOT NULL,lastLogin INTEGER)");ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS preferences(account TEXT NOT NULL,key TEXT NOT NULL,value TEXT NOT NULL,PRIMARY KEY(account,key))");ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS health(day TEXT NOT NULL,category TEXT NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(day,category))");ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS telemetry(id TEXT PRIMARY KEY,account TEXT NOT NULL,event TEXT NOT NULL,detail TEXT,created INTEGER NOT NULL)");ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS telemetry_created ON telemetry(created DESC)");}
+  constructor(ctx:DurableObjectState,env:Record<string,unknown>){super(ctx,env);ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS accounts(id TEXT PRIMARY KEY,username TEXT UNIQUE NOT NULL,salt TEXT NOT NULL,hash TEXT NOT NULL,enabled INTEGER NOT NULL DEFAULT 1,version INTEGER NOT NULL DEFAULT 1,created INTEGER NOT NULL,lastLogin INTEGER)");ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS preferences(account TEXT NOT NULL,key TEXT NOT NULL,value TEXT NOT NULL,PRIMARY KEY(account,key))");ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS health(day TEXT NOT NULL,category TEXT NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(day,category))");ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS telemetry(id TEXT PRIMARY KEY,account TEXT NOT NULL,event TEXT NOT NULL,detail TEXT,created INTEGER NOT NULL)");ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS telemetry_created ON telemetry(created DESC)");ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS security_events(id TEXT PRIMARY KEY,event TEXT NOT NULL,actor TEXT,detail TEXT,created INTEGER NOT NULL)");ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS security_events_created ON security_events(created DESC)");}
   async fetch(request:Request){
     const path=new URL(request.url).pathname,sql=this.ctx.storage.sql;
     const body=await request.json() as Record<string,unknown>;
@@ -62,6 +62,18 @@ export class NinetyAccounts extends DurableObject {
     }
     if(path==="/telemetry"){const account=String(body.account??""),event=String(body.event??""),detail=body.detail===undefined?null:JSON.stringify(body.detail);if(!/^(owner|guest):[a-f0-9]{64}$/.test(account)&&!/^friend:[a-f0-9-]{36}$/.test(account))return Response.json({error:"Invalid account."},{status:400});const allowed=["session-active","watch-open","match-open","player-start","player-stop","source-change","source-failure"];if(!allowed.includes(event)||detail&&detail.length>4000)return Response.json({error:"Invalid telemetry event."},{status:400});sql.exec("DELETE FROM telemetry WHERE created<?",Date.now()-30*86400000);sql.exec("INSERT INTO telemetry(id,account,event,detail,created) VALUES(?,?,?,?,?)",crypto.randomUUID(),account,event,detail,Date.now());return Response.json({ok:true});}
     if(path==="/telemetry-list"){const since=Date.now()-7*86400000;return Response.json({events:sql.exec<{id:string;account:string;event:string;detail:string|null;created:number}>("SELECT id,account,event,detail,created FROM telemetry WHERE created>=? ORDER BY created DESC LIMIT 500",since).toArray()});}
+    if(path==="/security-event"){
+      const event=String(body.event??""),actor=body.actor==null?null:String(body.actor),detail=body.detail===undefined?null:JSON.stringify(body.detail);
+      const allowed=["login-success","login-failure","rate-limited","access-denied","invalid-request","admin-action"];
+      if(!allowed.includes(event)||actor&&actor.length>120||detail&&detail.length>2000)return Response.json({error:"Invalid security event."},{status:400});
+      sql.exec("DELETE FROM security_events WHERE created<?",Date.now()-30*86400000);
+      sql.exec("INSERT INTO security_events(id,event,actor,detail,created) VALUES(?,?,?,?,?)",crypto.randomUUID(),event,actor,detail,Date.now());
+      return Response.json({ok:true});
+    }
+    if(path==="/security-list"){
+      const since=Date.now()-7*86400000;
+      return Response.json({events:sql.exec<{id:string;event:string;actor:string|null;detail:string|null;created:number}>("SELECT id,event,actor,detail,created FROM security_events WHERE created>=? ORDER BY created DESC LIMIT 500",since).toArray()});
+    }
     if(path==="/health") {const allowed=["match-feed-error","stream-api-error","stream-unavailable","football-data-error","source-retry"];const category=String(body.category);if(!allowed.includes(category))return Response.json({error:"Invalid category"},{status:400});const day=new Date().toISOString().slice(0,10);sql.exec("DELETE FROM health WHERE day<?",new Date(Date.now()-8*86400000).toISOString().slice(0,10));sql.exec("INSERT INTO health(day,category,count) VALUES(?,?,1) ON CONFLICT(day,category) DO UPDATE SET count=count+1",day,category);return Response.json({ok:true});}
     return new Response(null,{status:404});
   }
