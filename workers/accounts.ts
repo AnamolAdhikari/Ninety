@@ -5,6 +5,20 @@ const enc=new TextEncoder();
 const hex=(bytes:ArrayBuffer)=>Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,"0")).join("");
 async function passwordHash(password:string,salt:string){const key=await crypto.subtle.importKey("raw",enc.encode(password),"PBKDF2",false,["deriveBits"]);return hex(await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:enc.encode(salt),iterations:100000},key,256));}
 function same(a:string,b:string){let diff=a.length^b.length;for(let i=0;i<a.length;i++)diff|=a.charCodeAt(i)^(b.charCodeAt(i)??0);return diff===0;}
+function telemetryDetail(event:string,value:unknown):string|null {
+  const detail=value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{};
+  const text=(key:string,max:number)=>typeof detail[key]==="string"&&detail[key].length<=max?detail[key] as string:undefined;
+  const boolean=(key:string)=>typeof detail[key]==="boolean"?detail[key] as boolean:undefined;
+  let clean:Record<string,unknown>={};
+  if(event==="session-active")clean={matchId:text("matchId",180),source:text("source",64),watching:boolean("watching")};
+  else if(event==="watch-open")clean={requestedMatchId:text("requestedMatchId",180)};
+  else if(event==="match-open")clean={matchId:text("matchId",180),home:text("home",100),away:text("away",100)};
+  else if(event==="player-start"||event==="player-stop"||event==="source-failure")clean={matchId:text("matchId",180),source:text("source",64)};
+  else if(event==="source-change")clean={matchId:text("matchId",180),from:text("from",64),to:text("to",64)};
+  clean=Object.fromEntries(Object.entries(clean).filter(([,v])=>v!==undefined));
+  const encoded=JSON.stringify(clean);
+  return encoded==="{}"?null:encoded;
+}
 function preference(key:string,value:unknown):string|null {
   if(typeof value!=="string"||value.length>32000)return null;
   if(["ninety-favorites","ninety-reminders","ninety-teams"].includes(key)){try{const array=JSON.parse(value);if(!Array.isArray(array)||array.length>500||array.some(x=>typeof x!=="string"||x.length>200))return null;return JSON.stringify([...new Set(array)]);}catch{return null;}}
@@ -60,7 +74,7 @@ export class NinetyAccounts extends DurableObject {
       }
       return Response.json({values:Object.fromEntries(sql.exec<{key:string;value:string}>("SELECT key,value FROM preferences WHERE account=?",account).toArray().map(row=>[row.key,row.value]))});
     }
-    if(path==="/telemetry"){const account=String(body.account??""),event=String(body.event??""),detail=body.detail===undefined?null:JSON.stringify(body.detail);if(!/^(owner|guest):[a-f0-9]{64}$/.test(account)&&!/^friend:[a-f0-9-]{36}$/.test(account))return Response.json({error:"Invalid account."},{status:400});const allowed=["session-active","watch-open","match-open","player-start","player-stop","source-change","source-failure"];if(!allowed.includes(event)||detail&&detail.length>4000)return Response.json({error:"Invalid telemetry event."},{status:400});sql.exec("DELETE FROM telemetry WHERE created<?",Date.now()-30*86400000);sql.exec("INSERT INTO telemetry(id,account,event,detail,created) VALUES(?,?,?,?,?)",crypto.randomUUID(),account,event,detail,Date.now());return Response.json({ok:true});}
+    if(path==="/telemetry"){const account=String(body.account??""),event=String(body.event??"");if(!/^(owner|guest):[a-f0-9]{64}$/.test(account)&&!/^friend:[a-f0-9-]{36}$/.test(account))return Response.json({error:"Invalid account."},{status:400});const allowed=["session-active","watch-open","match-open","player-start","player-stop","source-change","source-failure"];if(!allowed.includes(event))return Response.json({error:"Invalid telemetry event."},{status:400});const detail=telemetryDetail(event,body.detail);sql.exec("DELETE FROM telemetry WHERE created<?",Date.now()-30*86400000);sql.exec("INSERT INTO telemetry(id,account,event,detail,created) VALUES(?,?,?,?,?)",crypto.randomUUID(),account,event,detail,Date.now());return Response.json({ok:true});}
     if(path==="/telemetry-list"){const since=Date.now()-7*86400000;return Response.json({events:sql.exec<{id:string;account:string;event:string;detail:string|null;created:number}>("SELECT id,account,event,detail,created FROM telemetry WHERE created>=? ORDER BY created DESC LIMIT 500",since).toArray()});}
     if(path==="/security-event"){
       const event=String(body.event??""),actor=body.actor==null?null:String(body.actor),detail=body.detail===undefined?null:JSON.stringify(body.detail);
