@@ -40,21 +40,25 @@ export default function AdminPage(){
     return hay.includes(activityQuery.trim().toLowerCase());
   });
   const readableActivity=filteredActivity.filter((event,index,rows)=>{
-    if(event.event!=="watch-open")return true;
-    return !rows.some((other,i)=>i!==index&&other.account===event.account&&other.event==="match-open"&&Math.abs(other.created-event.created)<5000);
+    if(event.event==="watch-open")return !rows.some((other,i)=>i!==index&&other.account===event.account&&other.event==="match-open"&&Math.abs(other.created-event.created)<10_000);
+    if(event.event!=="match-open")return true;
+    const name=matchName(event);
+    return !rows.slice(0,index).some(other=>other.account===event.account&&other.event==="match-open"&&matchName(other)===name&&Math.abs(other.created-event.created)<2*60_000);
   });
   const sessions=(()=>{
     const ordered=[...activityEvents].sort((a,b)=>a.created-b.created);
     const result:{account:string;start:number;end:number;matches:Set<string>;events:number}[]=[];
+    const lastByAccount=new Map<string,{account:string;start:number;end:number;matches:Set<string>;events:number}>();
     for(const event of ordered){
-      let current=result[result.length-1];
-      if(!current||current.account!==event.account||event.created-current.end>30*60_000){
-        current={account:event.account,start:event.created,end:event.created,matches:new Set<string>(),events:0};result.push(current);
+      let current=lastByAccount.get(event.account);
+      if(!current||event.created-current.end>30*60_000){
+        current={account:event.account,start:event.created,end:event.created,matches:new Set<string>(),events:0};
+        result.push(current);lastByAccount.set(event.account,current);
       }
       current.end=Math.max(current.end,event.created);current.events++;
       if(event.event==="match-open"){const name=matchName(event);if(name)current.matches.add(name);}
     }
-    return result.reverse().slice(0,8);
+    return result.filter(session=>session.matches.size>0||session.events>=2).reverse().slice(0,8);
   })();
   const todayStart=new Date(now);todayStart.setHours(0,0,0,0);
   const sessionsToday=sessions.filter(session=>session.end>=todayStart.getTime()).length;
@@ -71,8 +75,9 @@ export default function AdminPage(){
   const activeHours=hourBuckets.filter(bucket=>bucket.count>0).length;
   const peakHour=hourBuckets.reduce((peak,bucket)=>bucket.count>peak.count?bucket:peak,hourBuckets[0]);
   const chartTicks=[0,Math.ceil(maxHour/2),maxHour].filter((value,index,rows)=>rows.indexOf(value)===index).sort((a,b)=>b-a);
+  const uniqueMatchOpens=activityEvents.filter((event,index,rows)=>event.event==="match-open"&&!rows.slice(0,index).some(other=>other.account===event.account&&other.event==="match-open"&&matchName(other)===matchName(event)&&Math.abs(other.created-event.created)<2*60_000));
   const matchCounts=new Map<string,number>();
-  for(const event of activityEvents){if(event.event!=="match-open")continue;const name=matchName(event);if(name)matchCounts.set(name,(matchCounts.get(name)??0)+1);}
+  for(const event of uniqueMatchOpens){const name=matchName(event);if(name)matchCounts.set(name,(matchCounts.get(name)??0)+1);}
   const topMatches=Array.from(matchCounts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxMatch=Math.max(1,...topMatches.map(([,count])=>count));
   const breakdown=[
@@ -85,7 +90,7 @@ export default function AdminPage(){
   const maxActivityDay=Math.max(1,...activityDays.map(day=>day.count));
   const accountActivity=Array.from(activityEvents.reduce((map,event)=>{const key=label(event.account);map.set(key,(map.get(key)??0)+1);return map;},new Map<string,number>()).entries()).sort((a,b)=>b[1]-a[1]);
   const maxAccountActivity=Math.max(1,...accountActivity.map(([,count])=>count));
-  const matchesOpened=activityEvents.filter(event=>event.event==="match-open").length;
+  const matchesOpened=uniqueMatchOpens.length;
   const watchStarts=activityEvents.filter(event=>event.event==="player-start").length;
   const [services,setServices]=useState<{accounts:boolean;footballData:boolean}|null>(null);
   const [friends,setFriends]=useState<Friend[]>([]),[health,setHealth]=useState<Health[]>([]),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[resetId,setResetId]=useState<string|null>(null),[resetPassword,setResetPassword]=useState('');
