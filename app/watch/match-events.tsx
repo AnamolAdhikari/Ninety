@@ -44,13 +44,14 @@ export function MatchEvents({home,away,date,ended,active}:{home:string;away:stri
   },[home,away,date,ended,active,retry]);
 
   const events=[...(data?.events??[])].sort((a,b)=>((b.minute??-1)*100+(b.extra??0))-((a.minute??-1)*100+(a.extra??0)));
+  const quotaBlocked=Boolean(data?.message&&/allowance|quota|request limit/i.test(data.message));
   return <section id="events-panel" role="tabpanel" aria-labelledby="events-tab" className="match-events-panel">
     <div className="match-events-heading">
       <div>
         <div className="match-events-title-row"><h2>Match timeline</h2>{active&&!ended&&<span className="live-ticker-badge"><i/>LIVE</span>}</div>
         <p>{data?.checkedAt?'Updated '+new Date(data.checkedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):active&&!ended?'Live goals, cards, VAR and substitutions':'Reported goals, cards and substitutions'}</p>
       </div>
-      <button disabled={loading||(!active&&!ended)} onClick={()=>setRetry(x=>x+1)}><RefreshCw size={15}/>{loading?'Checking…':'Refresh'}</button>
+      <button disabled={loading||(!active&&!ended)||quotaBlocked} onClick={()=>setRetry(x=>x+1)}><RefreshCw size={15}/>{loading?'Checking…':quotaBlocked?'Waiting for provider':'Refresh'}</button>
     </div>
     {data?.status==='available'&&events.length?<ol>{events.map((event,index)=>{const key=eventKey(event);return <li key={key||index} className={fresh.has(key)?'event-new':''}><time>{event.minute??'—'}{event.extra?'+'+event.extra:''}′</time><div><strong>{event.type==='subst'?'Substitution':event.detail||event.type}</strong><span>{event.player}{event.assist?(event.type==='subst'?' → ':' · Assist: ')+event.assist:''}</span><small>{event.team}</small></div></li>;})}</ol>:<p className="match-events-empty">{!data?'Checking live match reports…':data.message??'No match events have been reported by the connected provider yet.'}</p>}
   </section>;
