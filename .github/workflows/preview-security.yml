@@ -5,12 +5,6 @@ on:
   push:
     branches:
       - feat/telemetry-control-center-auto
-    paths:
-      - "tests/e2e/**"
-      - "playwright.config.ts"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - ".github/workflows/preview-security.yml"
 
 permissions:
   contents: read
