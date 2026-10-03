@@ -80,8 +80,11 @@ export class NinetyAccounts extends DurableObject {
       const event=String(body.event??""),actor=body.actor==null?null:String(body.actor),detail=body.detail===undefined?null:JSON.stringify(body.detail);
       const allowed=["login-success","login-failure","rate-limited","access-denied","invalid-request","admin-action"];
       if(!allowed.includes(event)||actor&&actor.length>120||detail&&detail.length>2000)return Response.json({error:"Invalid security event."},{status:400});
-      sql.exec("DELETE FROM security_events WHERE created<?",Date.now()-30*86400000);
-      sql.exec("INSERT INTO security_events(id,event,actor,detail,created) VALUES(?,?,?,?,?)",crypto.randomUUID(),event,actor,detail,Date.now());
+      const now=Date.now();
+      sql.exec("DELETE FROM security_events WHERE created<?",now-30*86400000);
+      const recent=sql.exec<{total:number}>("SELECT COUNT(*) AS total FROM security_events WHERE created>=?",now-60000).one().total;
+      if(recent>=300)return Response.json({ok:true,dropped:true});
+      sql.exec("INSERT INTO security_events(id,event,actor,detail,created) VALUES(?,?,?,?,?)",crypto.randomUUID(),event,actor,detail,now);
       return Response.json({ok:true});
     }
     if(path==="/security-list"){
