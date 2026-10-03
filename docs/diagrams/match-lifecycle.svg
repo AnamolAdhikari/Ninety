@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="420" viewBox="0 0 1400 420">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1"><stop offset="0" stop-color="#090d12"/><stop offset="1" stop-color="#0d1512"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#000" flood-opacity=".35"/></filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#baff32"/></marker>
+  </defs>
+  <rect width="1400" height="420" rx="28" fill="url(#bg)"/>
+  <text x="70" y="70" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="28" font-weight="700">Match lifecycle</text>
+  <text x="70" y="104" fill="#81908a" font-family="Inter,Arial,sans-serif" font-size="16">The interface changes with the real state of the fixture and degrades safely when data is unavailable.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="155" width="260" height="150" rx="22" fill="#101820" stroke="#27333d"/>
+    <circle cx="115" cy="202" r="20" fill="#18251c" stroke="#baff32"/>
+    <path d="M115 190v13l9 6" stroke="#baff32" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <text x="150" y="198" fill="#baff32" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="2">UPCOMING</text>
+    <text x="105" y="246" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="700">Countdown</text>
+    <text x="105" y="274" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="15">Warm-up state and source checks</text>
+  </g>
+
+  <path d="M350 230H435" stroke="#baff32" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="455" y="155" width="260" height="150" rx="22" fill="#101820" stroke="#3b5020"/>
+    <circle cx="500" cy="202" r="20" fill="#192811" stroke="#baff32"/>
+    <circle cx="500" cy="202" r="6" fill="#baff32"/>
+    <path d="M512 190c10 7 10 17 0 24M518 184c18 13 18 31 0 44" stroke="#baff32" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <text x="535" y="198" fill="#baff32" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="2">LIVE</text>
+    <text x="490" y="246" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="700">Matchday</text>
+    <text x="490" y="274" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="15">Playback, events and lineups</text>
+  </g>
+
+  <path d="M735 230H820" stroke="#baff32" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="840" y="155" width="260" height="150" rx="22" fill="#101820" stroke="#27333d"/>
+    <circle cx="885" cy="202" r="20" fill="#18251c" stroke="#baff32"/>
+    <path d="M875 201l7 7 14-17" stroke="#baff32" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="920" y="198" fill="#baff32" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="2">FULL TIME</text>
+    <text x="875" y="246" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="700">Result</text>
+    <text x="875" y="274" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="15">Verified score and final timeline</text>
+  </g>
+
+  <path d="M1120 230H1205" stroke="#baff32" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="1225" y="155" width="110" height="150" rx="22" fill="#101820" stroke="#27333d"/>
+    <rect x="1255" y="181" width="50" height="36" rx="10" fill="#ff0033"/>
+    <path d="M1274 190l17 9-17 9z" fill="#fff"/>
+    <text x="1249" y="246" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="700">Highlights</text>
+    <text x="1251" y="274" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="13">Post-match</text>
+  </g>
+
+  <rect x="455" y="332" width="645" height="46" rx="23" fill="#0c1318" stroke="#26323b"/>
+  <text x="777" y="360" text-anchor="middle" fill="#7f8f88" font-family="Inter,Arial,sans-serif" font-size="14">Unavailable data or playback becomes a recoverable UI state, not a broken page.</text>
+</svg>
