@@ -1,0 +1,81 @@
+name: Preview Security Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/telemetry-control-center-auto
+    paths:
+      - "tests/e2e/**"
+      - "playwright.config.ts"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/preview-security.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security:
+    if: github.ref == 'refs/heads/feat/telemetry-control-center-auto'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NINETY_E2E_BASE_URL: https://feat-telemetry-control-center-auto-live.n90.workers.dev
+      NINETY_E2E_FRIEND_USERNAME: ${{ secrets.NINETY_E2E_FRIEND_USERNAME }}
+      NINETY_E2E_FRIEND_PASSWORD: ${{ secrets.NINETY_E2E_FRIEND_PASSWORD }}
+
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Wait for feature Preview
+        shell: bash
+        run: |
+          for attempt in {1..30}; do
+            status="$(curl -sS -o /dev/null -w '%{http_code}' "$NINETY_E2E_BASE_URL/login" || true)"
+            if [ "$status" = "200" ]; then
+              echo "Preview is ready."
+              exit 0
+            fi
+            echo "Preview not ready yet (HTTP $status); attempt $attempt/30."
+            sleep 10
+          done
+          echo "Feature Preview did not become ready in time."
+          exit 1
+
+      - name: Run security E2E suite
+        run: pnpm test:e2e:security
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-security-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
