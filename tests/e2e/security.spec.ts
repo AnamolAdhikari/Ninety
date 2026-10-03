@@ -108,3 +108,36 @@ test.describe("authenticated authorization", () => {
     expect(await tampered.json()).toEqual({ error: "Authentication required" });
   });
 });
+
+
+test("login rate limiter eventually returns 429 without leaking account details", async ({ request }) => {
+  test.setTimeout(90_000);
+
+  // Earlier authentication checks share Cloudflare's source-IP limiter.
+  // Let the 60-second window expire, then exercise the limiter last so it
+  // cannot make the authorization tests flaky.
+  await new Promise(resolve => setTimeout(resolve, 65_000));
+
+  let limited = false;
+  for (let attempt = 0; attempt < 7; attempt += 1) {
+    const response = await request.post("/auth/login", {
+      headers: {
+        Origin: process.env.NINETY_E2E_BASE_URL!,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      data: "username=rate-limit-test&password=not-a-real-password",
+    });
+
+    if (response.status() === 429) {
+      limited = true;
+      const body = await response.text();
+      expect(body).toContain("Too many attempts");
+      expect(body).not.toContain("rate-limit-test");
+      break;
+    }
+
+    expect(response.status()).toBe(401);
+  }
+
+  expect(limited).toBe(true);
+});
