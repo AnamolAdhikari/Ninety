@@ -102,9 +102,9 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
   if(identity) {
     const headers={"Cache-Control":"private, no-store"};
     if(url.pathname==="/api/account")return Response.json({...identity,sync:!!env.NINETY_ACCOUNTS},{headers});
-    if(/^\/admin(?:\/|$)/.test(url.pathname) && identity.role!=="owner"){await security(env,"access-denied",identity.storageId,{area:"admin"});return new Response("Owner access required",{status:403,headers});}
+    if(/^\/admin(?:\/|$)/.test(url.pathname) && identity.role!=="owner"){await security(env,"access-denied",identity.storageId,{area:"admin"});return new Response("Not Found",{status:404,headers:{...headers,"Content-Type":"text/plain; charset=utf-8"}});}
     if(url.pathname.startsWith("/api/admin/")||url.pathname==="/api/preferences"||url.pathname==="/api/playback-report"||url.pathname==="/api/telemetry") {
-      if(url.pathname.startsWith("/api/admin/")&&identity.role!=="owner"){await security(env,"access-denied",identity.storageId,{area:"admin-api"});return Response.json({error:"Owner access required"},{status:403,headers});}
+      if(url.pathname.startsWith("/api/admin/")&&identity.role!=="owner"){await security(env,"access-denied",identity.storageId,{area:"admin-api"});return new Response(null,{status:404,headers});}
       if(!["GET","POST"].includes(request.method))return new Response(null,{status:405,headers});
       if(request.method==="POST"&&request.headers.get("origin")!==url.origin)return new Response("Forbidden",{status:403,headers});
       let body:Record<string,unknown>={};
