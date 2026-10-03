@@ -79,14 +79,14 @@ export default function AdminPage(){
     ["Source changes",activityEvents.filter(event=>event.event==="source-change").length],
     ["Failures",activityEvents.filter(event=>event.event==="source-failure").length],
   ] as const;
+  const [services,setServices]=useState<{accounts:boolean;footballData:boolean}|null>(null);
+  const [friends,setFriends]=useState<Friend[]>([]),[health,setHealth]=useState<Health[]>([]),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[resetId,setResetId]=useState<string|null>(null),[resetPassword,setResetPassword]=useState('');
   const healthDays=Array.from({length:7},(_,index)=>{const date=new Date(now-(6-index)*86400000);const day=date.toISOString().slice(0,10);return {day,label:date.toLocaleDateString([],{weekday:"short"}),count:health.filter(row=>row.day===day).reduce((sum,row)=>sum+row.count,0)};});
   const maxHealth=Math.max(1,...healthDays.map(day=>day.count));
   const healthTotal=healthDays.reduce((sum,day)=>sum+day.count,0);
   const healthCategories=Array.from(health.reduce((map,row)=>map.set(row.category,(map.get(row.category)??0)+row.count),new Map<string,number>()).entries()).sort((a,b)=>b[1]-a[1]);
   const activeFriends=friends.filter(friend=>friend.enabled).length;
   const signedInFriends=friends.filter(friend=>friend.lastLogin!==null).length;
-  const [services,setServices]=useState<{accounts:boolean;footballData:boolean}|null>(null);
-  const [friends,setFriends]=useState<Friend[]>([]),[health,setHealth]=useState<Health[]>([]),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[resetId,setResetId]=useState<string|null>(null),[resetPassword,setResetPassword]=useState('');
   const load=async()=>{const response=await fetch('/api/admin/accounts',{cache:'no-store'});const data=await response.json() as {accounts?:Friend[];health?:Health[];services?:{accounts:boolean;footballData:boolean};error?:string};if(!response.ok)throw new Error(data.error??'Dashboard unavailable');setFriends(data.accounts??[]);setHealth(data.health??[]);setServices(data.services??null);};
   const loadTelemetry=async()=>{const response=await fetch('/api/admin/telemetry',{cache:'no-store'});const data=await response.json() as {events?:TelemetryEvent[]};if(!response.ok)throw new Error('Telemetry unavailable');setEvents(data.events??[]);setNow(Date.now());};
   useEffect(()=>{
