@@ -7,19 +7,27 @@ const badge=(value:unknown)=>{const id=clean(value);return id?`${API}/api/images
 
 export async function GET(){
   try{
-    const matchesResponse=await fetch(`${API}/api/matches/football`,{headers:{Accept:"application/json"},next:{revalidate:60}});
+    const [matchesResponse,liveResponse]=await Promise.all([
+      fetch(`${API}/api/matches/football`,{headers:{Accept:"application/json"},next:{revalidate:60}}),
+      fetch(`${API}/api/matches/live`,{headers:{Accept:"application/json"},cache:"no-store"}).catch(()=>null)
+    ]);
     if(!matchesResponse.ok)throw new Error(`matches ${matchesResponse.status}`);
     const raw=await matchesResponse.json() as RawMatch[], now=Date.now();
+    const liveRaw=liveResponse?.ok?await liveResponse.json() as RawMatch[]:[];
+    const liveById=new Map(liveRaw.map(item=>[clean(item.id),item]).filter(([id])=>Boolean(id)));
     let matches=raw.slice(0,80).map((match,index)=>{
       const title=clean(match.title,"Live event"), [titleHome,titleAway]=title.split(/\s+vs\.?\s+/i);
       const home=clean(match.teams?.home?.name,titleHome||title), away=clean(match.teams?.away?.name,titleAway||"Event");
       const date=typeof match.date==="number"?match.date:Number(match.date)||now;
-      return {id:clean(match.id,`event-${index}`),sport:clean(match.category,"Sports"),league:clean(match.category,"Sports"),home,away,
+      const id=clean(match.id,`event-${index}`);
+      const liveMatch=liveById.get(id);
+      const preferredSources=Array.isArray(liveMatch?.sources)&&liveMatch!.sources!.length?liveMatch!.sources:match.sources;
+      return {id,sport:clean(match.category,"Sports"),league:clean(match.category,"Sports"),home,away,
         homeCode:home.replace(/[^a-zA-Z]/g,"").slice(0,3).toUpperCase(),awayCode:away.replace(/[^a-zA-Z]/g,"").slice(0,3).toUpperCase(),
         date,time:new Date(date).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:"America/Chicago"}),
-        live:date<=now&&date>=now-4*60*60_000,popular:Boolean(match.popular),colorA:"#303a48",colorB:"#202b39",
+        live:Boolean(liveMatch)||(date<=now&&date>=now-4*60*60_000),popular:Boolean(match.popular),colorA:"#303a48",colorB:"#202b39",
         homeBadge:badge(match.teams?.home?.badge),awayBadge:badge(match.teams?.away?.badge),
-        apiSources:Array.isArray(match.sources)?match.sources.map(s=>({source:clean(s.source),id:clean(s.id)})).filter(s=>s.source&&s.id).slice(0,12):[]};
+        apiSources:Array.isArray(preferredSources)?preferredSources.map(s=>({source:clean(s.source),id:clean(s.id)})).filter(s=>s.source&&s.id).slice(0,12):[]};
     }).sort((a,b)=>Number(b.live)-Number(a.live)||a.date-b.date);
     // Share the date cache with lineups; never let a stats-provider failure break streams.
     let fixtures: Fixture[] = [];
