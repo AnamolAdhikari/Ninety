@@ -26,6 +26,10 @@ export function isMatchEnded(match: MatchLifecycle, now: number): boolean {
 }
 
 export function isEffectivelyLive(match: MatchLifecycle, now: number): boolean {
-  if (match.matchStatus && !active.has(match.matchStatus)) return false;
-  return Boolean(match.live && match.apiSources?.length && Number.isFinite(match.date) && now >= match.date! && !isMatchEnded(match, now));
+  if (!match.live || !match.apiSources?.length || !Number.isFinite(match.date) || now < match.date! || isMatchEnded(match, now)) return false;
+  // The stream feed is the primary source for whether a playable match has started.
+  // API-Football can be stale or unavailable when quota is exhausted, so an old NS/TBD
+  // must not hide a match that has already kicked off. Explicit terminal/suspended states still win.
+  if (match.matchStatus && ["PST","SUSP","INT","CANC","ABD","AWD","WO"].includes(match.matchStatus)) return false;
+  return true;
 }
