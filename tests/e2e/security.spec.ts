@@ -69,6 +69,28 @@ test.describe("authenticated authorization", () => {
     expect(response.headers()["cache-control"]).toContain("no-store");
   });
 
+  test("friend presence updates are rate limited without exposing internals", async ({ page }) => {
+    const statuses = await page.evaluate(async () => {
+      const results: number[] = [];
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        const response = await fetch("/api/presence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            match: "security-presence-test",
+            visitor: "11111111-1111-4111-8111-111111111111",
+            tab: "22222222-2222-4222-8222-222222222222",
+          }),
+        });
+        results.push(response.status);
+      }
+      return results;
+    });
+
+    expect(statuses.slice(0, 5).every(status => status === 200)).toBe(true);
+    expect(statuses[5]).toBe(429);
+  });
+
   test("friend session rejects CSRF, malformed requests, unsupported methods, and cookie tampering", async ({ page, context }) => {
     const csrf = await page.request.post("/api/telemetry", {
       headers: {
