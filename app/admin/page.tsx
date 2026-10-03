@@ -8,6 +8,7 @@ type SecurityEvent={id:string;event:string;actor:string|null;detail:string|null;
 export default function AdminPage(){
   const [events,setEvents]=useState<TelemetryEvent[]>([]);
   const [securityEvents,setSecurityEvents]=useState<SecurityEvent[]>([]);
+  const [friends,setFriends]=useState<Friend[]>([]);
   const [now,setNow]=useState(()=>Date.now());
   const [activityAccount,setActivityAccount]=useState("all");
   const [activityQuery,setActivityQuery]=useState("");
@@ -27,7 +28,13 @@ export default function AdminPage(){
   const watchingAccounts=watchingByAccount.size;
   const matchesWatching=new Set(Array.from(watchingByAccount.values()).map(event=>{try{const detail=event.detail?JSON.parse(event.detail):{};return typeof detail.matchId==="string"?detail.matchId:"";}catch{return "";}}).filter(Boolean)).size;
   const activityEvents=events.filter(event=>event.event!=="session-active");
-  const label=(account:string)=>account.startsWith("friend:")?"friend":account.split(":")[0];
+  const label=(account:string)=>{
+    if(account.startsWith("friend:")){
+      const id=account.slice("friend:".length);
+      return friends.find(friend=>friend.id===id)?.username??"friend";
+    }
+    return account.split(":")[0];
+  };
   const parseDetail=(event:TelemetryEvent)=>{try{return event.detail?JSON.parse(event.detail) as Record<string,unknown>:{};}catch{return {} as Record<string,unknown>;}};
   const matchLabels=new Map<string,string>();
   for(const event of events){if(event.event!=="match-open")continue;const detail=parseDetail(event);if(typeof detail.matchId==="string"&&typeof detail.home==="string"&&typeof detail.away==="string")matchLabels.set(detail.matchId,detail.home+" vs "+detail.away);}
@@ -93,7 +100,7 @@ export default function AdminPage(){
   const matchesOpened=uniqueMatchOpens.length;
   const watchStarts=activityEvents.filter(event=>event.event==="player-start").length;
   const [services,setServices]=useState<{accounts:boolean;footballData:boolean}|null>(null);
-  const [friends,setFriends]=useState<Friend[]>([]),[health,setHealth]=useState<Health[]>([]),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[resetId,setResetId]=useState<string|null>(null),[resetPassword,setResetPassword]=useState('');
+  const [health,setHealth]=useState<Health[]>([]),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[resetId,setResetId]=useState<string|null>(null),[resetPassword,setResetPassword]=useState('');
   const healthDays=Array.from({length:7},(_,index)=>{const date=new Date(now-(6-index)*86400000);const day=date.toISOString().slice(0,10);return {day,label:date.toLocaleDateString([],{weekday:"short"}),count:health.filter(row=>row.day===day).reduce((sum,row)=>sum+row.count,0)};});
   const maxHealth=Math.max(1,...healthDays.map(day=>day.count));
   const healthTotal=healthDays.reduce((sum,day)=>sum+day.count,0);
