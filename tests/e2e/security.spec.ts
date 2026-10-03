@@ -44,11 +44,67 @@ test.describe("authenticated authorization", () => {
     await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
     await expect(page.getByText("Page not found")).toBeVisible();
     await expect(page.getByText(/owner access|required/i)).toHaveCount(0);
+
+    const headers = response?.headers() ?? {};
+    expect(headers["cache-control"]).toContain("no-store");
+    expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["referrer-policy"]).toBe("no-referrer");
   });
 
   test("friend receives a non-revealing 404 from admin APIs", async ({ page }) => {
     const response = await page.request.get("/api/admin/security");
     expect(response.status()).toBe(404);
     expect(await response.text()).toBe("");
+    expect(response.headers()["cache-control"]).toContain("no-store");
+  });
+
+  test("friend session rejects CSRF, malformed requests, unsupported methods, and cookie tampering", async ({ page, context }) => {
+    const csrf = await page.request.post("/api/telemetry", {
+      headers: {
+        Origin: "https://evil.example",
+        "Content-Type": "application/json",
+      },
+      data: { event: "session-active", detail: {} },
+    });
+    expect(csrf.status()).toBe(403);
+    expect(await csrf.text()).toBe("Forbidden");
+
+    const unsupported = await page.request.delete("/api/telemetry");
+    expect(unsupported.status()).toBe(405);
+
+    const malformed = await page.evaluate(async () => {
+      const response = await fetch("/api/telemetry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{not-json",
+      });
+      return { status: response.status, body: await response.json() };
+    });
+    expect(malformed).toEqual({ status: 400, body: { error: "Invalid request" } });
+
+    const oversized = await page.evaluate(async () => {
+      const response = await fetch("/api/telemetry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ padding: "x".repeat(40_100) }),
+      });
+      return { status: response.status, body: await response.json() };
+    });
+    expect(oversized).toEqual({ status: 413, body: { error: "Request too large" } });
+
+    const session = (await context.cookies()).find(cookie => cookie.name === "__Host-ninety-session");
+    expect(session).toBeTruthy();
+    expect(session?.httpOnly).toBe(true);
+    expect(session?.secure).toBe(true);
+    expect(session?.sameSite).toBe("Strict");
+
+    const value = session!.value;
+    const replacement = value.endsWith("0") ? "1" : "0";
+    await context.addCookies([{ ...session!, value: value.slice(0, -1) + replacement }]);
+
+    const tampered = await page.request.get("/api/account");
+    expect(tampered.status()).toBe(401);
+    expect(await tampered.json()).toEqual({ error: "Authentication required" });
   });
 });
