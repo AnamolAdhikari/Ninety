@@ -11,6 +11,16 @@ test.describe("NINETY security controls", () => {
     await expect(page).toHaveURL(/\/auth\/login$/);
   });
 
+  test("security headers are applied to unauthenticated responses", async ({ request }) => {
+    const response = await request.get("/login");
+    const headers = response.headers();
+    expect(headers["strict-transport-security"]).toContain("max-age=31536000");
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["x-frame-options"]).toBe("DENY");
+    expect(headers["permissions-policy"]).toContain("camera=()");
+    expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+  });
+
   test("unauthenticated admin API does not return admin data", async ({ request }) => {
     const response = await request.get("/api/admin/security");
     expect(response.status()).toBe(401);

@@ -79,6 +79,8 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
     if(Number(request.headers.get("content-length")??0)>4096)return page("Invalid sign-in request.",400);
     const raw=await request.text();if(raw.length>4096)return page("Invalid sign-in request.",400);
     const form=new URLSearchParams(raw);const username=form.get("username")??"",password=form.get("password")??"";
+    const accountRate=await env.LOGIN_RATE_LIMITER.limit({key:"login-account:"+(await digest(username.trim().toLowerCase())).slice(0,32)});
+    if(!accountRate.success){await security(env,"rate-limited",null,{area:"login"});return page("Too many attempts. Please wait a minute before trying again.",429);}
     const guest=credentials(env,"guest");
     const checks=await Promise.all([equal(username,env.NINETY_USERNAME),equal(password,env.NINETY_PASSWORD),equal(username,guest?.username??""),equal(password,guest?.password??"")]);
     const role:Role|null=checks[0]&&checks[1]?"owner":guest&&checks[2]&&checks[3]?"guest":null;
