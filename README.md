@@ -4,7 +4,7 @@
 
 ### A modern football matchday experience built for the web
 
-Fast match discovery, live-state handling, resilient playback UX, match events, lineups, saved matches, reminders, and polished post-match flows — in one responsive interface.
+Fast match discovery, live-state handling, resilient playback UX, match events, lineups, saved matches, reminders, and polished post-match flows in one responsive interface.
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-20232A?logo=react&logoColor=61DAFB)
@@ -25,6 +25,10 @@ The application is designed around real match states rather than a static list o
 The project also treats external data and playback availability as unreliable inputs. Provider failures, missing lineups, stale statuses, unavailable sources, and completed broadcasts are handled as explicit product states instead of uncaught errors.
 
 > **Project note:** NINETY is a personal learning project. Playback is intended only for sources the operator is authorized to use. This repository does not document private provider credentials, internal access configuration, or deployment secrets.
+
+<!-- HERO_SCREENSHOT -->
+<!-- Recommended final asset: docs/media/home-desktop.webp -->
+
 
 ---
 
@@ -72,65 +76,36 @@ The project also treats external data and playback availability as unreliable in
 
 ---
 
-## Experience states
+## Match lifecycle
 
-NINETY deliberately models the full lifecycle of a football fixture.
+NINETY models the fixture as a product journey rather than a static page. Upcoming, live, full-time and post-match states each have their own UI and recovery behavior.
 
-```mermaid
-stateDiagram-v2
-    [*] --> Upcoming
-    Upcoming --> Live: kick-off reached + playable match state
-    Upcoming --> Unavailable: no source yet
-    Unavailable --> Live: source becomes available
-    Live --> Live: events / source refresh
-    Live --> Finished: verified status or lifecycle fallback
-    Finished --> Highlights: post-match experience
-```
+<p align="center">
+  <img src="docs/diagrams/match-lifecycle.svg" alt="NINETY match lifecycle from upcoming through live, full time and highlights" width="100%" />
+</p>
 
-The application does not assume that every upstream status is current. Local lifecycle safeguards prevent stale provider data from leaving already-finished matches marked as live indefinitely.
+The lifecycle layer does not trust one upstream flag blindly. It combines fixture timing, usable-source availability, verified terminal states and local safeguards so stale external data does not leave a finished match stuck in Live.
 
 ---
 
 ## High-level architecture
 
-The public documentation intentionally stays at a high level. Provider credentials, internal source identifiers, authentication secrets, operational endpoints, and infrastructure-specific configuration are not documented here.
+This is the public HLD view of NINETY. It shows the major trust boundaries and application layers without exposing private provider mappings, credentials, internal identifiers or privileged operational details.
 
-```mermaid
-flowchart LR
-    U[Browser / PWA] --> UI[React matchday UI]
-    UI --> S[Server-side application layer]
+<p align="center">
+  <img src="docs/diagrams/high-level-architecture.svg" alt="NINETY high-level architecture" width="100%" />
+</p>
 
-    S --> M[Match metadata adapter]
-    S --> P[Playback source adapter]
-    S --> D[Match detail adapter]
-    S --> A[Account & preference services]
-
-    M --> C[(Short-lived cache)]
-    P --> C
-    D --> C
-
-    S --> R[Resiliency & lifecycle rules]
-    R --> UI
-
-    A --> E[(Edge persistence)]
-
-    classDef client fill:#152019,stroke:#baff32,color:#fff;
-    classDef server fill:#101722,stroke:#516070,color:#fff;
-    classDef data fill:#171d25,stroke:#394858,color:#fff;
-
-    class U,UI client;
-    class S,M,P,D,A,R server;
-    class C,E data;
-```
+The diagram deliberately abstracts external integrations behind server-side adapters. The browser receives normalized application data rather than provider credentials or private integration details.
 
 ### Design principles
 
-- **Server-side provider access** — external service calls and credentials stay away from client code.
-- **Graceful degradation** — a metadata outage should not automatically break the rest of the match page.
-- **Explicit lifecycle rules** — live and ended states are not based on a single unreliable signal.
-- **Demand-driven data** — expensive data such as lineups is requested only when the user opens it.
-- **Defensive caching** — live information uses shorter caching while stable post-match information can be retained longer.
-- **No fabricated sports data** — missing scores, lineups, or events remain unavailable rather than being guessed.
+- **Server-side provider access** - external service calls and credentials stay away from client code.
+- **Graceful degradation** - a metadata outage should not automatically break the rest of the match page.
+- **Explicit lifecycle rules** - live and ended states are not based on a single unreliable signal.
+- **Demand-driven data** - expensive data such as lineups is requested only when the user opens it.
+- **Defensive caching** - live information uses shorter caching while stable post-match information can be retained longer.
+- **No fabricated sports data** - missing scores, lineups, or events remain unavailable rather than being guessed.
 
 ---
 
@@ -210,7 +185,7 @@ node --test tests/*.test.mjs
 
 ### Environment configuration
 
-Runtime credentials and private configuration belong in the deployment environment — **never in source control**.
+Runtime credentials and private configuration belong in the deployment environment - **never in source control**.
 
 This README intentionally does not provide:
 
@@ -262,22 +237,43 @@ If you discover a security issue, please report it privately rather than opening
 
 ---
 
-## Screenshots & demo media
+## Product gallery
 
-The visual experience is a major part of NINETY, but repository media should be **sanitized before publishing**.
+The best README layout is to keep one strong hero image near the top, then use a compact gallery here for supporting states.
 
-Recommended public media set:
+### Recommended placement
 
-1. **Homepage** — desktop match discovery with Live / Today / Upcoming states.
-2. **Mobile homepage** — responsive cards and navigation.
-3. **Upcoming match** — countdown and matchday warm-up state.
-4. **Live match center** — use a controlled/demo fixture; avoid publishing third-party broadcast footage.
-5. **Full-time screen** — final score and highlights CTA.
-6. **Short GIF** — search → match card → match page → match-center navigation.
+| Media | Best location | Purpose |
+| --- | --- | --- |
+| Desktop homepage screenshot | Directly after **Overview** | Immediate product context |
+| Mobile homepage screenshot | Product gallery | Responsive design proof |
+| Upcoming match screenshot | Product gallery | Countdown and warm-up state |
+| Full-time screenshot | Product gallery | Post-match result experience |
+| 8 to 12 second GIF | Directly below this gallery | Search to match to match-center flow |
+| Longer video | External link only | Full walkthrough without bloating the repository |
 
-For screenshots or recordings, crop out browser profiles, account names, private URLs, developer tools, tokens, request headers, admin pages, provider names, and any third-party video content you do not have permission to redistribute.
+For GitHub, an optimized GIF is the safest inline motion format. Keep it short, around 8 to 12 fps, and ideally below 5 MB. A WebM or MP4 will usually be much smaller, but GitHub README playback is less consistent, so longer demos are better linked externally instead of committed to the repository.
 
-A short GIF is preferable to embedding a large video directly in Git. If a longer demo is needed, host it separately and link to it from this section.
+Store public media under:
+
+```text
+docs/
+├── diagrams/
+│   ├── high-level-architecture.svg
+│   └── match-lifecycle.svg
+└── media/
+    ├── home-desktop.webp
+    ├── home-mobile.webp
+    ├── upcoming-match.webp
+    ├── full-time.webp
+    └── demo.gif
+```
+
+### Screenshot rules
+
+Before adding media, crop out browser profiles, account names, developer tools, tokens, request headers, admin surfaces, provider names, private URLs and any third-party video content you do not have permission to redistribute.
+
+The application UI itself is safe to showcase. Screenshots should focus on the product surface: match discovery, filters, cards, countdowns, lineups, event timelines and the full-time experience.
 
 ---
 
