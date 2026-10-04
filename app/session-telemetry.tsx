@@ -16,7 +16,8 @@ export default function SessionTelemetry(){
   const pathname=usePathname();
   useEffect(()=>{
     // The owner dashboard observes activity; it should not count itself as a viewer.
-    if(pathname.startsWith("/admin"))return;
+    // Watch pages send their own richer heartbeat with match context.
+    if(pathname.startsWith("/admin")||pathname.startsWith("/watch"))return;
     pulse();
     const timer=window.setInterval(pulse,60_000);
     const onVisibility=()=>{if(!document.hidden)pulse();};
