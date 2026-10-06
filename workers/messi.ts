@@ -252,7 +252,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
         <iframe
           id="tributeFrame"
           title="Lionel Messi tribute video"
-          src="https://www.youtube.com/embed/H2uVrzYQW-I?autoplay=1&mute=1&controls=1&loop=1&playlist=H2uVrzYQW-I&rel=0&playsinline=1"
+          src="https://www.youtube-nocookie.com/embed/vkEVH-FVNU4?autoplay=1&mute=1&controls=1&loop=1&playlist=vkEVH-FVNU4&rel=0&playsinline=1"
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
           allowfullscreen
           referrerpolicy="strict-origin-when-cross-origin"
@@ -370,10 +370,18 @@ $("carouselNext").onclick=()=>{showSlide(carouselIndex+1);restartCarousel();};
 restartCarousel();
 
 const tributeFrame=$("tributeFrame");
-const tributeVideoId="H2uVrzYQW-I";
-function ensureTribute(){
+const tributeVideoId="vkEVH-FVNU4";
+function tributeUrl(){
+  return "https://www.youtube-nocookie.com/embed/"+tributeVideoId+"?autoplay=1&mute=1&controls=1&loop=1&playlist="+tributeVideoId+"&rel=0&playsinline=1";
+}
+function ensureTribute(force=false){
   if(!tributeFrame)return;
-  const src="https://www.youtube.com/embed/"+tributeVideoId+"?autoplay=1&mute=1&controls=1&loop=1&playlist="+tributeVideoId+"&rel=0&playsinline=1";
+  const src=tributeUrl();
+  if(force){
+    tributeFrame.setAttribute("src","about:blank");
+    requestAnimationFrame(()=>requestAnimationFrame(()=>tributeFrame.setAttribute("src",src)));
+    return;
+  }
   if(tributeFrame.getAttribute("src")!==src)tributeFrame.setAttribute("src",src);
 }
 ensureTribute();
@@ -421,7 +429,7 @@ function render(){
     toggle.onclick=()=>{
       const open=tribute.classList.toggle("open");
       toggle.textContent=open?"Hide tribute":"Watch tribute instead";
-      if(open)ensureTribute();
+      if(open)ensureTribute(true);
     };
     btn.onclick=()=>{
       tribute.classList.add("optional");tribute.classList.remove("open");
