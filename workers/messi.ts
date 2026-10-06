@@ -171,6 +171,12 @@ h1 .soft{display:block;color:transparent;-webkit-text-stroke:1px rgba(247,251,25
 .numbers{width:min(1180px,calc(100% - 40px));margin:0 auto 58px;display:grid;grid-template-columns:repeat(4,1fr);border:1px solid rgba(217,183,95,.22);border-radius:24px;overflow:hidden;background:linear-gradient(135deg,rgba(217,183,95,.055),rgba(118,199,242,.035))}.numbers div{padding:34px 22px;text-align:center;border-right:1px solid rgba(217,183,95,.16);position:relative}.numbers div:last-child{border-right:0}.numbers strong{display:block;color:var(--gold);font-family:Georgia,serif;font-size:clamp(3rem,6vw,5rem);font-style:italic;font-weight:500}.numbers span{display:block;margin-top:7px;color:#a8bac6;font-size:.78rem}
 .memory-marquee{overflow:hidden;border-block:1px solid rgba(255,255,255,.07);margin:0 0 82px;padding:19px 0;background:rgba(255,255,255,.015)}.memory-track{display:flex;width:max-content;gap:28px;align-items:center;animation:marquee 28s linear infinite;color:#7890a1;font-size:.72rem;font-weight:900;letter-spacing:.2em}.memory-track b{color:var(--gold);font-family:Georgia,serif;font-size:1.25rem;font-style:italic;font-weight:500}.memory-track span{white-space:nowrap}@keyframes marquee{to{transform:translateX(-50%)}}
 .letter{width:min(1180px,calc(100% - 40px));margin:0 auto 100px;display:grid;grid-template-columns:minmax(320px,.8fr) 1.2fr;gap:0;overflow:hidden;border:1px solid rgba(255,255,255,.09);border-radius:28px;background:linear-gradient(135deg,rgba(10,24,38,.96),rgba(5,14,22,.98));box-shadow:0 28px 80px rgba(0,0,0,.28)}.letter-art{position:relative;min-height:560px;overflow:hidden}.letter-art:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 45%,rgba(7,17,27,.95) 100%)}.letter-art img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;transform:scale(1.03)}.letter-mark{position:absolute;left:24px;bottom:20px;z-index:2;font-family:Georgia,serif;color:transparent;-webkit-text-stroke:1px rgba(217,183,95,.7);font-size:8rem;line-height:.8;font-style:italic}.letter-copy{padding:56px 54px;align-self:center}.letter p{color:#a8bac6;font-size:1rem;line-height:1.9}.letter strong{display:block;margin-top:22px;color:#fff;font-family:Georgia,serif;font-size:1.3rem;font-style:italic;font-weight:500;line-height:1.5}
+.one-night{display:inline-flex;align-items:center;gap:9px;margin-bottom:18px;border:1px solid rgba(217,183,95,.32);border-radius:999px;background:rgba(217,183,95,.06);padding:8px 12px;color:#efd176;font-size:.64rem;font-weight:900;letter-spacing:.16em}.one-night-dot{width:7px;height:7px;border-radius:50%;background:#efd176;box-shadow:0 0 0 0 rgba(239,209,118,.4);animation:nightPulse 2s infinite}@keyframes nightPulse{0%{box-shadow:0 0 0 0 rgba(239,209,118,.35)}70%{box-shadow:0 0 0 9px rgba(239,209,118,0)}100%{box-shadow:0 0 0 0 rgba(239,209,118,0)}}
+.moments{width:min(1180px,calc(100% - 40px));margin:0 auto 96px}.moments-head{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:end;margin-bottom:34px}.moments-head small{color:var(--gold);font-size:.66rem;font-weight:900;letter-spacing:.19em}.moments-head h2{margin:8px 0 0;font-size:clamp(2.4rem,5.5vw,5rem);line-height:.95;letter-spacing:-.06em}.moments-head p{margin:0;color:#8ea3b2;line-height:1.75;font-size:.96rem}
+.moments-list{display:grid;gap:16px}.moment{position:relative;min-height:330px;overflow:hidden;border:1px solid rgba(255,255,255,.09);border-radius:28px;background:#06111a;isolation:isolate;display:grid;grid-template-columns:140px 1fr;align-items:end;padding:30px}.moment:before{content:"";position:absolute;inset:0;z-index:-3;background-image:var(--moment-img);background-size:cover;background-position:center;transform:scale(1.03);filter:saturate(.82) brightness(.62);transition:transform 1s ease,filter 1s ease}.moment:after{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(90deg,rgba(3,10,16,.96) 0%,rgba(3,10,16,.75) 42%,rgba(3,10,16,.28) 75%,rgba(3,10,16,.05) 100%)}.moment-right:after{background:linear-gradient(270deg,rgba(3,10,16,.96) 0%,rgba(3,10,16,.75) 42%,rgba(3,10,16,.28) 75%,rgba(3,10,16,.05) 100%)}.moment-right{grid-template-columns:1fr 140px;text-align:right}.moment-right .moment-num{grid-column:2;grid-row:1}.moment-right .moment-copy{grid-column:1;grid-row:1;justify-self:end;max-width:560px}.moment:hover:before{transform:scale(1.08);filter:saturate(1) brightness(.72)}.moment-num{font-family:Georgia,serif;font-size:clamp(4rem,8vw,7rem);font-style:italic;color:transparent;-webkit-text-stroke:1px rgba(239,209,118,.55);line-height:.8}.moment-copy{max-width:560px}.moment-copy small{display:block;color:var(--sky);font-size:.62rem;font-weight:900;letter-spacing:.18em}.moment-copy h3{margin:7px 0 9px;font-size:clamp(1.8rem,4vw,3.4rem);letter-spacing:-.045em}.moment-copy p{margin:0;color:#c4d0d8;line-height:1.7;font-size:.9rem}.moment.finale{border-color:rgba(217,183,95,.3);box-shadow:0 24px 80px rgba(217,183,95,.05)}
+.finale-mark{width:min(1180px,calc(100% - 40px));margin:0 auto 110px;text-align:center;padding:72px 20px 20px;position:relative}.finale-ten{font-family:Georgia,serif;font-size:clamp(10rem,28vw,24rem);font-style:italic;line-height:.65;color:transparent;-webkit-text-stroke:1px rgba(217,183,95,.22);letter-spacing:-.08em;user-select:none}.finale-mark p{margin:-12px 0 8px;color:#fff;font-size:clamp(2.2rem,5vw,4.4rem);font-weight:950;letter-spacing:-.05em}.finale-mark span{color:#8fa3b2;font-family:Georgia,serif;font-style:italic;font-size:1rem}
+@media(max-width:850px){.moments-head{grid-template-columns:1fr;gap:16px}.moment,.moment-right{grid-template-columns:92px 1fr;text-align:left}.moment-right .moment-num{grid-column:1;grid-row:1}.moment-right .moment-copy{grid-column:2;grid-row:1;justify-self:start}.moment:after,.moment-right:after{background:linear-gradient(90deg,rgba(3,10,16,.96) 0%,rgba(3,10,16,.78) 55%,rgba(3,10,16,.35) 100%)}}
+@media(max-width:520px){.moments{width:min(100% - 26px,1180px)}.moment,.moment-right{min-height:300px;grid-template-columns:1fr;align-content:end;padding:22px}.moment-num,.moment-right .moment-num{grid-column:1;grid-row:1;margin-bottom:18px}.moment-copy,.moment-right .moment-copy{grid-column:1;grid-row:2;max-width:none}.moment:after,.moment-right:after{background:linear-gradient(180deg,rgba(3,10,16,.12) 10%,rgba(3,10,16,.94) 78%)}.finale-mark{width:min(100% - 26px,1180px);padding-top:50px}}
 footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-align:center;color:#617687;font-size:.72rem;line-height:1.7}
 @media(max-width:850px){.photo-wall-grid{grid-auto-rows:150px}.photo-card.large,.photo-card.medium,.photo-card.wide{grid-column:span 6;grid-row:span 2}.hero{grid-template-columns:1fr;min-height:auto;padding-top:42px}.portrait{height:520px;order:2}.hero-copy{order:1}.teams{gap:12px}.tribute{grid-template-columns:1fr;gap:22px}.match-card{padding:26px}.open-private{font-size:0}.open-private:after{content:"Sign in";font-size:.75rem}.prebroadcast-head{align-items:flex-start;flex-direction:column}.tribute-side{align-items:flex-start}.prebroadcast-head p{text-align:left}.legacy-grid{grid-template-columns:repeat(2,1fr)}.letter{grid-template-columns:1fr}.letter-art{min-height:420px}.letter-art:after{background:linear-gradient(180deg,transparent 45%,rgba(7,17,27,.96) 100%)}.letter-copy{padding:38px 32px}.letter-mark{font-size:6rem}}
 @media(max-width:520px){.photo-wall-grid{display:block}.photo-card.large,.photo-card.medium,.photo-card.wide{display:block;min-height:300px;margin-bottom:12px}header,.hero,.match-shell,.tribute,.legacy,.numbers,.letter{width:min(100% - 26px,1320px)}header{padding-top:max(18px,env(safe-area-inset-top))}h1{font-size:clamp(3.4rem,20vw,5.7rem)}.lead{font-size:.98rem}.portrait{height:420px}.portrait img{height:100%}.match-card{padding:22px 16px;border-radius:20px}.team{font-size:clamp(1.65rem,9vw,2.6rem)}.versus{width:42px;height:42px}.match-top{align-items:flex-start;flex-direction:column}.match-live-tools{width:100%;justify-content:space-between}.source-bar{align-items:flex-start;flex-direction:column}.source-bar select{width:100%;max-width:none}.legacy-grid{grid-template-columns:1fr}.numbers{grid-template-columns:repeat(2,1fr)}.numbers div:nth-child(2){border-right:0}.numbers div:nth-child(-n+2){border-bottom:1px solid rgba(217,183,95,.15)}.letter-mark{font-size:5rem}}
@@ -183,6 +189,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
 <main>
 <section class="hero">
   <div class="hero-copy">
+    <div class="one-night"><span class="one-night-dot"></span>ONE NIGHT ONLY · OCTOBER 6, 2026</div>
     <span class="kicker"><i></i>October 6, 2026 · Buenos Aires</span>
     <h1><span class="soft">GRACIAS,</span><span class="leo">LEO.</span></h1>
     <p class="lead"><strong>One final night in Argentina colors.</strong> For more than two decades, Lionel Messi made impossible moments feel inevitable. Tonight, NINETY steps away from its usual matchday look to simply say thank you.</p>
@@ -302,6 +309,46 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
   </div>
 </section>
 
+<section class="moments" aria-label="Ten Lionel Messi moments">
+  <div class="moments-head">
+    <div><small>THE NUMBER 10</small><h2>Ten moments. One impossible career.</h2></div>
+    <p>Not a ranking. Ten flashes from a story that made millions stop whatever they were doing and watch.</p>
+  </div>
+
+  <div class="moments-list">
+    <article class="moment moment-left" style="--moment-img:url('https://upload.wikimedia.org/wikipedia/commons/2/26/Leo_messi_barce_2005.jpg')">
+      <div class="moment-num">01</div><div class="moment-copy"><small>BARCELONA · 2005</small><h3>The first chapter</h3><p>A teenager steps onto football's biggest stage and immediately looks like he belongs there.</p></div>
+    </article>
+    <article class="moment moment-right" style="--moment-img:url('https://upload.wikimedia.org/wikipedia/commons/7/70/Lionel_Messi_in_a_La_Liga_match_at_Camp_Nou%2C_Barcelona_%28_Ank_Kumar%2C_Infosys_Limited%29_06_%28cropped%29.jpg')">
+      <div class="moment-num">02</div><div class="moment-copy"><small>BARCELONA</small><h3>The shirt becomes his</h3><p>Number 10 stops being a number and becomes an expectation every time he touches the ball.</p></div>
+    </article>
+    <article class="moment moment-left" style="--moment-img:url('https://images2.alphacoders.com/133/thumb-1920-1335727.jpeg')">
+      <div class="moment-num">03</div><div class="moment-copy"><small>EUROPEAN NIGHTS</small><h3>The biggest stages</h3><p>When the lights got brighter, the football somehow became even more outrageous.</p></div>
+    </article>
+    <article class="moment moment-right" style="--moment-img:url('https://images5.alphacoders.com/642/thumb-1920-642891.jpg')">
+      <div class="moment-num">04</div><div class="moment-copy"><small>ARGENTINA</small><h3>The weight of home</h3><p>Every tournament carried a country's hope. He kept coming back until heartbreak finally turned into belief.</p></div>
+    </article>
+    <article class="moment moment-left" style="--moment-img:url('https://w0.peakpx.com/wallpaper/526/416/HD-wallpaper-lionel-messi-argentina-national-football-team-portrait-football-star-argentinian-footballer-football-match-argentina.jpg')">
+      <div class="moment-num">05</div><div class="moment-copy"><small>THE CAPTAIN</small><h3>A different kind of leader</h3><p>Quiet, relentless, and carrying the shirt with a calm that made the impossible feel normal.</p></div>
+    </article>
+    <article class="moment moment-right" style="--moment-img:url('https://upload.wikimedia.org/wikipedia/commons/c/c8/Lionel_Messi_WC2022.jpg')">
+      <div class="moment-num">06</div><div class="moment-copy"><small>QATAR · 2022</small><h3>The run</h3><p>Every match felt heavier. Every touch felt historic. The story was moving toward the ending everyone wanted.</p></div>
+    </article>
+    <article class="moment moment-left" style="--moment-img:url('https://upload.wikimedia.org/wikipedia/commons/c/c8/Lionel_Messi_WC2022.jpg')">
+      <div class="moment-num">07</div><div class="moment-copy"><small>THE FINAL</small><h3>One last mountain</h3><p>Football's greatest final demanded everything, and somehow he still found moments of calm inside the chaos.</p></div>
+    </article>
+    <article class="moment moment-right" style="--moment-img:url('https://images5.alphacoders.com/642/thumb-1920-642891.jpg')">
+      <div class="moment-num">08</div><div class="moment-copy"><small>CAMPEÓN DEL MUNDO</small><h3>The picture everyone waited for</h3><p>The captain, the trophy, the smile. A lifetime of expectation finally dissolves into celebration.</p></div>
+    </article>
+    <article class="moment moment-left" style="--moment-img:url('https://upload.wikimedia.org/wikipedia/commons/0/06/Lionel_Messi_NYCFC_Miami_24_Sep_2025-057.jpg')">
+      <div class="moment-num">09</div><div class="moment-copy"><small>MIAMI</small><h3>The world follows</h3><p>New colors, new city, same gravitational pull. Wherever he went, stadiums became events.</p></div>
+    </article>
+    <article class="moment moment-right finale" style="--moment-img:url('https://upload.wikimedia.org/wikipedia/commons/c/c8/Lionel_Messi_WC2022.jpg')">
+      <div class="moment-num">10</div><div class="moment-copy"><small>ONE LAST NIGHT</small><h3>Gracias, Leo.</h3><p>Not goodbye to the memories. Just one more night to celebrate the player who made football feel different.</p></div>
+    </article>
+  </div>
+</section>
+
 <section class="legacy" aria-label="Lionel Messi legacy">
   <div class="legacy-heading"><small>THE JOURNEY</small><h2>From Rosario to forever.</h2><p>Not a list of statistics. A few chapters that changed how an entire generation remembers football.</p></div>
   <div class="legacy-grid">
@@ -338,6 +385,12 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
     <p>Some careers are measured in trophies. Some are remembered in moments. Messi gave football both.</p>
     <strong>Tonight is not about saying goodbye to the memories. It is about giving them one more night to breathe.</strong>
   </div>
+</section>
+
+<section class="finale-mark" aria-label="Final thank you to Lionel Messi">
+  <div class="finale-ten">10</div>
+  <p>GRACIAS, LEO.</p>
+  <span>For the joy. For the magic. For the memories.</span>
 </section>
 </main>
 <footer>NINETY · Special Matchday Tribute<br>Image used under CC BY 4.0. This page is an independent fan tribute and is not affiliated with Lionel Messi, AFA or FIFA.</footer>
