@@ -164,12 +164,16 @@ h1 .soft{display:block;color:transparent;-webkit-text-stroke:1px rgba(247,251,25
 .source-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;font-size:.75rem;color:#8498a8}.source-bar select{max-width:240px;background:#0d1a26;color:#dce7ef;border:1px solid #294052;border-radius:9px;padding:8px 10px}
 .status-action{display:flex;justify-content:center;margin-top:28px}.watch-btn{border:0;border-radius:999px;padding:15px 24px;background:linear-gradient(135deg,#8dd7fb,#5bb8e8);color:#06111a;font-weight:900;font-size:.88rem;cursor:pointer;box-shadow:0 12px 35px rgba(91,184,232,.20)}.watch-btn:disabled{opacity:.55;cursor:default}
 .note{text-align:center;color:#778c9b;font-size:.75rem;line-height:1.6;margin:18px auto 0;max-width:700px}
-.prebroadcast{margin-top:30px;border-top:1px solid rgba(255,255,255,.09);padding-top:28px}.prebroadcast.hidden{display:none}.prebroadcast-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:16px}.prebroadcast-head div small{display:block;color:var(--sky);font-size:.63rem;font-weight:900;letter-spacing:.17em;text-transform:uppercase}.prebroadcast-head h3{margin:7px 0 0;font-size:clamp(1.3rem,3vw,2rem);letter-spacing:-.035em}.tribute-side{display:flex;align-items:flex-end;gap:12px;flex-direction:column}.prebroadcast-head p{margin:0;max-width:440px;color:#8296a5;font-size:.77rem;line-height:1.6;text-align:right}.tribute-toggle{border:1px solid rgba(118,199,242,.38);border-radius:999px;background:rgba(118,199,242,.08);color:#d9f2ff;padding:9px 13px;font-size:.72rem;font-weight:800;cursor:pointer}.prebroadcast.optional .tribute-video,.prebroadcast.optional .video-tabs{display:none}.prebroadcast.optional.open .tribute-video,.prebroadcast.optional.open .video-tabs{display:block}.tribute-video{aspect-ratio:16/9;overflow:hidden;border-radius:18px;border:1px solid rgba(255,255,255,.10);background:#020507;box-shadow:0 18px 50px rgba(0,0,0,.28)}.tribute-video iframe{display:block;width:100%;height:100%;border:0}.video-tabs{display:none!important}.video-tabs button{border:1px solid #294052;border-radius:999px;background:#0c1924;color:#9fb3c1;padding:9px 13px;font-size:.72rem;font-weight:750;cursor:pointer}.video-tabs button.active{border-color:rgba(118,199,242,.65);background:rgba(118,199,242,.10);color:#e6f7ff}.video-tabs button:hover{border-color:var(--sky);color:#fff}
+.prebroadcast{margin-top:30px;border-top:1px solid rgba(255,255,255,.09);padding-top:28px}.prebroadcast.hidden{display:none}.prebroadcast-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:16px}.prebroadcast-head div small{display:block;color:var(--sky);font-size:.63rem;font-weight:900;letter-spacing:.17em;text-transform:uppercase}.prebroadcast-head h3{margin:7px 0 0;font-size:clamp(1.3rem,3vw,2rem);letter-spacing:-.035em}.tribute-side{display:flex;align-items:flex-end;gap:12px;flex-direction:column}.prebroadcast-head p{margin:0;max-width:440px;color:#8296a5;font-size:.77rem;line-height:1.6;text-align:right}.tribute-toggle{border:1px solid rgba(118,199,242,.38);border-radius:999px;background:rgba(118,199,242,.08);color:#d9f2ff;padding:9px 13px;font-size:.72rem;font-weight:800;cursor:pointer}.prebroadcast.optional .tribute-video,.prebroadcast.optional .video-tabs{display:none}.prebroadcast.optional.open .tribute-video,.prebroadcast.optional.open .video-tabs{display:block}.tribute-video{aspect-ratio:16/9;overflow:hidden;border-radius:18px;border:1px solid rgba(255,255,255,.10);background:#020507;box-shadow:0 18px 50px rgba(0,0,0,.28)}.tribute-video iframe{display:block;width:100%;height:100%;border:0}
 .tribute{width:min(1180px,calc(100% - 40px));margin:0 auto 90px;display:grid;grid-template-columns:.8fr 1.2fr;gap:60px;padding-top:30px}.tribute aside{color:var(--gold);font-family:Georgia,serif;font-size:clamp(2.4rem,5vw,4.6rem);line-height:1.08;font-style:italic}.tribute p{font-size:1.04rem;line-height:1.9;color:#aebfcb;margin:0}.tribute p strong{color:#fff}
-.photo-wall{width:min(1180px,calc(100% - 40px));margin:0 auto 90px}.photo-wall-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;margin-top:28px}.photo-card{position:relative;overflow:hidden;border-radius:22px;border:1px solid rgba(255,255,255,.09);background:#07111a;min-height:230px;box-shadow:0 18px 50px rgba(0,0,0,.25)}.photo-card.large{grid-column:span 6;min-height:370px}.photo-card.medium{grid-column:span 4;min-height:290px}.photo-card.small{grid-column:span 3;min-height:240px}.photo-card img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.01);transition:transform .6s ease,filter .6s ease}.photo-card:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 42%,rgba(3,9,15,.9) 100%)}.photo-card:hover img{transform:scale(1.065);filter:saturate(1.08) contrast(1.03)}.photo-card figcaption{position:absolute;z-index:2;left:18px;right:18px;bottom:16px}.photo-card figcaption small{display:block;color:var(--sky);font-size:.61rem;font-weight:900;letter-spacing:.17em;text-transform:uppercase}.photo-card figcaption strong{display:block;margin-top:5px;color:#fff;font-family:Georgia,serif;font-size:1.08rem;font-style:italic;font-weight:500;line-height:1.3}.legacy{width:min(1180px,calc(100% - 40px));margin:0 auto 90px}.legacy-heading{max-width:680px}.legacy-heading small,.letter small{color:var(--sky);font-size:.66rem;font-weight:900;letter-spacing:.19em}.legacy-heading h2,.letter h2{margin:8px 0 12px;font-size:clamp(2.2rem,5vw,4.5rem);letter-spacing:-.055em}.legacy-heading p{color:#8fa4b3;line-height:1.7}.legacy-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:32px}.legacy-grid article{min-height:260px;border:1px solid rgba(255,255,255,.09);border-radius:20px;background:linear-gradient(150deg,rgba(15,31,44,.9),rgba(8,19,29,.9));padding:24px}.legacy-grid article>span{display:block;color:rgba(118,199,242,.22);font-size:3rem;font-weight:950;line-height:1}.legacy-grid small{display:block;margin-top:26px;color:var(--sky);font-size:.61rem;font-weight:900;letter-spacing:.17em}.legacy-grid h3{margin:8px 0 10px;font-size:1.25rem}.legacy-grid p{margin:0;color:#8fa3b2;font-size:.83rem;line-height:1.65}.numbers{width:min(1180px,calc(100% - 40px));margin:0 auto 90px;display:grid;grid-template-columns:repeat(4,1fr);border:1px solid rgba(217,183,95,.2);border-radius:22px;overflow:hidden;background:rgba(217,183,95,.035)}.numbers div{padding:28px 22px;text-align:center;border-right:1px solid rgba(217,183,95,.15)}.numbers div:last-child{border-right:0}.numbers strong{display:block;color:var(--gold);font-family:Georgia,serif;font-size:clamp(2.6rem,5vw,4.5rem);font-style:italic;font-weight:500}.numbers span{display:block;margin-top:6px;color:#9fb0bd;font-size:.76rem}.letter{width:min(1180px,calc(100% - 40px));margin:0 auto 110px;display:grid;grid-template-columns:180px 1fr;gap:50px;align-items:start}.letter-mark{font-family:Georgia,serif;color:transparent;-webkit-text-stroke:1px rgba(217,183,95,.55);font-size:9rem;line-height:.8;font-style:italic}.letter p{color:#a8bac6;font-size:1rem;line-height:1.9}.letter strong{display:block;margin-top:22px;color:#fff;font-family:Georgia,serif;font-size:1.3rem;font-style:italic;font-weight:500;line-height:1.5}
+.photo-wall{width:min(1180px,calc(100% - 40px));margin:0 auto 78px}.photo-wall-grid{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:170px;gap:14px;margin-top:30px}.photo-card{position:relative;overflow:hidden;margin:0;border-radius:24px;border:1px solid rgba(255,255,255,.09);background:#07111a;box-shadow:0 22px 60px rgba(0,0,0,.26)}.photo-card.large{grid-column:span 7;grid-row:span 3}.photo-card.wide{grid-column:span 8;grid-row:span 2}.photo-card.medium{grid-column:span 5;grid-row:span 2}.photo-card img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.02);transition:transform .8s cubic-bezier(.2,.7,.2,1),filter .8s}.photo-card:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 36%,rgba(3,9,15,.92) 100%)}.photo-card:hover img{transform:scale(1.08);filter:saturate(1.08) contrast(1.04)}.photo-card figcaption{position:absolute;z-index:2;left:22px;right:22px;bottom:20px}.photo-card figcaption small{display:block;color:var(--sky);font-size:.62rem;font-weight:900;letter-spacing:.17em}.photo-card figcaption strong{display:block;margin-top:7px;color:#fff;font-family:Georgia,serif;font-size:clamp(1.05rem,2vw,1.45rem);font-style:italic;font-weight:500;line-height:1.3}
+.legacy{width:min(1180px,calc(100% - 40px));margin:0 auto 78px}.legacy-heading{max-width:760px}.legacy-heading small,.letter small{color:var(--sky);font-size:.66rem;font-weight:900;letter-spacing:.19em}.legacy-heading h2,.letter h2{margin:8px 0 12px;font-size:clamp(2.2rem,5vw,4.5rem);letter-spacing:-.055em}.legacy-heading p{color:#8fa4b3;line-height:1.7}.legacy-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}.legacy-grid article{position:relative;min-height:390px;overflow:hidden;border:1px solid rgba(255,255,255,.09);border-radius:24px;padding:26px;display:flex;flex-direction:column;justify-content:flex-end;background:#08141f;isolation:isolate}.legacy-grid article:before{content:"";position:absolute;inset:0;z-index:-2;background-image:var(--legacy-img);background-size:cover;background-position:center;transform:scale(1.04);transition:transform .8s ease,filter .8s ease;filter:saturate(.78) brightness(.6)}.legacy-grid article:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(4,10,16,.05) 20%,rgba(4,10,16,.94) 80%)}.legacy-grid article:hover:before{transform:scale(1.1);filter:saturate(1) brightness(.73)}.legacy-grid article>span{display:block;color:rgba(255,255,255,.32);font-size:3.3rem;font-weight:950;line-height:1}.legacy-grid small{display:block;margin-top:18px;color:var(--sky);font-size:.61rem;font-weight:900;letter-spacing:.17em}.legacy-grid h3{margin:8px 0 10px;font-size:1.35rem}.legacy-grid p{margin:0;color:#c4d0d8;font-size:.84rem;line-height:1.65}
+.numbers{width:min(1180px,calc(100% - 40px));margin:0 auto 58px;display:grid;grid-template-columns:repeat(4,1fr);border:1px solid rgba(217,183,95,.22);border-radius:24px;overflow:hidden;background:linear-gradient(135deg,rgba(217,183,95,.055),rgba(118,199,242,.035))}.numbers div{padding:34px 22px;text-align:center;border-right:1px solid rgba(217,183,95,.16);position:relative}.numbers div:last-child{border-right:0}.numbers strong{display:block;color:var(--gold);font-family:Georgia,serif;font-size:clamp(3rem,6vw,5rem);font-style:italic;font-weight:500}.numbers span{display:block;margin-top:7px;color:#a8bac6;font-size:.78rem}
+.memory-marquee{overflow:hidden;border-block:1px solid rgba(255,255,255,.07);margin:0 0 82px;padding:19px 0;background:rgba(255,255,255,.015)}.memory-track{display:flex;width:max-content;gap:28px;align-items:center;animation:marquee 28s linear infinite;color:#7890a1;font-size:.72rem;font-weight:900;letter-spacing:.2em}.memory-track b{color:var(--gold);font-family:Georgia,serif;font-size:1.25rem;font-style:italic;font-weight:500}.memory-track span{white-space:nowrap}@keyframes marquee{to{transform:translateX(-50%)}}
+.letter{width:min(1180px,calc(100% - 40px));margin:0 auto 100px;display:grid;grid-template-columns:minmax(320px,.8fr) 1.2fr;gap:0;overflow:hidden;border:1px solid rgba(255,255,255,.09);border-radius:28px;background:linear-gradient(135deg,rgba(10,24,38,.96),rgba(5,14,22,.98));box-shadow:0 28px 80px rgba(0,0,0,.28)}.letter-art{position:relative;min-height:560px;overflow:hidden}.letter-art:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 45%,rgba(7,17,27,.95) 100%)}.letter-art img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;transform:scale(1.03)}.letter-mark{position:absolute;left:24px;bottom:20px;z-index:2;font-family:Georgia,serif;color:transparent;-webkit-text-stroke:1px rgba(217,183,95,.7);font-size:8rem;line-height:.8;font-style:italic}.letter-copy{padding:56px 54px;align-self:center}.letter p{color:#a8bac6;font-size:1rem;line-height:1.9}.letter strong{display:block;margin-top:22px;color:#fff;font-family:Georgia,serif;font-size:1.3rem;font-style:italic;font-weight:500;line-height:1.5}
 footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-align:center;color:#617687;font-size:.72rem;line-height:1.7}
-@media(max-width:850px){.photo-card.large,.photo-card.medium,.photo-card.small{grid-column:span 6}.hero{grid-template-columns:1fr;min-height:auto;padding-top:42px}.portrait{height:520px;order:2}.hero-copy{order:1}.teams{gap:12px}.tribute{grid-template-columns:1fr;gap:22px}.match-card{padding:26px}.open-private{font-size:0}.open-private:after{content:"Sign in";font-size:.75rem}.prebroadcast-head{align-items:flex-start;flex-direction:column}.tribute-side{align-items:flex-start}.prebroadcast-head p{text-align:left}.legacy-grid{grid-template-columns:repeat(2,1fr)}.letter{grid-template-columns:1fr}.letter-mark{font-size:6rem}}
-@media(max-width:520px){.photo-card.large,.photo-card.medium,.photo-card.small{grid-column:span 12}header,.hero,.match-shell,.tribute,.legacy,.numbers,.letter{width:min(100% - 26px,1320px)}header{padding-top:max(18px,env(safe-area-inset-top))}h1{font-size:clamp(3.4rem,20vw,5.7rem)}.lead{font-size:.98rem}.portrait{height:420px}.portrait img{height:100%}.match-card{padding:22px 16px;border-radius:20px}.team{font-size:clamp(1.65rem,9vw,2.6rem)}.versus{width:42px;height:42px}.match-top{align-items:flex-start;flex-direction:column}.source-bar{align-items:flex-start;flex-direction:column}.source-bar select{width:100%;max-width:none}.legacy-grid{grid-template-columns:1fr}.numbers{grid-template-columns:repeat(2,1fr)}.numbers div:nth-child(2){border-right:0}.numbers div:nth-child(-n+2){border-bottom:1px solid rgba(217,183,95,.15)}.letter-mark{font-size:5rem}}
+@media(max-width:850px){.photo-wall-grid{grid-auto-rows:150px}.photo-card.large,.photo-card.medium,.photo-card.wide{grid-column:span 6;grid-row:span 2}.hero{grid-template-columns:1fr;min-height:auto;padding-top:42px}.portrait{height:520px;order:2}.hero-copy{order:1}.teams{gap:12px}.tribute{grid-template-columns:1fr;gap:22px}.match-card{padding:26px}.open-private{font-size:0}.open-private:after{content:"Sign in";font-size:.75rem}.prebroadcast-head{align-items:flex-start;flex-direction:column}.tribute-side{align-items:flex-start}.prebroadcast-head p{text-align:left}.legacy-grid{grid-template-columns:repeat(2,1fr)}.letter{grid-template-columns:1fr}.letter-art{min-height:420px}.letter-art:after{background:linear-gradient(180deg,transparent 45%,rgba(7,17,27,.96) 100%)}.letter-copy{padding:38px 32px}.letter-mark{font-size:6rem}}
+@media(max-width:520px){.photo-wall-grid{display:block}.photo-card.large,.photo-card.medium,.photo-card.wide{display:block;min-height:300px;margin-bottom:12px}header,.hero,.match-shell,.tribute,.legacy,.numbers,.letter{width:min(100% - 26px,1320px)}header{padding-top:max(18px,env(safe-area-inset-top))}h1{font-size:clamp(3.4rem,20vw,5.7rem)}.lead{font-size:.98rem}.portrait{height:420px}.portrait img{height:100%}.match-card{padding:22px 16px;border-radius:20px}.team{font-size:clamp(1.65rem,9vw,2.6rem)}.versus{width:42px;height:42px}.match-top{align-items:flex-start;flex-direction:column}.source-bar{align-items:flex-start;flex-direction:column}.source-bar select{width:100%;max-width:none}.legacy-grid{grid-template-columns:1fr}.numbers{grid-template-columns:repeat(2,1fr)}.numbers div:nth-child(2){border-right:0}.numbers div:nth-child(-n+2){border-bottom:1px solid rgba(217,183,95,.15)}.letter-mark{font-size:5rem}}
 @media(prefers-reduced-motion:no-preference){.portrait img{animation:reveal 1s cubic-bezier(.2,.7,.2,1) both}.hero-copy{animation:rise .8s ease both}.match-card{animation:rise .8s .15s ease both}@keyframes reveal{from{opacity:0;transform:translateY(30px) scale(.98)}to{opacity:1;transform:none}}@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}}
 </style>
 </head>
@@ -248,17 +252,11 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
         <iframe
           id="tributeFrame"
           title="Lionel Messi tribute video"
-          src="https://www.youtube.com/embed/H2uVrzYQW-I?autoplay=1&mute=1&loop=1&playlist=H2uVrzYQW-I&rel=0&playsinline=1"
+          src="https://www.youtube.com/embed/H2uVrzYQW-I?autoplay=1&mute=1&controls=1&loop=1&playlist=H2uVrzYQW-I&rel=0&playsinline=1"
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
           allowfullscreen
           referrerpolicy="strict-origin-when-cross-origin"
         ></iframe>
-      </div>
-      <div class="video-tabs" id="videoTabs">
-        <button class="active" type="button" data-video="H2uVrzYQW-I">33 amazing Messi moments · Barça</button>
-        <button type="button" data-video="q6Jmuoa90h0">Teammates tribute · Barça</button>
-        <button type="button" data-video="8SqkTw8khDc">Family & teammates tribute · Barça</button>
-        <button type="button" data-video="1iPrFVpMJDI">Iconic celebrations · Barça</button>
       </div>
     </section>
     <p class="note">This temporary tribute page is public for this matchday only. The rest of NINETY remains private.</p>
@@ -276,16 +274,41 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
     <h2>A career that looked like cinema.</h2>
     <p>Barcelona nights, Argentina colors, the number 10, and the moments supporters carried home with them.</p>
   </div>
-  <div class="photo-wall-grid" id="photoWallGrid"></div>
+  <div class="photo-wall-grid">
+    <figure class="photo-card large">
+      <img src="https://images5.alphacoders.com/642/thumb-1920-642891.jpg" alt="Lionel Messi in Argentina colors" loading="lazy">
+      <figcaption><small>ARGENTINA</small><strong>The shirt that carried a country's dream.</strong></figcaption>
+    </figure>
+    <figure class="photo-card medium">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Leo_messi_barce_2005.jpg" alt="Young Lionel Messi at Barcelona in 2005" loading="lazy">
+      <figcaption><small>BARCELONA · 2005</small><strong>Before the records, there was the fearless teenager.</strong></figcaption>
+    </figure>
+    <figure class="photo-card medium">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/c/c8/Lionel_Messi_WC2022.jpg" alt="Lionel Messi at the 2022 World Cup" loading="lazy">
+      <figcaption><small>QATAR · 2022</small><strong>The night the dream became history.</strong></figcaption>
+    </figure>
+    <figure class="photo-card wide">
+      <img src="https://images2.alphacoders.com/133/thumb-1920-1335727.jpeg" alt="Lionel Messi in Barcelona colors" loading="lazy">
+      <figcaption><small>BARCELONA</small><strong>European nights under the brightest lights.</strong></figcaption>
+    </figure>
+    <figure class="photo-card medium">
+      <img src="https://w0.peakpx.com/wallpaper/526/416/HD-wallpaper-lionel-messi-argentina-national-football-team-portrait-football-star-argentinian-footballer-football-match-argentina.jpg" alt="Lionel Messi celebrating for Argentina" loading="lazy">
+      <figcaption><small>ARGENTINA</small><strong>The roar of a nation finally answered.</strong></figcaption>
+    </figure>
+    <figure class="photo-card medium">
+      <img src="https://wallpapers.com/images/hd/messi-inter-miami-corner-kick-fdwaqedo6ftznjmx.jpg" alt="Lionel Messi for Inter Miami" loading="lazy">
+      <figcaption><small>MIAMI</small><strong>A different continent, the same magnetic number 10.</strong></figcaption>
+    </figure>
+  </div>
 </section>
 
 <section class="legacy" aria-label="Lionel Messi legacy">
   <div class="legacy-heading"><small>THE JOURNEY</small><h2>From Rosario to forever.</h2><p>Not a list of statistics. A few chapters that changed how an entire generation remembers football.</p></div>
   <div class="legacy-grid">
-    <article><span>01</span><small>ROSARIO</small><h3>The beginning</h3><p>A little boy with a ball, a dream, and a family willing to cross an ocean for it.</p></article>
-    <article><span>10</span><small>BARCELONA</small><h3>The masterpiece</h3><p>From La Masia to the Camp Nou, the number 10 became shorthand for possibility.</p></article>
-    <article><span>🇦🇷</span><small>ARGENTINA</small><h3>The weight of home</h3><p>He carried expectation, heartbreak and criticism until the shirt finally felt like celebration.</p></article>
-    <article><span>★</span><small>QATAR 2022</small><h3>The dream completed</h3><p>The image of the captain lifting the World Cup became the ending millions had waited to see.</p></article>
+    <article style="--legacy-img:url('https://upload.wikimedia.org/wikipedia/commons/2/26/Leo_messi_barce_2005.jpg')"><span>01</span><small>ROSARIO → BARCELONA</small><h3>The beginning</h3><p>A little boy with a ball, a dream, and a family willing to cross an ocean for it.</p></article>
+    <article style="--legacy-img:url('https://images2.alphacoders.com/133/thumb-1920-1335727.jpeg')"><span>10</span><small>BARCELONA</small><h3>The masterpiece</h3><p>From La Masia to Camp Nou, the number 10 became shorthand for possibility.</p></article>
+    <article style="--legacy-img:url('https://images5.alphacoders.com/642/thumb-1920-642891.jpg')"><span>🇦🇷</span><small>ARGENTINA</small><h3>The weight of home</h3><p>Expectation, heartbreak, criticism, then joy. The shirt finally felt like celebration.</p></article>
+    <article style="--legacy-img:url('https://upload.wikimedia.org/wikipedia/commons/c/c8/Lionel_Messi_WC2022.jpg')"><span>★</span><small>QATAR 2022</small><h3>The dream completed</h3><p>The captain lifting the World Cup became the ending millions had waited to see.</p></article>
   </div>
 </section>
 
@@ -296,9 +319,19 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
   <div><strong>10</strong><span>The number that became his</span></div>
 </section>
 
+<section class="memory-marquee" aria-label="Messi tribute phrases">
+  <div class="memory-track">
+    <span>ROSARIO</span><b>10</b><span>BARCELONA</span><b>10</b><span>ARGENTINA</span><b>10</b><span>QATAR</span><b>10</b><span>MIAMI</span><b>10</b>
+    <span>ROSARIO</span><b>10</b><span>BARCELONA</span><b>10</b><span>ARGENTINA</span><b>10</b><span>QATAR</span><b>10</b><span>MIAMI</span><b>10</b>
+  </div>
+</section>
+
 <section class="letter">
-  <div class="letter-mark">10</div>
-  <div>
+  <div class="letter-art">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c8/Lionel_Messi_WC2022.jpg" alt="Lionel Messi in Argentina colors" loading="lazy">
+    <span class="letter-mark">10</span>
+  </div>
+  <div class="letter-copy">
     <small>ONE LAST THANK YOU</small>
     <h2>Gracias for making football feel like this.</h2>
     <p>For the dribbles that made defenders stop. For the passes nobody else saw. For the free kicks that bent toward the impossible. For every quiet walk back to the halfway line after doing something extraordinary. For Barcelona. For Argentina. For every kid who tried the same move the next morning.</p>
@@ -309,9 +342,10 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
 </main>
 <footer>NINETY · Special Matchday Tribute<br>Image used under CC BY 4.0. This page is an independent fan tribute and is not affiliated with Lionel Messi, AFA or FIFA.</footer>
 <script>
-const fallbackKickoff=${FALLBACK_KICKOFF};
-let data=null, timer=null, selected=0, carouselIndex=0, carouselTimer=null;
+const fallbackKickoff=1791327600000;
+let data=null,selected=0,carouselIndex=0,carouselTimer=null;
 const $=id=>document.getElementById(id);
+
 const slides=[...document.querySelectorAll(".messi-slide")];
 const dotsRoot=$("carouselDots");
 function showSlide(index){
@@ -319,47 +353,41 @@ function showSlide(index){
   slides.forEach((slide,i)=>slide.classList.toggle("active",i===carouselIndex));
   [...dotsRoot.children].forEach((dot,i)=>dot.classList.toggle("active",i===carouselIndex));
 }
-slides.forEach((_,i)=>{const dot=document.createElement("button");dot.type="button";dot.className="carousel-dot"+(i===0?" active":"");dot.setAttribute("aria-label","Show career image "+(i+1));dot.onclick=()=>{showSlide(i);restartCarousel();
-const wall=$("photoWallGrid");
-if(wall){
-  slides.forEach((slide,i)=>{
-    const img=slide.querySelector("img"),era=slide.querySelector("small"),caption=slide.querySelector("strong");
-    if(!img)return;
-    const figure=document.createElement("figure");
-    figure.className="photo-card "+(i%5===0?"large":i%3===0?"medium":"small");
-    const photo=document.createElement("img");
-    photo.src=img.currentSrc||img.src;photo.alt=img.alt||"Lionel Messi";photo.loading="lazy";
-    const cap=document.createElement("figcaption");
-    const small=document.createElement("small");small.textContent=era?.textContent||"Lionel Messi";
-    const strong=document.createElement("strong");strong.textContent=caption?.textContent||"A moment from Messi's journey.";
-    cap.append(small,strong);figure.append(photo,cap);wall.appendChild(figure);
-  });
-}};dotsRoot.appendChild(dot);});
-function restartCarousel(){if(carouselTimer)clearInterval(carouselTimer);carouselTimer=setInterval(()=>showSlide(carouselIndex+1),4800);}
+slides.forEach((_,i)=>{
+  const dot=document.createElement("button");
+  dot.type="button";
+  dot.className="carousel-dot"+(i===0?" active":"");
+  dot.setAttribute("aria-label","Show career image "+(i+1));
+  dot.onclick=()=>{showSlide(i);restartCarousel();};
+  dotsRoot.appendChild(dot);
+});
+function restartCarousel(){
+  if(carouselTimer)clearInterval(carouselTimer);
+  carouselTimer=setInterval(()=>showSlide(carouselIndex+1),4800);
+}
 $("carouselPrev").onclick=()=>{showSlide(carouselIndex-1);restartCarousel();};
 $("carouselNext").onclick=()=>{showSlide(carouselIndex+1);restartCarousel();};
 restartCarousel();
-const tributeVideos=["H2uVrzYQW-I","q6Jmuoa90h0","8SqkTw8khDc","1iPrFVpMJDI"];
-let tributeVideoIndex=0,tributeVideoTimer=null;
-function tributeSrc(id){return "https://www.youtube.com/embed/"+encodeURIComponent(id)+"?autoplay=1&mute=1&loop=1&playlist="+encodeURIComponent(id)+"&rel=0&playsinline=1";}
-function playTribute(index){
-  tributeVideoIndex=(index+tributeVideos.length)%tributeVideos.length;
-  $("tributeFrame").src=tributeSrc(tributeVideos[tributeVideoIndex]);
+
+const tributeFrame=$("tributeFrame");
+const tributeVideoId="H2uVrzYQW-I";
+function ensureTribute(){
+  if(!tributeFrame)return;
+  const src="https://www.youtube.com/embed/"+tributeVideoId+"?autoplay=1&mute=1&controls=1&loop=1&playlist="+tributeVideoId+"&rel=0&playsinline=1";
+  if(tributeFrame.getAttribute("src")!==src)tributeFrame.setAttribute("src",src);
 }
-function startTributeRotation(){
-  if(tributeVideoTimer)clearInterval(tributeVideoTimer);
-  tributeVideoTimer=setInterval(()=>playTribute(tributeVideoIndex+1),180000);
+ensureTribute();
+
+function kickoffLabel(ts){
+  return new Date(ts).toLocaleString([], {weekday:"long",hour:"numeric",minute:"2-digit",timeZoneName:"short"});
 }
-playTribute(0);
-startTributeRotation();
-function kickoffLabel(ts){return new Date(ts).toLocaleString([], {weekday:"long",hour:"numeric",minute:"2-digit",timeZoneName:"short"});}
 function tick(){
-  const kickoff=data?.kickoff||fallbackKickoff, diff=kickoff-Date.now();
+  const kickoff=data?.kickoff||fallbackKickoff,diff=kickoff-Date.now();
   $("kickoffTime").textContent=kickoffLabel(kickoff);
   if(diff>0){
     const s=Math.floor(diff/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
     $("countdown").textContent=String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0")+" TO KICKOFF";
-  } else $("countdown").textContent=data?.live?"LIVE NOW":"KICKOFF REACHED";
+  }else $("countdown").textContent=data?.live?"LIVE NOW":"KICKOFF REACHED";
 }
 function renderPlayer(index){
   const stream=data?.streams?.[index];if(!stream)return;
@@ -376,41 +404,60 @@ function renderPlayer(index){
 }
 function render(){
   if(!data)return;
-  $("home").textContent=(data.home||"Argentina").toUpperCase();$("away").textContent=(data.away||"Benin").toUpperCase();
+  $("home").textContent=(data.home||"Argentina").toUpperCase();
+  $("away").textContent=(data.away||"Benin").toUpperCase();
   const streams=Array.isArray(data.streams)?data.streams:[];
   $("statusText").textContent=streams.length?(data.live?"LIVE NOW":"BROADCAST OPEN"):data.live?"LIVE · broadcast pending":"MATCHDAY";
-  const btn=$("watchButton"), notice=$("broadcastNotice"), tribute=$("prebroadcast"), toggle=$("tributeToggle");
+  const btn=$("watchButton"),notice=$("broadcastNotice"),tribute=$("prebroadcast"),toggle=$("tributeToggle");
   if(streams.length){
-    btn.disabled=false;
+    btn.disabled=false;btn.style.display="";
     btn.textContent=data.live?"Watch live broadcast":"Watch available broadcast";
     notice.className="broadcast-notice visible "+(data.live?"live":"early");
     notice.textContent=data.live?"The farewell broadcast is LIVE now.":"The broadcast feed is already available before kickoff.";
-    tribute.classList.add("optional");
-    tribute.classList.remove("open");
+    tribute.classList.add("optional");tribute.classList.remove("open");
     $("tributeLabel").textContent="TRIBUTE ARCHIVE";
-    $("tributeCopy").textContent="The tribute videos are still here if you want to keep watching them.";
+    $("tributeCopy").textContent="The tribute is still here whenever you want to relive the magic.";
     toggle.hidden=false;toggle.textContent="Watch tribute instead";
-    toggle.onclick=()=>{const open=tribute.classList.toggle("open");toggle.textContent=open?"Hide tribute":"Watch tribute instead";};
-    btn.onclick=()=>{tribute.classList.add("optional");tribute.classList.remove("open");$("playerWrap").classList.add("visible");renderPlayer(selected);btn.style.display="none";$("playerWrap").scrollIntoView({behavior:"smooth",block:"center"});};
-  } else {
-    notice.className="broadcast-notice";
-    notice.textContent="";
+    toggle.onclick=()=>{
+      const open=tribute.classList.toggle("open");
+      toggle.textContent=open?"Hide tribute":"Watch tribute instead";
+      if(open)ensureTribute();
+    };
+    btn.onclick=()=>{
+      tribute.classList.add("optional");tribute.classList.remove("open");
+      $("playerWrap").classList.add("visible");
+      renderPlayer(selected);
+      btn.style.display="none";
+      $("playerWrap").scrollIntoView({behavior:"smooth",block:"center"});
+    };
+  }else{
+    notice.className="broadcast-notice";notice.textContent="";
     btn.disabled=true;btn.style.display="";
     btn.textContent=data.live?"Waiting for broadcast source":"Checking for an early broadcast";
     tribute.classList.remove("optional","open");
     $("tributeLabel").textContent="WHILE WE WAIT";
-    $("tributeCopy").textContent="Official FC Barcelona Messi tributes play here until an early or live broadcast source becomes available.";
-    toggle.hidden=true;
+    $("tributeCopy").textContent="A looping Barça tribute plays here until an early or live broadcast source becomes available.";
+    toggle.hidden=true;ensureTribute();
   }
   const select=$("sourceSelect");select.innerHTML="";
-  streams.forEach((s,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent="Source "+(i+1)+" · "+(s.language||"Stream")+(s.hd?" · HD":"");select.appendChild(o);});
+  streams.forEach((s,i)=>{
+    const o=document.createElement("option");
+    o.value=String(i);
+    o.textContent="Source "+(i+1)+" · "+(s.language||"Stream")+(s.hd?" · HD":"");
+    select.appendChild(o);
+  });
   select.onchange=()=>renderPlayer(Number(select.value));
   tick();
 }
 async function load(){
-  try{const r=await fetch("/messi/data",{cache:"no-store"});if(r.ok){data=await r.json();render();}}catch{}
+  try{
+    const r=await fetch("/messi/data",{cache:"no-store"});
+    if(r.ok){data=await r.json();render();}
+  }catch{}
 }
-load();setInterval(load,30000);timer=setInterval(tick,1000);
+load();
+setInterval(load,30000);
+setInterval(tick,1000);
 </script>
 </body></html>`;
 
