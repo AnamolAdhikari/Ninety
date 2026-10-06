@@ -145,8 +145,15 @@ h1 .soft{display:block;color:transparent;-webkit-text-stroke:1px rgba(247,251,25
 .portrait{align-self:end;position:relative;height:650px;display:flex;align-items:flex-end;justify-content:center}
 .portrait:before{content:"10";position:absolute;right:-4%;top:2%;font-size:clamp(13rem,24vw,23rem);font-weight:950;line-height:.7;color:rgba(118,199,242,.045);letter-spacing:-.1em}
 .portrait:after{content:"";position:absolute;inset:14% -10% 1%;z-index:-1;background:radial-gradient(ellipse at 50% 58%,rgba(118,199,242,.30),transparent 57%)}
-.portrait img{height:min(92%,620px);max-width:100%;object-fit:contain;object-position:bottom;filter:drop-shadow(0 32px 55px rgba(0,0,0,.55));border-radius:22px 22px 0 0}
-.photo-credit{position:absolute;right:10px;bottom:10px;background:rgba(3,10,16,.72);backdrop-filter:blur(8px);padding:6px 9px;border-radius:7px;color:#91a4b3;font-size:.57rem}.photo-credit a{color:#b7c8d4}
+.messi-carousel{position:relative;width:100%;height:100%;overflow:hidden;border-radius:26px 26px 0 0;box-shadow:0 34px 80px rgba(0,0,0,.38)}
+.messi-slide{position:absolute;inset:0;opacity:0;transform:scale(1.035);transition:opacity .9s ease,transform 5.4s ease;pointer-events:none}
+.messi-slide.active{opacity:1;transform:scale(1);pointer-events:auto}
+.messi-slide:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(3,10,16,.84) 100%)}
+.messi-slide img{width:100%;height:100%;object-fit:cover;object-position:center 18%;display:block;filter:saturate(.9) contrast(1.04)}
+.messi-slide[data-era="Argentina"] img{object-position:center 20%}
+.messi-slide-copy{position:absolute;left:22px;right:22px;bottom:55px;z-index:2}.messi-slide-copy small{display:block;color:var(--sky);font-size:.62rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.messi-slide-copy strong{display:block;margin-top:5px;font-family:Georgia,serif;font-size:1.25rem;font-weight:500;font-style:italic}
+.carousel-controls{position:absolute;z-index:4;left:18px;right:18px;bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px}.carousel-dots{display:flex;gap:7px}.carousel-dot{width:7px;height:7px;padding:0;border:0;border-radius:999px;background:rgba(255,255,255,.32);cursor:pointer;transition:width .25s,background .25s}.carousel-dot.active{width:24px;background:var(--sky)}.carousel-arrows{display:flex;gap:7px}.carousel-arrows button{display:grid;place-items:center;width:32px;height:32px;border:1px solid rgba(255,255,255,.18);border-radius:50%;background:rgba(3,10,16,.55);color:white;cursor:pointer;backdrop-filter:blur(8px)}
+.photo-credit{position:absolute;z-index:5;right:10px;top:10px;background:rgba(3,10,16,.72);backdrop-filter:blur(8px);padding:6px 9px;border-radius:7px;color:#91a4b3;font-size:.55rem}.photo-credit a{color:#b7c8d4}
 .match-shell{width:min(1180px,calc(100% - 40px));margin:0 auto 80px;position:relative}
 .match-card{position:relative;overflow:hidden;border:1px solid rgba(118,199,242,.24);border-radius:28px;background:linear-gradient(135deg,rgba(10,27,42,.96),rgba(7,18,29,.96));box-shadow:0 32px 100px rgba(0,0,0,.35);padding:38px}
 .match-card:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(118,199,242,.06),transparent 35%,transparent 65%,rgba(118,199,242,.06));pointer-events:none}
@@ -157,9 +164,10 @@ h1 .soft{display:block;color:transparent;-webkit-text-stroke:1px rgba(247,251,25
 .source-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;font-size:.75rem;color:#8498a8}.source-bar select{max-width:240px;background:#0d1a26;color:#dce7ef;border:1px solid #294052;border-radius:9px;padding:8px 10px}
 .status-action{display:flex;justify-content:center;margin-top:28px}.watch-btn{border:0;border-radius:999px;padding:15px 24px;background:linear-gradient(135deg,#8dd7fb,#5bb8e8);color:#06111a;font-weight:900;font-size:.88rem;cursor:pointer;box-shadow:0 12px 35px rgba(91,184,232,.20)}.watch-btn:disabled{opacity:.55;cursor:default}
 .note{text-align:center;color:#778c9b;font-size:.75rem;line-height:1.6;margin:18px auto 0;max-width:700px}
+.prebroadcast{margin-top:30px;border-top:1px solid rgba(255,255,255,.09);padding-top:28px}.prebroadcast.hidden{display:none}.prebroadcast-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:16px}.prebroadcast-head div small{display:block;color:var(--sky);font-size:.63rem;font-weight:900;letter-spacing:.17em;text-transform:uppercase}.prebroadcast-head h3{margin:7px 0 0;font-size:clamp(1.3rem,3vw,2rem);letter-spacing:-.035em}.prebroadcast-head p{margin:0;max-width:440px;color:#8296a5;font-size:.77rem;line-height:1.6;text-align:right}.tribute-reel{aspect-ratio:16/9;overflow:hidden;border-radius:18px;border:1px solid rgba(255,255,255,.10);background:#020507;box-shadow:0 18px 50px rgba(0,0,0,.28)}.tribute-reel iframe{width:100%;height:100%;border:0}.reel-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.reel-tabs button{border:1px solid #294052;border-radius:999px;background:#0c1924;color:#9fb3c1;padding:8px 12px;font-size:.72rem;font-weight:750;cursor:pointer}.reel-tabs button.active{border-color:rgba(118,199,242,.6);background:rgba(118,199,242,.10);color:#dff4ff}
 .tribute{width:min(1180px,calc(100% - 40px));margin:0 auto 90px;display:grid;grid-template-columns:.8fr 1.2fr;gap:60px;padding-top:30px}.tribute aside{color:var(--gold);font-family:Georgia,serif;font-size:clamp(2.4rem,5vw,4.6rem);line-height:1.08;font-style:italic}.tribute p{font-size:1.04rem;line-height:1.9;color:#aebfcb;margin:0}.tribute p strong{color:#fff}
 footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-align:center;color:#617687;font-size:.72rem;line-height:1.7}
-@media(max-width:850px){.hero{grid-template-columns:1fr;min-height:auto;padding-top:42px}.portrait{height:520px;order:2}.hero-copy{order:1}.teams{gap:12px}.tribute{grid-template-columns:1fr;gap:22px}.match-card{padding:26px}.open-private{font-size:0}.open-private:after{content:"Sign in";font-size:.75rem}}
+@media(max-width:850px){.hero{grid-template-columns:1fr;min-height:auto;padding-top:42px}.portrait{height:520px;order:2}.hero-copy{order:1}.teams{gap:12px}.tribute{grid-template-columns:1fr;gap:22px}.match-card{padding:26px}.open-private{font-size:0}.open-private:after{content:"Sign in";font-size:.75rem}.prebroadcast-head{align-items:flex-start;flex-direction:column}.prebroadcast-head p{text-align:left}}
 @media(max-width:520px){header,.hero,.match-shell,.tribute{width:min(100% - 26px,1320px)}header{padding-top:max(18px,env(safe-area-inset-top))}h1{font-size:clamp(3.4rem,20vw,5.7rem)}.lead{font-size:.98rem}.portrait{height:420px}.portrait img{height:100%}.match-card{padding:22px 16px;border-radius:20px}.team{font-size:clamp(1.65rem,9vw,2.6rem)}.versus{width:42px;height:42px}.match-top{align-items:flex-start;flex-direction:column}.source-bar{align-items:flex-start;flex-direction:column}.source-bar select{width:100%;max-width:none}}
 @media(prefers-reduced-motion:no-preference){.portrait img{animation:reveal 1s cubic-bezier(.2,.7,.2,1) both}.hero-copy{animation:rise .8s ease both}.match-card{animation:rise .8s .15s ease both}@keyframes reveal{from{opacity:0;transform:translateY(30px) scale(.98)}to{opacity:1;transform:none}}@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}}
 </style>
@@ -176,8 +184,33 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
     <div class="signature"><span class="ten">10</span><div><span>A NINETY matchday tribute</span><b>For the joy, the magic, the memories.</b></div></div>
   </div>
   <div class="portrait">
-    <img src="${MESSI_IMAGE}" alt="Lionel Messi playing for Argentina" referrerpolicy="no-referrer">
-    <small class="photo-credit">Photo: Hossein Zohrevand / Tasnim News Agency · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a></small>
+    <div class="messi-carousel" id="messiCarousel" aria-label="Lionel Messi career gallery">
+      <article class="messi-slide active" data-era="Barcelona">
+        <img src="https://commons.wikimedia.org/wiki/Special:Redirect/file/Leo%20messi%20barce%202005.jpg?width=900" alt="A young Lionel Messi playing for Barcelona in 2005" referrerpolicy="no-referrer">
+        <div class="messi-slide-copy"><small>2005 · Barcelona</small><strong>The teenager who made the world look twice.</strong></div>
+      </article>
+      <article class="messi-slide" data-era="Barcelona">
+        <img loading="lazy" src="https://commons.wikimedia.org/wiki/Special:Redirect/file/Lionel%20Messi%20of%20FC%20Barcelona%2C%20April%2011%2C%202009.jpg?width=900" alt="Lionel Messi playing for Barcelona in 2009" referrerpolicy="no-referrer">
+        <div class="messi-slide-copy"><small>2009 · Barcelona</small><strong>From promise to the center of football.</strong></div>
+      </article>
+      <article class="messi-slide" data-era="Argentina">
+        <img loading="lazy" src="${MESSI_IMAGE}" alt="Lionel Messi playing for Argentina at the 2022 World Cup" referrerpolicy="no-referrer">
+        <div class="messi-slide-copy"><small>2022 · Argentina</small><strong>The captain. The trophy. The dream fulfilled.</strong></div>
+      </article>
+      <article class="messi-slide" data-era="PSG">
+        <img loading="lazy" src="https://commons.wikimedia.org/wiki/Special:Redirect/file/Lionel%20Messi%20PSG%20%28cropped%29.jpg?width=900" alt="Lionel Messi playing for Paris Saint-Germain" referrerpolicy="no-referrer">
+        <div class="messi-slide-copy"><small>2021 · Paris</small><strong>A new city, the same left foot.</strong></div>
+      </article>
+      <article class="messi-slide" data-era="Inter Miami">
+        <img loading="lazy" src="https://commons.wikimedia.org/wiki/Special:Redirect/file/20240204%20Hong%20Kong%20v%20Inter%20Miami%2001.png?width=900" alt="Lionel Messi with Inter Miami in 2024" referrerpolicy="no-referrer">
+        <div class="messi-slide-copy"><small>2024 · Miami</small><strong>The final club chapter, still making stadiums stop.</strong></div>
+      </article>
+      <div class="carousel-controls">
+        <div class="carousel-dots" id="carouselDots" aria-label="Choose career image"></div>
+        <div class="carousel-arrows"><button type="button" id="carouselPrev" aria-label="Previous Messi image">‹</button><button type="button" id="carouselNext" aria-label="Next Messi image">›</button></div>
+      </div>
+      <small class="photo-credit">Career gallery · <a href="https://commons.wikimedia.org/wiki/Category:Lionel_Messi" target="_blank" rel="noopener noreferrer">Wikimedia Commons / CC licenses</a></small>
+    </div>
   </div>
 </section>
 
@@ -191,6 +224,11 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
       <div class="player-stage" id="playerStage"></div>
       <div class="source-bar"><span id="sourceText"></span><select id="sourceSelect" aria-label="Broadcast source"></select></div>
     </div>
+    <section class="prebroadcast" id="prebroadcast">
+      <div class="prebroadcast-head"><div><small>WHILE WE WAIT</small><h3>Relive the magic.</h3></div><p>Official FIFA highlights play here until an early or live broadcast source becomes available.</p></div>
+      <div class="tribute-reel"><iframe id="tributeFrame" title="Lionel Messi official FIFA highlights" src="https://www.youtube-nocookie.com/embed/AVZUj1wDdqs?autoplay=1&mute=1&loop=1&playlist=AVZUj1wDdqs&controls=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+      <div class="reel-tabs" id="reelTabs"><button class="active" type="button" data-video="AVZUj1wDdqs">World Cup goals · FIFA</button><button type="button" data-video="tVFkz5-2p2I">2026 World Cup goals · FIFA</button></div>
+    </section>
     <p class="note">This temporary tribute page is public for this matchday only. The rest of NINETY remains private.</p>
   </div>
 </section>
@@ -203,8 +241,25 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
 <footer>NINETY · Special Matchday Tribute<br>Image used under CC BY 4.0. This page is an independent fan tribute and is not affiliated with Lionel Messi, AFA or FIFA.</footer>
 <script>
 const fallbackKickoff=${FALLBACK_KICKOFF};
-let data=null, timer=null, selected=0;
+let data=null, timer=null, selected=0, carouselIndex=0, carouselTimer=null;
 const $=id=>document.getElementById(id);
+const slides=[...document.querySelectorAll(".messi-slide")];
+const dotsRoot=$("carouselDots");
+function showSlide(index){
+  carouselIndex=(index+slides.length)%slides.length;
+  slides.forEach((slide,i)=>slide.classList.toggle("active",i===carouselIndex));
+  [...dotsRoot.children].forEach((dot,i)=>dot.classList.toggle("active",i===carouselIndex));
+}
+slides.forEach((_,i)=>{const dot=document.createElement("button");dot.type="button";dot.className="carousel-dot"+(i===0?" active":"");dot.setAttribute("aria-label","Show career image "+(i+1));dot.onclick=()=>{showSlide(i);restartCarousel();};dotsRoot.appendChild(dot);});
+function restartCarousel(){if(carouselTimer)clearInterval(carouselTimer);carouselTimer=setInterval(()=>showSlide(carouselIndex+1),4800);}
+$("carouselPrev").onclick=()=>{showSlide(carouselIndex-1);restartCarousel();};
+$("carouselNext").onclick=()=>{showSlide(carouselIndex+1);restartCarousel();};
+restartCarousel();
+document.querySelectorAll("#reelTabs button").forEach(button=>button.addEventListener("click",()=>{
+  const id=button.getAttribute("data-video");if(!id)return;
+  $("tributeFrame").src="https://www.youtube-nocookie.com/embed/"+encodeURIComponent(id)+"?autoplay=1&mute=1&loop=1&playlist="+encodeURIComponent(id)+"&controls=1&rel=0";
+  document.querySelectorAll("#reelTabs button").forEach(item=>item.classList.toggle("active",item===button));
+}));
 function fmt(ts){return new Date(ts).toLocaleString([], {weekday:"long",month:"long",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"});}
 function tick(){
   const kickoff=data?.kickoff||fallbackKickoff, diff=kickoff-Date.now();
@@ -228,10 +283,10 @@ function render(){
   if(!data)return;
   $("home").textContent=(data.home||"Argentina").toUpperCase();$("away").textContent=(data.away||"Benin").toUpperCase();
   const streams=Array.isArray(data.streams)?data.streams:[];
-  $("statusText").textContent=data.live?(streams.length?"LIVE NOW":"LIVE · broadcast pending"):"MATCHDAY";
+  $("statusText").textContent=streams.length?(data.live?"LIVE NOW":"BROADCAST OPEN"):data.live?"LIVE · broadcast pending":"MATCHDAY";
   const btn=$("watchButton");
-  if(data.live&&streams.length){btn.disabled=false;btn.textContent="Enter the farewell match";btn.onclick=()=>{$("playerWrap").classList.add("visible");renderPlayer(selected);btn.style.display="none";$("playerWrap").scrollIntoView({behavior:"smooth",block:"center"});};}
-  else {btn.disabled=true;btn.textContent=data.live?"Waiting for broadcast source":"Opens when the match goes live";}
+  if(streams.length){btn.disabled=false;btn.textContent=data.live?"Enter the farewell match":"Early broadcast available · Watch now";btn.onclick=()=>{$("prebroadcast").classList.add("hidden");$("tributeFrame").src="about:blank";$("playerWrap").classList.add("visible");renderPlayer(selected);btn.style.display="none";$("playerWrap").scrollIntoView({behavior:"smooth",block:"center"});};}
+  else {btn.disabled=true;btn.textContent=data.live?"Waiting for broadcast source":"Checking for an early broadcast";$("prebroadcast").classList.remove("hidden");}
   const select=$("sourceSelect");select.innerHTML="";
   streams.forEach((s,i)=>{const o=document.createElement("option");o.value=String(i);o.textContent="Source "+(i+1)+" · "+(s.language||"Stream")+(s.hd?" · HD":"");select.appendChild(o);});
   select.onchange=()=>renderPlayer(Number(select.value));
@@ -240,7 +295,7 @@ function render(){
 async function load(){
   try{const r=await fetch("/messi/data",{cache:"no-store"});if(r.ok){data=await r.json();render();}}catch{}
 }
-load();setInterval(load,60000);timer=setInterval(tick,1000);
+load();setInterval(load,30000);timer=setInterval(tick,1000);
 </script>
 </body></html>`;
 
@@ -248,7 +303,7 @@ load();setInterval(load,60000);timer=setInterval(tick,1000);
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "public, max-age=30, s-maxage=60",
-      "Content-Security-Policy": "default-src 'none'; img-src https://upload.wikimedia.org data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-src https:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
+      "Content-Security-Policy": "default-src 'none'; img-src https://upload.wikimedia.org https://commons.wikimedia.org data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-src https://www.youtube-nocookie.com https:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
       "Referrer-Policy": "no-referrer",
       "X-Content-Type-Options": "nosniff",
       "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
