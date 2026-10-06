@@ -384,7 +384,10 @@ function ensureTribute(force=false){
   }
   if(tributeFrame.getAttribute("src")!==src)tributeFrame.setAttribute("src",src);
 }
-ensureTribute();
+function stopTribute(){
+  if(!tributeFrame)return;
+  if(tributeFrame.getAttribute("src")!=="about:blank")tributeFrame.setAttribute("src","about:blank");
+}
 
 function kickoffLabel(ts){
   return new Date(ts).toLocaleString([], {weekday:"long",hour:"numeric",minute:"2-digit",timeZoneName:"short"});
@@ -417,34 +420,43 @@ function render(){
   const streams=Array.isArray(data.streams)?data.streams:[];
   $("statusText").textContent=streams.length?(data.live?"LIVE NOW":"BROADCAST OPEN"):data.live?"LIVE · broadcast pending":"MATCHDAY";
   const btn=$("watchButton"),notice=$("broadcastNotice"),tribute=$("prebroadcast"),toggle=$("tributeToggle");
-  if(streams.length){
-    btn.disabled=false;btn.style.display="";
-    btn.textContent=data.live?"Watch live broadcast":"Watch available broadcast";
-    notice.className="broadcast-notice visible "+(data.live?"live":"early");
-    notice.textContent=data.live?"The farewell broadcast is LIVE now.":"The broadcast feed is already available before kickoff.";
+  if(streams.length||data.live){
     tribute.classList.add("optional");tribute.classList.remove("open");
+    stopTribute();
     $("tributeLabel").textContent="TRIBUTE ARCHIVE";
-    $("tributeCopy").textContent="The tribute is still here whenever you want to relive the magic.";
+    $("tributeCopy").textContent=streams.length?"Broadcast comes first. The tribute is still available if you want it.":"The live match window is active. The tribute remains available on demand.";
     toggle.hidden=false;toggle.textContent="Watch tribute instead";
     toggle.onclick=()=>{
       const open=tribute.classList.toggle("open");
       toggle.textContent=open?"Hide tribute":"Watch tribute instead";
-      if(open)ensureTribute(true);
+      if(open)ensureTribute(true);else stopTribute();
     };
-    btn.onclick=()=>{
-      tribute.classList.add("optional");tribute.classList.remove("open");
-      $("playerWrap").classList.add("visible");
-      renderPlayer(selected);
-      btn.style.display="none";
-      $("playerWrap").scrollIntoView({behavior:"smooth",block:"center"});
-    };
+
+    if(streams.length){
+      btn.disabled=false;btn.style.display="";
+      btn.textContent=data.live?"Watch live broadcast":"Watch available broadcast";
+      notice.className="broadcast-notice visible "+(data.live?"live":"early");
+      notice.textContent=data.live?"The farewell broadcast is LIVE now.":"The broadcast feed is already available before kickoff.";
+      btn.onclick=()=>{
+        tribute.classList.add("optional");tribute.classList.remove("open");stopTribute();
+        $("playerWrap").classList.add("visible");
+        renderPlayer(selected);
+        btn.style.display="none";
+        $("playerWrap").scrollIntoView({behavior:"smooth",block:"center"});
+      };
+    }else{
+      notice.className="broadcast-notice visible live";
+      notice.textContent="The live match window is active. NINETY is checking for the broadcast source.";
+      btn.disabled=true;btn.style.display="";
+      btn.textContent="Waiting for broadcast source";
+    }
   }else{
     notice.className="broadcast-notice";notice.textContent="";
     btn.disabled=true;btn.style.display="";
-    btn.textContent=data.live?"Waiting for broadcast source":"Checking for an early broadcast";
+    btn.textContent="Checking for an early broadcast";
     tribute.classList.remove("optional","open");
     $("tributeLabel").textContent="WHILE WE WAIT";
-    $("tributeCopy").textContent="A looping Barça tribute plays here until an early or live broadcast source becomes available.";
+    $("tributeCopy").textContent="The Messi tribute starts automatically while we wait for the broadcast.";
     toggle.hidden=true;ensureTribute();
   }
   const select=$("sourceSelect");select.innerHTML="";
