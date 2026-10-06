@@ -1,11 +1,15 @@
 import handler from "vinext/server/fetch-handler";
 import { authenticate, type AuthEnv } from "./auth";
+import { messiData, messiPage } from "./messi";
 export { MatchPresence } from "./presence";
 export { NinetyAccounts } from "./accounts";
 export default {
   async fetch(request: Request, env: AuthEnv & { ASSETS: Fetcher }, ctx: ExecutionContext) {
+    const pathname = new URL(request.url).pathname;
+    if (pathname === "/messi" && (request.method === "GET" || request.method === "HEAD")) return messiPage();
+    if (pathname === "/messi/data" && request.method === "GET") return messiData();
     // Public cleanup worker carries no app content and removes obsolete offline caches.
-    if (new URL(request.url).pathname === "/sw.js") return new Response(
+    if (pathname === "/sw.js") return new Response(
       `self.addEventListener("install",()=>self.skipWaiting());self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith("ninety-")).map(key=>caches.delete(key)))).then(()=>self.clients.claim()).then(()=>self.registration.unregister())));`,
       { headers: { "Content-Type": "application/javascript", "Cache-Control": "no-store" } },
     );
