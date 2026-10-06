@@ -157,7 +157,7 @@ h1 .soft{display:block;color:transparent;-webkit-text-stroke:1px rgba(247,251,25
 .match-shell{width:min(1180px,calc(100% - 40px));margin:0 auto 80px;position:relative}
 .match-card{position:relative;overflow:hidden;border:1px solid rgba(118,199,242,.24);border-radius:28px;background:linear-gradient(135deg,rgba(10,27,42,.96),rgba(7,18,29,.96));box-shadow:0 32px 100px rgba(0,0,0,.35);padding:38px}
 .match-card:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(118,199,242,.06),transparent 35%,transparent 65%,rgba(118,199,242,.06));pointer-events:none}
-.match-top{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:34px}.match-top span{font-size:.7rem;font-weight:900;letter-spacing:.17em;text-transform:uppercase;color:var(--sky)}.match-top b{font-size:.78rem;color:#d6e0e7;font-weight:700}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff4c62;box-shadow:0 0 0 6px rgba(255,76,98,.12);margin-right:9px}
+.match-top{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:34px}.match-top>span{font-size:.7rem;font-weight:900;letter-spacing:.17em;text-transform:uppercase;color:var(--sky)}.match-top b{font-size:.78rem;color:#d6e0e7;font-weight:700}.match-live-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}.fans-live{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(88,225,143,.24);border-radius:999px;background:rgba(25,94,58,.20);padding:8px 12px;color:#c9f8da;font-size:.72rem;font-weight:800;white-space:nowrap}.fans-live strong{color:#fff;font-size:.82rem}.fans-icon{color:#65e99d;font-size:.95rem;line-height:1}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff4c62;box-shadow:0 0 0 6px rgba(255,76,98,.12);margin-right:9px}
 .teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:28px}.team{font-size:clamp(2.1rem,5vw,4.5rem);font-weight:950;letter-spacing:-.06em}.team.away{text-align:right}.versus{display:grid;place-items:center;width:54px;height:54px;border:1px solid rgba(255,255,255,.15);border-radius:50%;font-size:.72rem;color:#8498a8;font-weight:900}
 .match-meta{text-align:center;margin:28px 0 0;color:#91a5b4;font-size:.82rem}.venue{color:#8195a5}.kickoff-time{margin-top:7px;color:#dfe9f0;font-size:.95rem;font-weight:750}.countdown-pill{display:inline-flex;align-items:center;justify-content:center;margin-top:12px;min-width:150px;border:1px solid rgba(118,199,242,.28);border-radius:999px;background:rgba(118,199,242,.08);padding:8px 13px;color:var(--sky);font-size:.78rem;font-weight:900;letter-spacing:.04em}.broadcast-notice{display:none;max-width:560px;margin:22px auto 0;border:1px solid rgba(88,225,143,.34);border-radius:14px;background:rgba(24,103,65,.18);padding:13px 16px;color:#dfffea;text-align:center;font-size:.82rem;font-weight:800}.broadcast-notice.visible{display:block}.broadcast-notice.live:before{content:"●";margin-right:8px;color:#66f1a2}.broadcast-notice.early:before{content:"●";margin-right:8px;color:var(--sky)}
 .player-wrap{margin-top:28px;display:none}.player-wrap.visible{display:block}.player-stage{aspect-ratio:16/9;width:100%;overflow:hidden;border-radius:18px;border:1px solid rgba(255,255,255,.11);background:#020507;box-shadow:0 18px 50px rgba(0,0,0,.3)}iframe{width:100%;height:100%;border:0;display:block}
@@ -173,7 +173,7 @@ h1 .soft{display:block;color:transparent;-webkit-text-stroke:1px rgba(247,251,25
 .letter{width:min(1180px,calc(100% - 40px));margin:0 auto 100px;display:grid;grid-template-columns:minmax(320px,.8fr) 1.2fr;gap:0;overflow:hidden;border:1px solid rgba(255,255,255,.09);border-radius:28px;background:linear-gradient(135deg,rgba(10,24,38,.96),rgba(5,14,22,.98));box-shadow:0 28px 80px rgba(0,0,0,.28)}.letter-art{position:relative;min-height:560px;overflow:hidden}.letter-art:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 45%,rgba(7,17,27,.95) 100%)}.letter-art img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;transform:scale(1.03)}.letter-mark{position:absolute;left:24px;bottom:20px;z-index:2;font-family:Georgia,serif;color:transparent;-webkit-text-stroke:1px rgba(217,183,95,.7);font-size:8rem;line-height:.8;font-style:italic}.letter-copy{padding:56px 54px;align-self:center}.letter p{color:#a8bac6;font-size:1rem;line-height:1.9}.letter strong{display:block;margin-top:22px;color:#fff;font-family:Georgia,serif;font-size:1.3rem;font-style:italic;font-weight:500;line-height:1.5}
 footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-align:center;color:#617687;font-size:.72rem;line-height:1.7}
 @media(max-width:850px){.photo-wall-grid{grid-auto-rows:150px}.photo-card.large,.photo-card.medium,.photo-card.wide{grid-column:span 6;grid-row:span 2}.hero{grid-template-columns:1fr;min-height:auto;padding-top:42px}.portrait{height:520px;order:2}.hero-copy{order:1}.teams{gap:12px}.tribute{grid-template-columns:1fr;gap:22px}.match-card{padding:26px}.open-private{font-size:0}.open-private:after{content:"Sign in";font-size:.75rem}.prebroadcast-head{align-items:flex-start;flex-direction:column}.tribute-side{align-items:flex-start}.prebroadcast-head p{text-align:left}.legacy-grid{grid-template-columns:repeat(2,1fr)}.letter{grid-template-columns:1fr}.letter-art{min-height:420px}.letter-art:after{background:linear-gradient(180deg,transparent 45%,rgba(7,17,27,.96) 100%)}.letter-copy{padding:38px 32px}.letter-mark{font-size:6rem}}
-@media(max-width:520px){.photo-wall-grid{display:block}.photo-card.large,.photo-card.medium,.photo-card.wide{display:block;min-height:300px;margin-bottom:12px}header,.hero,.match-shell,.tribute,.legacy,.numbers,.letter{width:min(100% - 26px,1320px)}header{padding-top:max(18px,env(safe-area-inset-top))}h1{font-size:clamp(3.4rem,20vw,5.7rem)}.lead{font-size:.98rem}.portrait{height:420px}.portrait img{height:100%}.match-card{padding:22px 16px;border-radius:20px}.team{font-size:clamp(1.65rem,9vw,2.6rem)}.versus{width:42px;height:42px}.match-top{align-items:flex-start;flex-direction:column}.source-bar{align-items:flex-start;flex-direction:column}.source-bar select{width:100%;max-width:none}.legacy-grid{grid-template-columns:1fr}.numbers{grid-template-columns:repeat(2,1fr)}.numbers div:nth-child(2){border-right:0}.numbers div:nth-child(-n+2){border-bottom:1px solid rgba(217,183,95,.15)}.letter-mark{font-size:5rem}}
+@media(max-width:520px){.photo-wall-grid{display:block}.photo-card.large,.photo-card.medium,.photo-card.wide{display:block;min-height:300px;margin-bottom:12px}header,.hero,.match-shell,.tribute,.legacy,.numbers,.letter{width:min(100% - 26px,1320px)}header{padding-top:max(18px,env(safe-area-inset-top))}h1{font-size:clamp(3.4rem,20vw,5.7rem)}.lead{font-size:.98rem}.portrait{height:420px}.portrait img{height:100%}.match-card{padding:22px 16px;border-radius:20px}.team{font-size:clamp(1.65rem,9vw,2.6rem)}.versus{width:42px;height:42px}.match-top{align-items:flex-start;flex-direction:column}.match-live-tools{width:100%;justify-content:space-between}.source-bar{align-items:flex-start;flex-direction:column}.source-bar select{width:100%;max-width:none}.legacy-grid{grid-template-columns:1fr}.numbers{grid-template-columns:repeat(2,1fr)}.numbers div:nth-child(2){border-right:0}.numbers div:nth-child(-n+2){border-bottom:1px solid rgba(217,183,95,.15)}.letter-mark{font-size:5rem}}
 @media(prefers-reduced-motion:no-preference){.portrait img{animation:reveal 1s cubic-bezier(.2,.7,.2,1) both}.hero-copy{animation:rise .8s ease both}.match-card{animation:rise .8s .15s ease both}@keyframes reveal{from{opacity:0;transform:translateY(30px) scale(.98)}to{opacity:1;transform:none}}@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}}
 </style>
 </head>
@@ -233,7 +233,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
 
 <section class="match-shell" id="match">
   <div class="match-card">
-    <div class="match-top"><span><i class="dot"></i>THE FAREWELL MATCH</span><b id="statusText">Checking match status…</b></div>
+    <div class="match-top"><span><i class="dot"></i>THE FAREWELL MATCH</span><div class="match-live-tools"><div class="fans-live" id="fansLive" aria-live="polite"><span class="fans-icon">♧</span><strong id="fansCount">1</strong><span>Fans Live Watching</span></div><b id="statusText">Checking match status…</b></div></div>
     <div class="teams"><div class="team" id="home">ARGENTINA</div><div class="versus">VS</div><div class="team away" id="away">BENIN</div></div>
     <div class="match-meta">
       <div class="venue">Estadio Monumental · Buenos Aires</div>
@@ -420,11 +420,15 @@ function render(){
   const streams=Array.isArray(data.streams)?data.streams:[];
   $("statusText").textContent=streams.length?(data.live?"LIVE NOW":"BROADCAST OPEN"):data.live?"LIVE · broadcast pending":"MATCHDAY";
   const btn=$("watchButton"),notice=$("broadcastNotice"),tribute=$("prebroadcast"),toggle=$("tributeToggle");
-  if(streams.length||data.live){
+  const kickoff=data.kickoff||fallbackKickoff;
+  const msToKickoff=kickoff-Date.now();
+  const broadcastPriority=data.live||msToKickoff<=60000;
+
+  if(broadcastPriority){
     tribute.classList.add("optional");tribute.classList.remove("open");
     stopTribute();
     $("tributeLabel").textContent="TRIBUTE ARCHIVE";
-    $("tributeCopy").textContent=streams.length?"Broadcast comes first. The tribute is still available if you want it.":"The live match window is active. The tribute remains available on demand.";
+    $("tributeCopy").textContent=data.live?"The match is live. The tribute remains available on demand.":"Kickoff is less than a minute away. Broadcast now takes priority.";
     toggle.hidden=false;toggle.textContent="Watch tribute instead";
     toggle.onclick=()=>{
       const open=tribute.classList.toggle("open");
@@ -434,9 +438,9 @@ function render(){
 
     if(streams.length){
       btn.disabled=false;btn.style.display="";
-      btn.textContent=data.live?"Watch live broadcast":"Watch available broadcast";
-      notice.className="broadcast-notice visible "+(data.live?"live":"early");
-      notice.textContent=data.live?"The farewell broadcast is LIVE now.":"The broadcast feed is already available before kickoff.";
+      btn.textContent=data.live?"Watch live broadcast":"Watch broadcast";
+      notice.className="broadcast-notice visible live";
+      notice.textContent=data.live?"The farewell broadcast is LIVE now.":"Kickoff is less than 1 minute away. The broadcast is ready.";
       btn.onclick=()=>{
         tribute.classList.add("optional");tribute.classList.remove("open");stopTribute();
         $("playerWrap").classList.add("visible");
@@ -446,18 +450,27 @@ function render(){
       };
     }else{
       notice.className="broadcast-notice visible live";
-      notice.textContent="The live match window is active. NINETY is checking for the broadcast source.";
+      notice.textContent=data.live?"The match is live. NINETY is checking for the broadcast source.":"Kickoff is less than 1 minute away. NINETY is checking for the broadcast source.";
       btn.disabled=true;btn.style.display="";
       btn.textContent="Waiting for broadcast source";
     }
   }else{
-    notice.className="broadcast-notice";notice.textContent="";
-    btn.disabled=true;btn.style.display="";
-    btn.textContent="Checking for an early broadcast";
+    notice.className=streams.length?"broadcast-notice visible early":"broadcast-notice";
+    notice.textContent=streams.length?"An early broadcast source is available. The tribute will keep playing until the final minute before kickoff.":"";
+    btn.disabled=!streams.length;btn.style.display="";
+    btn.textContent=streams.length?"Broadcast available":"Checking for an early broadcast";
+    if(streams.length){
+      btn.onclick=()=>{
+        $("playerWrap").classList.add("visible");
+        renderPlayer(selected);
+        $("playerWrap").scrollIntoView({behavior:"smooth",block:"center"});
+      };
+    }
     tribute.classList.remove("optional","open");
     $("tributeLabel").textContent="WHILE WE WAIT";
-    $("tributeCopy").textContent="The Messi tribute starts automatically while we wait for the broadcast.";
-    toggle.hidden=true;ensureTribute();
+    $("tributeCopy").textContent="The Messi tribute plays automatically until the final minute before kickoff.";
+    toggle.hidden=true;
+    ensureTribute();
   }
   const select=$("sourceSelect");select.innerHTML="";
   streams.forEach((s,i)=>{
@@ -469,6 +482,20 @@ function render(){
   select.onchange=()=>renderPlayer(Number(select.value));
   tick();
 }
+const presenceVisitor=(()=>{try{const key="ninety-messi-visitor";let value=localStorage.getItem(key);if(!value){value=crypto.randomUUID();localStorage.setItem(key,value);}return value;}catch{return crypto.randomUUID();}})();
+const presenceTab=crypto.randomUUID();
+async function updatePresence(leave=false){
+  try{
+    const r=await fetch("/messi/presence",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({visitor:presenceVisitor,tab:presenceTab,leave}),keepalive:leave});
+    if(!r.ok)return;
+    const result=await r.json();
+    if(typeof result.count==="number")$("fansCount").textContent=String(Math.max(1,result.count));
+  }catch{}
+}
+updatePresence();
+setInterval(()=>updatePresence(),30000);
+addEventListener("pagehide",()=>{void updatePresence(true);});
+
 async function load(){
   try{
     const r=await fetch("/messi/data",{cache:"no-store"});
