@@ -252,7 +252,7 @@ footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 20px 38px;text-al
         <iframe
           id="tributeFrame"
           title="Lionel Messi tribute video"
-          src="https://www.youtube-nocookie.com/embed/yPeEQitu_-o?autoplay=1&mute=1&controls=1&loop=1&playlist=yPeEQitu_-o&rel=0&playsinline=1"
+          src="https://www.youtube-nocookie.com/embed/vkEVH-FVNU4?autoplay=1&mute=1&controls=1&loop=1&playlist=vkEVH-FVNU4&rel=0&playsinline=1"
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
           allowfullscreen
           referrerpolicy="strict-origin-when-cross-origin"
@@ -370,7 +370,7 @@ $("carouselNext").onclick=()=>{showSlide(carouselIndex+1);restartCarousel();};
 restartCarousel();
 
 const tributeFrame=$("tributeFrame");
-const tributeVideoId="yPeEQitu_-o";
+const tributeVideoId="vkEVH-FVNU4";
 function tributeUrl(){
   return "https://www.youtube-nocookie.com/embed/"+tributeVideoId+"?autoplay=1&mute=1&controls=1&loop=1&playlist="+tributeVideoId+"&rel=0&playsinline=1";
 }
@@ -468,7 +468,7 @@ function render(){
     }
     tribute.classList.remove("optional","open");
     $("tributeLabel").textContent="WHILE WE WAIT";
-    $("tributeCopy").textContent="The Messi Argentina tribute plays automatically until the final minute before kickoff.";
+    $("tributeCopy").textContent="The Messi tribute plays automatically until the final minute before kickoff.";
     toggle.hidden=true;
     ensureTribute();
   }
