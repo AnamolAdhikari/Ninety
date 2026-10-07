@@ -1,103 +1,78 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
-<defs>
-  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#071018"/><stop offset=".55" stop-color="#09131d"/><stop offset="1" stop-color="#07110f"/></linearGradient>
-  <linearGradient id="lime" x1="0" x2="1"><stop stop-color="#c9ff22"/><stop offset="1" stop-color="#79f56d"/></linearGradient>
-  <linearGradient id="blue" x1="0" x2="1"><stop stop-color="#16d9ff"/><stop offset="1" stop-color="#6b8cff"/></linearGradient>
-  <filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-  <filter id="shadow"><feDropShadow dx="0" dy="12" stdDeviation="18" flood-opacity=".34"/></filter>
-  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#31d7f4"/></marker>
-</defs>
-<rect width="1600" height="900" rx="32" fill="url(#bg)"/>
-<circle cx="1370" cy="70" r="260" fill="#12302b" opacity=".14"/><circle cx="250" cy="870" r="310" fill="#0b2940" opacity=".16"/>
-<!-- brand -->
-<rect x="55" y="48" width="74" height="74" rx="18" fill="#0c151b" stroke="#c9ff22" stroke-width="2"/>
-<path d="M76 98V70h13l20 28V70h0v30H96L76 72v26z" fill="url(#lime)" filter="url(#glow)"/>
-<text x="151" y="82" fill="#f5f8fb" font-family="Inter,Arial,sans-serif" font-size="36" font-weight="800" letter-spacing="2">NINETY</text>
-<text x="151" y="111" fill="#8ba4bd" font-family="Inter,Arial,sans-serif" font-size="18">System Architecture · Public HLD</text>
-<text x="1540" y="79" text-anchor="end" fill="#60788c" font-family="Inter,Arial,sans-serif" font-size="14">Sensitive implementation details intentionally abstracted</text>
-<!-- badges -->
-<g font-family="Inter,Arial,sans-serif" font-size="13" fill="#dce8f2">
-<rect x="55" y="151" width="218" height="48" rx="14" fill="#0c1822" stroke="#1c3445"/><circle cx="82" cy="175" r="9" fill="#c9ff22"/><text x="102" y="180">Lifecycle-aware match UX</text>
-<rect x="289" y="151" width="193" height="48" rx="14" fill="#0c1822" stroke="#1c3445"/><path d="M315 166l9 4v7c0 7-4 11-9 14-5-3-9-7-9-14v-7z" fill="none" stroke="#36e4b5" stroke-width="2"/><text x="340" y="180">Protected access</text>
-<rect x="498" y="151" width="205" height="48" rx="14" fill="#0c1822" stroke="#1c3445"/><path d="M520 181c14-1 14-16 2-17-3-8-16-7-18 2-9 1-9 15 1 15z" fill="#f48120"/><text x="546" y="180">Global edge runtime</text>
-<rect x="719" y="151" width="211" height="48" rx="14" fill="#0c1822" stroke="#1c3445"/><path d="M745 165l9 6-9 6-9-6zM736 179l9 6 9-6" fill="none" stroke="#5ac8fa" stroke-width="2"/><text x="771" y="180">Resilient by design</text>
-</g>
-<!-- connectors -->
-<path d="M367 395H468" stroke="#31d7f4" stroke-width="3" marker-end="url(#arrow)"/>
-<path d="M817 395H918" stroke="#31d7f4" stroke-width="3" marker-end="url(#arrow)"/>
-<path d="M1267 395H1360" stroke="#31d7f4" stroke-width="3" marker-end="url(#arrow)"/>
-<path d="M1092 551V625" stroke="#31d7f4" stroke-width="3" marker-end="url(#arrow)"/>
-<!-- client -->
-<g filter="url(#shadow)">
-<rect x="55" y="245" width="312" height="307" rx="25" fill="#0c1721" stroke="#234257"/>
-<circle cx="91" cy="285" r="18" fill="#102b32"/><path d="M81 278h20v14H81zM87 295h8" fill="none" stroke="#55e5ff" stroke-width="2" stroke-linecap="round"/>
-<text x="122" y="282" fill="#f5f8fb" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="700">Client Experience</text>
-<text x="122" y="306" fill="#7891a6" font-family="Inter,Arial,sans-serif" font-size="14">Responsive web interface</text>
-<rect x="82" y="336" width="258" height="128" rx="15" fill="#071018" stroke="#2a3d4b"/>
-<rect x="99" y="352" width="86" height="9" rx="4" fill="#c9ff22"/><rect x="99" y="372" width="205" height="7" rx="3" fill="#263b4b"/>
-<rect x="99" y="399" width="104" height="48" rx="9" fill="#102230"/><circle cx="119" cy="423" r="9" fill="#2fd2f2"/><rect x="137" y="413" width="50" height="6" rx="3" fill="#70899d"/><rect x="137" y="426" width="36" height="5" rx="2" fill="#40586b"/>
-<rect x="214" y="399" width="109" height="48" rx="9" fill="#102230"/><circle cx="234" cy="423" r="9" fill="#c9ff22"/><rect x="252" y="413" width="50" height="6" rx="3" fill="#70899d"/><rect x="252" y="426" width="36" height="5" rx="2" fill="#40586b"/>
-<text x="82" y="497" fill="#b9c9d6" font-family="Inter,Arial,sans-serif" font-size="14">Discovery · Matchday · Post-match</text>
-<text x="82" y="523" fill="#6f879a" font-family="Inter,Arial,sans-serif" font-size="13">UI receives normalized application data</text>
-</g>
-<!-- edge -->
-<g filter="url(#shadow)">
-<rect x="468" y="245" width="349" height="307" rx="25" fill="#0c1721" stroke="#2b4a3c"/>
-<circle cx="506" cy="285" r="19" fill="#2a1b10"/><path d="M493 290c11-1 11-14 2-15-2-7-13-6-15 1-7 1-7 13 1 14z" fill="#f48120"/>
-<text x="538" y="282" fill="#f5f8fb" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="700">Edge Application</text>
-<text x="538" y="306" fill="#7891a6" font-family="Inter,Arial,sans-serif" font-size="14">Cloudflare Workers</text>
-<rect x="495" y="337" width="295" height="48" rx="12" fill="#101f29"/><text x="518" y="367" fill="#dbe6ee" font-family="Inter,Arial,sans-serif" font-size="15">Access boundary</text>
-<rect x="495" y="396" width="295" height="48" rx="12" fill="#101f29"/><text x="518" y="426" fill="#dbe6ee" font-family="Inter,Arial,sans-serif" font-size="15">Application routing</text>
-<rect x="495" y="455" width="295" height="48" rx="12" fill="#101f29"/><text x="518" y="485" fill="#dbe6ee" font-family="Inter,Arial,sans-serif" font-size="15">Caching + response optimization</text>
-</g>
-<!-- app services -->
-<g filter="url(#shadow)">
-<rect x="918" y="245" width="349" height="307" rx="25" fill="#0c1721" stroke="#27465c"/>
-<circle cx="956" cy="285" r="19" fill="#102b32"/><path d="M947 285l9-8 9 8-9 8z" fill="none" stroke="#55e5ff" stroke-width="2"/>
-<text x="988" y="282" fill="#f5f8fb" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="700">Application Services</text>
-<text x="988" y="306" fill="#7891a6" font-family="Inter,Arial,sans-serif" font-size="14">Server-side orchestration</text>
-<rect x="945" y="337" width="295" height="48" rx="12" fill="#101f29"/><text x="968" y="367" fill="#dbe6ee" font-family="Inter,Arial,sans-serif" font-size="15">Match lifecycle + state reconciliation</text>
-<rect x="945" y="396" width="295" height="48" rx="12" fill="#101f29"/><text x="968" y="426" fill="#dbe6ee" font-family="Inter,Arial,sans-serif" font-size="15">Match details + content aggregation</text>
-<rect x="945" y="455" width="295" height="48" rx="12" fill="#101f29"/><text x="968" y="485" fill="#dbe6ee" font-family="Inter,Arial,sans-serif" font-size="15">Fallback + graceful degradation</text>
-</g>
-<!-- providers -->
-<g filter="url(#shadow)">
-<rect x="1360" y="245" width="185" height="307" rx="25" fill="#0c1721" stroke="#4a3f28"/>
-<circle cx="1395" cy="285" r="18" fill="#272319"/><circle cx="1395" cy="285" r="8" fill="none" stroke="#ffd65a" stroke-width="2"/><path d="M1395 269v8M1395 293v8M1379 285h8M1403 285h8" stroke="#ffd65a" stroke-width="2"/>
-<text x="1423" y="281" fill="#f5f8fb" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="700">External</text>
-<text x="1423" y="303" fill="#7891a6" font-family="Inter,Arial,sans-serif" font-size="13">Integrations</text>
-<text x="1384" y="361" fill="#c7d5df" font-family="Inter,Arial,sans-serif" font-size="14">Match data</text>
-<text x="1384" y="400" fill="#c7d5df" font-family="Inter,Arial,sans-serif" font-size="14">Match content</text>
-<text x="1384" y="439" fill="#c7d5df" font-family="Inter,Arial,sans-serif" font-size="14">Media services</text>
-<text x="1384" y="478" fill="#7891a6" font-family="Inter,Arial,sans-serif" font-size="12">Provider identities</text>
-<text x="1384" y="497" fill="#7891a6" font-family="Inter,Arial,sans-serif" font-size="12">remain abstracted</text>
-</g>
-<!-- state layer -->
-<g filter="url(#shadow)">
-<rect x="918" y="625" width="349" height="133" rx="23" fill="#0c1721" stroke="#39455a"/>
-<circle cx="956" cy="665" r="18" fill="#1c2134"/><ellipse cx="956" cy="658" rx="10" ry="4" fill="none" stroke="#8ba6ff" stroke-width="2"/><path d="M946 658v14c0 5 20 5 20 0v-14M946 665c0 5 20 5 20 0" fill="none" stroke="#8ba6ff" stroke-width="2"/>
-<text x="988" y="663" fill="#f5f8fb" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="700">Edge State + Cache</text>
-<text x="988" y="690" fill="#7891a6" font-family="Inter,Arial,sans-serif" font-size="13">Short-lived state · preferences · cached data</text>
-<text x="988" y="716" fill="#7891a6" font-family="Inter,Arial,sans-serif" font-size="13">Implementation identifiers intentionally omitted</text>
-</g>
-<!-- principles -->
-<g filter="url(#shadow)">
-<rect x="55" y="625" width="762" height="133" rx="23" fill="#0b161e" stroke="#203847"/>
-<text x="82" y="661" fill="#c9ff22" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="2">ENGINEERING PRINCIPLES</text>
-<text x="82" y="699" fill="#dce8f2" font-family="Inter,Arial,sans-serif" font-size="15">Evidence-based lifecycle</text><text x="272" y="699" fill="#3f596b">•</text>
-<text x="294" y="699" fill="#dce8f2" font-family="Inter,Arial,sans-serif" font-size="15">Demand-driven loading</text><text x="493" y="699" fill="#3f596b">•</text>
-<text x="515" y="699" fill="#dce8f2" font-family="Inter,Arial,sans-serif" font-size="15">Graceful degradation</text>
-<text x="82" y="730" fill="#dce8f2" font-family="Inter,Arial,sans-serif" font-size="15">No fabricated match data</text><text x="272" y="730" fill="#3f596b">•</text>
-<text x="294" y="730" fill="#dce8f2" font-family="Inter,Arial,sans-serif" font-size="15">Provider isolation</text><text x="493" y="730" fill="#3f596b">•</text>
-<text x="515" y="730" fill="#dce8f2" font-family="Inter,Arial,sans-serif" font-size="15">Responsive matchday UX</text>
-</g>
-<!-- flow -->
-<text x="55" y="820" fill="#7891a6" font-family="Inter,Arial,sans-serif" font-size="13" letter-spacing="1">REQUEST FLOW</text>
-<path d="M170 815H1450" stroke="#183444" stroke-width="2"/>
-<g font-family="Inter,Arial,sans-serif" font-size="13" fill="#c9d8e3">
-<circle cx="250" cy="815" r="16" fill="#102b32" stroke="#31d7f4"/><text x="250" y="820" text-anchor="middle">1</text><text x="277" y="820">Request</text>
-<circle cx="510" cy="815" r="16" fill="#102b32" stroke="#31d7f4"/><text x="510" y="820" text-anchor="middle">2</text><text x="537" y="820">Edge processing</text>
-<circle cx="815" cy="815" r="16" fill="#102b32" stroke="#31d7f4"/><text x="815" y="820" text-anchor="middle">3</text><text x="842" y="820">Normalize + reconcile</text>
-<circle cx="1150" cy="815" r="16" fill="#102b32" stroke="#31d7f4"/><text x="1150" y="820" text-anchor="middle">4</text><text x="1177" y="820">Optimized response</text>
-</g>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="820" viewBox="0 0 1500 820">
+  <defs>
+    <linearGradient id="bg2" x1="0" x2="1"><stop offset="0" stop-color="#080c11"/><stop offset="1" stop-color="#0d1512"/></linearGradient>
+    <filter id="shadow2"><feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000" flood-opacity=".35"/></filter>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#718078"/></marker>
+  </defs>
+  <rect width="1500" height="820" rx="30" fill="url(#bg2)"/>
+  <text x="70" y="68" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700">NINETY high-level architecture</text>
+  <text x="70" y="102" fill="#81908a" font-family="Inter,Arial,sans-serif" font-size="16">Public HLD view. Sensitive provider, credential and deployment details are intentionally abstracted.</text>
+
+  <g filter="url(#shadow2)">
+    <rect x="70" y="180" width="240" height="160" rx="22" fill="#111820" stroke="#2b3740"/>
+    <g transform="translate(155 210) scale(2.9167)"><path fill="#ffffff" d="M12 0C8.21 0 4.831 1.757 2.632 4.501l3.953 6.848A5.454 5.454 0 0 1 12 6.545h10.691A12 12 0 0 0 12 0zM1.931 5.47A11.943 11.943 0 0 0 0 12c0 6.012 4.42 10.991 10.189 11.864l3.953-6.847a5.45 5.45 0 0 1-6.865-2.29zm13.342 2.166a5.446 5.446 0 0 1 1.45 7.09l.002.001h-.002l-5.344 9.257c.206.01.413.016.621.016 6.627 0 12-5.373 12-12 0-1.54-.29-3.011-.818-4.364zM12 16.364a4.364 4.364 0 1 1 0-8.728 4.364 4.364 0 0 1 0 8.728Z"/></g>
+    <text x="190" y="307" text-anchor="middle" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="700">Browser / PWA</text>
+  </g>
+
+  <path d="M330 260H430" stroke="#718078" stroke-width="3" marker-end="url(#arr2)"/>
+
+  <g filter="url(#shadow2)">
+    <rect x="450" y="145" width="330" height="230" rx="24" fill="#101820" stroke="#38521f"/>
+    <g transform="translate(500 188) scale(2.5833)"><path fill="#61DAFB" d="M14.23 12.004a2.236 2.236 0 0 1-2.235 2.236 2.236 2.236 0 0 1-2.236-2.236 2.236 2.236 0 0 1 2.235-2.236 2.236 2.236 0 0 1 2.236 2.236zm2.648-10.69c-1.346 0-3.107.96-4.888 2.622-1.78-1.653-3.542-2.602-4.887-2.602-.41 0-.783.093-1.106.278-1.375.793-1.683 3.264-.973 6.365C1.98 8.917 0 10.42 0 12.004c0 1.59 1.99 3.097 5.043 4.03-.704 3.113-.39 5.588.988 6.38.32.187.69.275 1.102.275 1.345 0 3.107-.96 4.888-2.624 1.78 1.654 3.542 2.603 4.887 2.603.41 0 .783-.09 1.106-.275 1.374-.792 1.683-3.263.973-6.365C22.02 15.096 24 13.59 24 12.004c0-1.59-1.99-3.097-5.043-4.032.704-3.11.39-5.587-.988-6.38-.318-.184-.688-.277-1.092-.278zm-.005 1.09v.006c.225 0 .406.044.558.127.666.382.955 1.835.73 3.704-.054.46-.142.945-.25 1.44-.96-.236-2.006-.417-3.107-.534-.66-.905-1.345-1.727-2.035-2.447 1.592-1.48 3.087-2.292 4.105-2.295zm-9.77.02c1.012 0 2.514.808 4.11 2.28-.686.72-1.37 1.537-2.02 2.442-1.107.117-2.154.298-3.113.538-.112-.49-.195-.964-.254-1.42-.23-1.868.054-3.32.714-3.707.19-.09.4-.127.563-.132zm4.882 3.05c.455.468.91.992 1.36 1.564-.44-.02-.89-.034-1.345-.034-.46 0-.915.01-1.36.034.44-.572.895-1.096 1.345-1.565zM12 8.1c.74 0 1.477.034 2.202.093.406.582.802 1.203 1.183 1.86.372.64.71 1.29 1.018 1.946-.308.655-.646 1.31-1.013 1.95-.38.66-.773 1.288-1.18 1.87-.728.063-1.466.098-2.21.098-.74 0-1.477-.035-2.202-.093-.406-.582-.802-1.204-1.183-1.86-.372-.64-.71-1.29-1.018-1.946.303-.657.646-1.313 1.013-1.954.38-.66.773-1.286 1.18-1.868.728-.064 1.466-.098 2.21-.098zm-3.635.254c-.24.377-.48.763-.704 1.16-.225.39-.435.782-.635 1.174-.265-.656-.49-1.31-.676-1.947.64-.15 1.315-.283 2.015-.386zm7.26 0c.695.103 1.365.23 2.006.387-.18.632-.405 1.282-.66 1.933-.2-.39-.41-.783-.64-1.174-.225-.392-.465-.774-.705-1.146zm3.063.675c.484.15.944.317 1.375.498 1.732.74 2.852 1.708 2.852 2.476-.005.768-1.125 1.74-2.857 2.475-.42.18-.88.342-1.355.493-.28-.958-.646-1.956-1.1-2.98.45-1.017.81-2.01 1.085-2.964zm-13.395.004c.278.96.645 1.957 1.1 2.98-.45 1.017-.812 2.01-1.086 2.964-.484-.15-.944-.318-1.37-.5-1.732-.737-2.852-1.706-2.852-2.474 0-.768 1.12-1.742 2.852-2.476.42-.18.88-.342 1.356-.494zm11.678 4.28c.265.657.49 1.312.676 1.948-.64.157-1.316.29-2.016.39.24-.375.48-.762.705-1.158.225-.39.435-.788.636-1.18zm-9.945.02c.2.392.41.783.64 1.175.23.39.465.772.705 1.143-.695-.102-1.365-.23-2.006-.386.18-.63.406-1.282.66-1.933zM17.92 16.32c.112.493.2.968.254 1.423.23 1.868-.054 3.32-.714 3.708-.147.09-.338.128-.563.128-1.012 0-2.514-.807-4.11-2.28.686-.72 1.37-1.536 2.02-2.44 1.107-.118 2.154-.3 3.113-.54zm-11.83.01c.96.234 2.006.415 3.107.532.66.905 1.345 1.727 2.035 2.446-1.595 1.483-3.092 2.295-4.11 2.295-.22-.005-.406-.05-.553-.132-.666-.38-.955-1.834-.73-3.703.054-.46.142-.944.25-1.438zm4.56.64c.44.02.89.034 1.345.034.46 0 .915-.01 1.36-.034-.44.572-.895 1.095-1.345 1.565-.455-.47-.91-.993-1.36-1.565z"/></g>
+    <g transform="translate(584 188) scale(2.5833)"><path fill="#3178C6" d="M1.125 0C.502 0 0 .502 0 1.125v21.75C0 23.498.502 24 1.125 24h21.75c.623 0 1.125-.502 1.125-1.125V1.125C24 .502 23.498 0 22.875 0zm17.363 9.75c.612 0 1.154.037 1.627.111a6.38 6.38 0 0 1 1.306.34v2.458a3.95 3.95 0 0 0-.643-.361 5.093 5.093 0 0 0-.717-.26 5.453 5.453 0 0 0-1.426-.2c-.3 0-.573.028-.819.086a2.1 2.1 0 0 0-.623.242c-.17.104-.3.229-.393.374a.888.888 0 0 0-.14.49c0 .196.053.373.156.529.104.156.252.304.443.444s.423.276.696.41c.273.135.582.274.926.416.47.197.892.407 1.266.628.374.222.695.473.963.753.268.279.472.598.614.957.142.359.214.776.214 1.253 0 .657-.125 1.21-.373 1.656a3.033 3.033 0 0 1-1.012 1.085 4.38 4.38 0 0 1-1.487.596c-.566.12-1.163.18-1.79.18a9.916 9.916 0 0 1-1.84-.164 5.544 5.544 0 0 1-1.512-.493v-2.63a5.033 5.033 0 0 0 3.237 1.2c.333 0 .624-.03.872-.09.249-.06.456-.144.623-.25.166-.108.29-.234.373-.38a1.023 1.023 0 0 0-.074-1.089 2.12 2.12 0 0 0-.537-.5 5.597 5.597 0 0 0-.807-.444 27.72 27.72 0 0 0-1.007-.436c-.918-.383-1.602-.852-2.053-1.405-.45-.553-.676-1.222-.676-2.005 0-.614.123-1.141.369-1.582.246-.441.58-.804 1.004-1.089a4.494 4.494 0 0 1 1.47-.629 7.536 7.536 0 0 1 1.77-.201zm-15.113.188h9.563v2.166H9.506v9.646H6.789v-9.646H3.375z"/></g>
+    <text x="615" y="292" text-anchor="middle" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="700">Matchday UI</text>
+    <text x="615" y="324" text-anchor="middle" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="15">Discovery, watch page, match center</text>
+  </g>
+
+  <path d="M800 260H900" stroke="#718078" stroke-width="3" marker-end="url(#arr2)"/>
+
+  <g filter="url(#shadow2)">
+    <rect x="920" y="115" width="510" height="290" rx="26" fill="#101820" stroke="#514529"/>
+    <g transform="translate(970 162) scale(3.25)"><path fill="#F38020" d="M16.5088 16.8447c.1475-.5068.0908-.9707-.1553-1.3154-.2246-.3164-.6045-.499-1.0615-.5205l-8.6592-.1123a.1559.1559 0 0 1-.1333-.0713c-.0283-.042-.0351-.0986-.021-.1553.0278-.084.1123-.1484.2036-.1562l8.7359-.1123c1.0351-.0489 2.1601-.8868 2.5537-1.9136l.499-1.3013c.0215-.0561.0293-.1128.0147-.168-.5625-2.5463-2.835-4.4453-5.5499-4.4453-2.5039 0-4.6284 1.6177-5.3876 3.8614-.4927-.3658-1.1187-.5625-1.794-.499-1.2026.119-2.1665 1.083-2.2861 2.2856-.0283.31-.0069.6128.0635.894C1.5683 13.171 0 14.7754 0 16.752c0 .1748.0142.3515.0352.5273.0141.083.0844.1475.1689.1475h15.9814c.0909 0 .1758-.0645.2032-.1553l.12-.4268zm2.7568-5.5634c-.0771 0-.1611 0-.2383.0112-.0566 0-.1054.0415-.127.0976l-.3378 1.1744c-.1475.5068-.0918.9707.1543 1.3164.2256.3164.6055.498 1.0625.5195l1.8437.1133c.0557 0 .1055.0263.1329.0703.0283.043.0351.1074.0214.1562-.0283.084-.1132.1485-.204.1553l-1.921.1123c-1.041.0488-2.1582.8867-2.5527 1.914l-.1406.3585c-.0283.0713.0215.1416.0986.1416h6.5977c.0771 0 .1474-.0489.169-.126.1122-.4082.1757-.837.1757-1.2803 0-2.6025-2.125-4.727-4.7344-4.727"/></g>
+    <text x="1080" y="190" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="700">Cloudflare edge application</text>
+    <text x="1080" y="220" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="15">Server-side application boundary</text>
+
+    <rect x="970" y="270" width="205" height="78" rx="16" fill="#141d24" stroke="#2b3740"/>
+    <text x="1072" y="302" text-anchor="middle" fill="#baff32" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="700">MATCH SERVICES</text>
+    <text x="1072" y="328" text-anchor="middle" fill="#c4cec9" font-family="Inter,Arial,sans-serif" font-size="14">Lifecycle + match details</text>
+
+    <rect x="1192" y="270" width="190" height="78" rx="16" fill="#141d24" stroke="#2b3740"/>
+    <text x="1287" y="302" text-anchor="middle" fill="#baff32" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="700">ACCOUNT SERVICES</text>
+    <text x="1287" y="328" text-anchor="middle" fill="#c4cec9" font-family="Inter,Arial,sans-serif" font-size="14">Preferences + sessions</text>
+  </g>
+
+  <path d="M1175 425V500" stroke="#718078" stroke-width="3" marker-end="url(#arr2)"/>
+
+  <g filter="url(#shadow2)">
+    <rect x="865" y="525" width="310" height="190" rx="24" fill="#101820" stroke="#2b3740"/>
+    <g transform="translate(910 565) scale(2.4167)"><path fill="#F38020" d="M16.5088 16.8447c.1475-.5068.0908-.9707-.1553-1.3154-.2246-.3164-.6045-.499-1.0615-.5205l-8.6592-.1123a.1559.1559 0 0 1-.1333-.0713c-.0283-.042-.0351-.0986-.021-.1553.0278-.084.1123-.1484.2036-.1562l8.7359-.1123c1.0351-.0489 2.1601-.8868 2.5537-1.9136l.499-1.3013c.0215-.0561.0293-.1128.0147-.168-.5625-2.5463-2.835-4.4453-5.5499-4.4453-2.5039 0-4.6284 1.6177-5.3876 3.8614-.4927-.3658-1.1187-.5625-1.794-.499-1.2026.119-2.1665 1.083-2.2861 2.2856-.0283.31-.0069.6128.0635.894C1.5683 13.171 0 14.7754 0 16.752c0 .1748.0142.3515.0352.5273.0141.083.0844.1475.1689.1475h15.9814c.0909 0 .1758-.0645.2032-.1553l.12-.4268zm2.7568-5.5634c-.0771 0-.1611 0-.2383.0112-.0566 0-.1054.0415-.127.0976l-.3378 1.1744c-.1475.5068-.0918.9707.1543 1.3164.2256.3164.6055.498 1.0625.5195l1.8437.1133c.0557 0 .1055.0263.1329.0703.0283.043.0351.1074.0214.1562-.0283.084-.1132.1485-.204.1553l-1.921.1123c-1.041.0488-2.1582.8867-2.5527 1.914l-.1406.3585c-.0283.0713.0215.1416.0986.1416h6.5977c.0771 0 .1474-.0489.169-.126.1122-.4082.1757-.837.1757-1.2803 0-2.6025-2.125-4.727-4.7344-4.727"/></g>
+    <text x="995" y="588" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="21" font-weight="700">Edge state</text>
+    <text x="910" y="650" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="15">Account-aware preferences</text>
+    <text x="910" y="678" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="15">Short-lived caching</text>
+  </g>
+
+  <path d="M1195 620H1260" stroke="#718078" stroke-width="3" marker-end="url(#arr2)"/>
+
+  <g filter="url(#shadow2)">
+    <rect x="1280" y="525" width="150" height="190" rx="24" fill="#101820" stroke="#2b3740"/>
+    <circle cx="1355" cy="585" r="34" fill="#17211c" stroke="#baff32"/>
+    <path d="M1335 590c8-30 45-30 52-4 20 1 21 31 1 31h-60c-19 0-22-26-5-31 2-16 17-25 32-20" fill="none" stroke="#baff32" stroke-width="4" stroke-linecap="round"/>
+    <text x="1355" y="657" text-anchor="middle" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="700">Approved</text>
+    <text x="1355" y="682" text-anchor="middle" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="13">external services</text>
+  </g>
+
+  <g filter="url(#shadow2)">
+    <rect x="70" y="505" width="620" height="210" rx="24" fill="#0e151b" stroke="#26323b"/>
+    <text x="110" y="550" fill="#baff32" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="700" letter-spacing="2">RESILIENCY LAYER</text>
+    <text x="110" y="592" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="21" font-weight="700">Provider isolation + lifecycle safeguards</text>
+    <text x="110" y="632" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="15">Stale-state protection</text>
+    <text x="110" y="660" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="15">Demand-driven data loading</text>
+    <text x="365" y="632" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="15">Verified result fallback</text>
+    <text x="365" y="660" fill="#8f9d97" font-family="Inter,Arial,sans-serif" font-size="15">Graceful unavailable states</text>
+  </g>
+
+  <path d="M760 375C760 470 690 505 620 505" stroke="#718078" stroke-width="2.5" fill="none" marker-end="url(#arr2)"/>
+  <path d="M690 610H840" stroke="#718078" stroke-width="2.5" marker-end="url(#arr2)"/>
+
+  <text x="750" y="780" text-anchor="middle" fill="#66756f" font-family="Inter,Arial,sans-serif" font-size="13">Public architecture intentionally omits provider names, secret names, private routes, storage identifiers and operational bindings.</text>
 </svg>
