@@ -38,7 +38,7 @@ export async function GET(){
         ...match,
         venueName: "Spotify Camp Nou",
         venueCity: "Barcelona",
-        venueImage: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Camp%20Nou%202018%2005.jpg?width=1800",
+        venueImage: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Camp%20Nou%20at%20Night%20-%20april%202022.jpg?width=1800",
       } : match;
     });
     return Response.json({matches,sports:[{id:"football",name:"Football"}]},{headers:{"Cache-Control":"public, max-age=30, s-maxage=60"}});
