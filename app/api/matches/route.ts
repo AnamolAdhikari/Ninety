@@ -38,6 +38,11 @@ export async function GET(){
       fixtureDates.map(date => footballData<Fixture>(`fixtures?date=${date}`))
     );
     fixtures = fixtureResults.flatMap(result => result.status === "fulfilled" ? result.value : []);
+    const fixtureErrors = fixtureResults.flatMap((result,index) =>
+      result.status === "rejected"
+        ? [{ date: fixtureDates[index], error: result.reason instanceof Error ? result.reason.message : String(result.reason) }]
+        : []
+    );
     matches = matches.map(match => {
       const fixture = findFixture(fixtures, match.home, match.away, match.date);
       const venue = fixture?.fixture?.venue;
@@ -58,6 +63,7 @@ export async function GET(){
           requestedDate: new Date(match.date).toISOString(),
           fixtureDates,
           fixtureCount: fixtures.length,
+          fixtureErrors,
           matched: Boolean(fixture),
           candidates: sameTeams.map(item => ({
             home: item.teams?.home?.name,
