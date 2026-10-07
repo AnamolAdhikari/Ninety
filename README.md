@@ -76,6 +76,20 @@ The project also treats external data and playback availability as unreliable in
 
 ---
 
+## Engineering documentation
+
+NINETY includes a public-safe engineering notebook for readers who want to go beyond the product surface:
+
+- [System Design](docs/system-design.md) - architecture, trust boundaries, application layers, and deployment model
+- [Match Lifecycle](docs/match-lifecycle.md) - reasoning across upcoming, live, finished, and post-match states
+- [Reliability & Resilience](docs/reliability.md) - graceful degradation, data integrity, caching principles, and recovery
+- [Engineering Decisions](docs/engineering-decisions.md) - important architectural choices and trade-offs
+- [Security & Documentation Boundary](docs/security-boundary.md) - the line between useful public design documentation and sensitive operational detail
+
+The documents intentionally describe **patterns and decisions rather than production recipes**. Provider mappings, protected request contracts, authentication internals, exact thresholds, privileged routes, production identifiers, and detailed abuse/monitoring controls are not published.
+
+---
+
 ## Match lifecycle
 
 NINETY models the fixture as a product journey rather than a static page. Upcoming, live, full-time and post-match states each have their own UI and recovery behavior.
