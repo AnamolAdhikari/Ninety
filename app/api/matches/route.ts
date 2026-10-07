@@ -1,5 +1,4 @@
 import { recordHealth } from "../../service-health";
-import { footballData, findFixture, type Fixture } from "../../football-data";
 const API = "https://streamed.pk";
 type RawMatch = { id?:unknown; title?:unknown; category?:unknown; date?:unknown; popular?:unknown; teams?:{home?:{name?:unknown;badge?:unknown};away?:{name?:unknown;badge?:unknown}}; sources?:Array<{source?:unknown;id?:unknown}> };
 const clean=(value:unknown,fallback="")=>typeof value==="string"?value:fallback;
@@ -29,50 +28,18 @@ export async function GET(){
         homeBadge:badge(match.teams?.home?.badge),awayBadge:badge(match.teams?.away?.badge),
         apiSources:Array.isArray(preferredSources)?preferredSources.map(s=>({source:clean(s.source),id:clean(s.id)})).filter(s=>s.source&&s.id).slice(0,12):[]};
     }).sort((a,b)=>Number(b.live)-Number(a.live)||a.date-b.date);
-    // Fetch fixture metadata for each calendar date represented in the feed so
-    // upcoming featured matches can resolve their venue as well as today's games.
-    // Keep this best-effort: stats-provider failures must never break the stream feed.
-    let fixtures: Fixture[] = [];
-    const fixtureDates = [...new Set(matches.map(match => new Date(match.date).toISOString().slice(0,10)))];
-    const fixtureResults = await Promise.allSettled(
-      fixtureDates.map(date => footballData<Fixture>(`fixtures?date=${date}`))
-    );
-    fixtures = fixtureResults.flatMap(result => result.status === "fulfilled" ? result.value : []);
-    const fixtureErrors = fixtureResults.flatMap((result,index) =>
-      result.status === "rejected"
-        ? [{ date: fixtureDates[index], error: result.reason instanceof Error ? result.reason.message : String(result.reason) }]
-        : []
-    );
+    // Featured stadium artwork test: keep this independent from the football-data
+    // provider so venue-plan/quota limits cannot block the visual test.
     matches = matches.map(match => {
-      const fixture = findFixture(fixtures, match.home, match.away, match.date);
-      const venue = fixture?.fixture?.venue;
-      const venueId = typeof venue?.id === "number" && Number.isInteger(venue.id) && venue.id > 0 ? venue.id : undefined;
-      const sameTeams = fixtures.filter(item =>
-        item.teams?.home?.name && item.teams?.away?.name &&
-        item.teams.home.name.toLowerCase().includes(match.home.toLowerCase().split(" ")[0]) &&
-        item.teams.away.name.toLowerCase().includes(match.away.toLowerCase().split(" ")[0])
-      ).slice(0,3);
-      return {
+      const isBarcelonaGetafe =
+        match.home.toLowerCase() === "barcelona" &&
+        match.away.toLowerCase() === "getafe";
+      return isBarcelonaGetafe ? {
         ...match,
-        matchStatus: fixture?.fixture?.status?.short,
-        venueName: venue?.name ?? undefined,
-        venueCity: venue?.city ?? undefined,
-        venueImage: venueId ? `https://media.api-sports.io/football/venues/${venueId}.png` : undefined,
-        ...(process.env.NODE_ENV !== "production" ? {} : {}),
-        venueDebug: match.home.toLowerCase().includes("barcelona") && match.away.toLowerCase().includes("getafe") ? {
-          requestedDate: new Date(match.date).toISOString(),
-          fixtureDates,
-          fixtureCount: fixtures.length,
-          fixtureErrors,
-          matched: Boolean(fixture),
-          candidates: sameTeams.map(item => ({
-            home: item.teams?.home?.name,
-            away: item.teams?.away?.name,
-            date: item.fixture?.date,
-            venue: item.fixture?.venue,
-          })),
-        } : undefined,
-      };
+        venueName: "Spotify Camp Nou",
+        venueCity: "Barcelona",
+        venueImage: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Camp%20nou%20FC%20Barcelona.jpg?width=1600",
+      } : match;
     });
     return Response.json({matches,sports:[{id:"football",name:"Football"}]},{headers:{"Cache-Control":"public, max-age=30, s-maxage=60"}});
   }catch{await recordHealth("match-feed-error");return Response.json({error:"Live event feed is temporarily unavailable."},{status:502});}
