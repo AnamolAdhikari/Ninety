@@ -32,9 +32,7 @@ function countdown(timestamp:number,now:number){const distance=timestamp-now;if(
 function tickerStatus(match:Match,now:number):TickerStatus{if(isMatchEnded(match,now))return "ended";if(isEffectivelyLive(match,now))return "live";if(match.date&&sameLocalDay(match.date,now))return "today";return "upcoming"}
 function leagueName(value:string){return !value||value.toLowerCase()==="football"?"Football":value.replace(/[-_]/g," ").replace(/\b\w/g,char=>char.toUpperCase())}
 function matchHref(match:Match){
-  const home=match.home.toLocaleLowerCase(),away=match.away.toLocaleLowerCase();
-  const messiFarewell=(home.includes("argentina")&&away.includes("benin"))||(home.includes("benin")&&away.includes("argentina"));
-  return messiFarewell?"/messi":"/watch?match="+encodeURIComponent(match.id);
+  return "/watch?match="+encodeURIComponent(match.id);
 }
 const featuredTeams=new Map(Object.entries({"real madrid":900,"barcelona":900,"manchester city":850,"manchester united":850,"liverpool":850,"arsenal":820,"chelsea":780,"bayern munich":850,"paris saint-germain":820,"psg":820,"juventus":780,"inter milan":780,"ac milan":760,"england":800,"france":800,"spain":790,"germany":790,"italy":780,"portugal":780,"belgium":740,"brazil":850,"argentina":850,"netherlands":730,"croatia":700,"uruguay":730,"colombia":690,"mexico":680,"united states":680,"usa":680}));
 function teamImportance(match:Match){return [match.home,match.away].reduce((score,name)=>score+(featuredTeams.get(name.toLocaleLowerCase())??0),0)}
