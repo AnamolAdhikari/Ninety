@@ -32,7 +32,18 @@ export async function GET(){
     // Share the date cache with lineups; never let a stats-provider failure break streams.
     let fixtures: Fixture[] = [];
     try { fixtures = await footballData<Fixture>(`fixtures?date=${new Date(now).toISOString().slice(0,10)}`); } catch {}
-    matches = matches.map(match => ({ ...match, matchStatus: findFixture(fixtures, match.home, match.away, match.date)?.fixture?.status?.short }));
+    matches = matches.map(match => {
+      const fixture = findFixture(fixtures, match.home, match.away, match.date);
+      const venue = fixture?.fixture?.venue;
+      const venueId = typeof venue?.id === "number" && Number.isInteger(venue.id) && venue.id > 0 ? venue.id : undefined;
+      return {
+        ...match,
+        matchStatus: fixture?.fixture?.status?.short,
+        venueName: venue?.name ?? undefined,
+        venueCity: venue?.city ?? undefined,
+        venueImage: venueId ? `https://media.api-sports.io/football/venues/${venueId}.png` : undefined,
+      };
+    });
     return Response.json({matches,sports:[{id:"football",name:"Football"}]},{headers:{"Cache-Control":"public, max-age=30, s-maxage=60"}});
   }catch{await recordHealth("match-feed-error");return Response.json({error:"Live event feed is temporarily unavailable."},{status:502});}
 }
