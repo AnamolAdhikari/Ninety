@@ -28,18 +28,28 @@ export async function GET(){
         homeBadge:badge(match.teams?.home?.badge),awayBadge:badge(match.teams?.away?.badge),
         apiSources:Array.isArray(preferredSources)?preferredSources.map(s=>({source:clean(s.source),id:clean(s.id)})).filter(s=>s.source&&s.id).slice(0,12):[]};
     }).sort((a,b)=>Number(b.live)-Number(a.live)||a.date-b.date);
-    // Featured stadium artwork test: keep this independent from the football-data
-    // provider so venue-plan/quota limits cannot block the visual test.
-    matches = matches.map(match => {
-      const isBarcelonaGetafe =
-        match.home.toLowerCase() === "barcelona" &&
-        match.away.toLowerCase() === "getafe";
-      return isBarcelonaGetafe ? {
-        ...match,
+    // Curated stadium artwork is intentionally independent from the football-data
+    // provider so venue-plan/quota limits cannot block the featured hero.
+    const stadiums: Record<string,{venueName:string;venueCity:string;venueImage:string}> = {
+      "barcelona": {
         venueName: "Spotify Camp Nou",
         venueCity: "Barcelona",
         venueImage: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Barcelona-Sevilla-Supercopa-2016-PARTIDO.jpg?width=1800",
-      } : match;
+      },
+      "real madrid": {
+        venueName: "Santiago Bernabéu",
+        venueCity: "Madrid",
+        venueImage: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Santiago%20Bernab%C3%A9u%20Stadium%20Inside%20360%20degree%20view%20%2C%20Madrid%20in%202019.jpg?width=1800",
+      },
+      "manchester city": {
+        venueName: "Etihad Stadium",
+        venueCity: "Manchester",
+        venueImage: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Etihad%20night.jpg?width=1800",
+      },
+    };
+    matches = matches.map(match => {
+      const stadium=stadiums[match.home.toLowerCase()];
+      return stadium?{...match,...stadium}:match;
     });
     return Response.json({matches,sports:[{id:"football",name:"Football"}]},{headers:{"Cache-Control":"public, max-age=30, s-maxage=60"}});
   }catch{await recordHealth("match-feed-error");return Response.json({error:"Live event feed is temporarily unavailable."},{status:502});}
