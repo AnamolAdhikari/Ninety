@@ -29,9 +29,15 @@ export async function GET(){
         homeBadge:badge(match.teams?.home?.badge),awayBadge:badge(match.teams?.away?.badge),
         apiSources:Array.isArray(preferredSources)?preferredSources.map(s=>({source:clean(s.source),id:clean(s.id)})).filter(s=>s.source&&s.id).slice(0,12):[]};
     }).sort((a,b)=>Number(b.live)-Number(a.live)||a.date-b.date);
-    // Share the date cache with lineups; never let a stats-provider failure break streams.
+    // Fetch fixture metadata for each calendar date represented in the feed so
+    // upcoming featured matches can resolve their venue as well as today's games.
+    // Keep this best-effort: stats-provider failures must never break the stream feed.
     let fixtures: Fixture[] = [];
-    try { fixtures = await footballData<Fixture>(`fixtures?date=${new Date(now).toISOString().slice(0,10)}`); } catch {}
+    const fixtureDates = [...new Set(matches.map(match => new Date(match.date).toISOString().slice(0,10)))];
+    const fixtureResults = await Promise.allSettled(
+      fixtureDates.map(date => footballData<Fixture>(`fixtures?date=${date}`))
+    );
+    fixtures = fixtureResults.flatMap(result => result.status === "fulfilled" ? result.value : []);
     matches = matches.map(match => {
       const fixture = findFixture(fixtures, match.home, match.away, match.date);
       const venue = fixture?.fixture?.venue;
