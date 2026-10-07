@@ -42,12 +42,30 @@ export async function GET(){
       const fixture = findFixture(fixtures, match.home, match.away, match.date);
       const venue = fixture?.fixture?.venue;
       const venueId = typeof venue?.id === "number" && Number.isInteger(venue.id) && venue.id > 0 ? venue.id : undefined;
+      const sameTeams = fixtures.filter(item =>
+        item.teams?.home?.name && item.teams?.away?.name &&
+        item.teams.home.name.toLowerCase().includes(match.home.toLowerCase().split(" ")[0]) &&
+        item.teams.away.name.toLowerCase().includes(match.away.toLowerCase().split(" ")[0])
+      ).slice(0,3);
       return {
         ...match,
         matchStatus: fixture?.fixture?.status?.short,
         venueName: venue?.name ?? undefined,
         venueCity: venue?.city ?? undefined,
         venueImage: venueId ? `https://media.api-sports.io/football/venues/${venueId}.png` : undefined,
+        ...(process.env.NODE_ENV !== "production" ? {} : {}),
+        venueDebug: match.home.toLowerCase().includes("barcelona") && match.away.toLowerCase().includes("getafe") ? {
+          requestedDate: new Date(match.date).toISOString(),
+          fixtureDates,
+          fixtureCount: fixtures.length,
+          matched: Boolean(fixture),
+          candidates: sameTeams.map(item => ({
+            home: item.teams?.home?.name,
+            away: item.teams?.away?.name,
+            date: item.fixture?.date,
+            venue: item.fixture?.venue,
+          })),
+        } : undefined,
       };
     });
     return Response.json({matches,sports:[{id:"football",name:"Football"}]},{headers:{"Cache-Control":"public, max-age=30, s-maxage=60"}});
