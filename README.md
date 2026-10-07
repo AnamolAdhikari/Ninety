@@ -76,20 +76,6 @@ The project also treats external data and playback availability as unreliable in
 
 ---
 
-## Engineering documentation
-
-NINETY includes a public-safe engineering notebook for readers who want to go beyond the product surface:
-
-- [System Design](docs/system-design.md) - architecture, trust boundaries, application layers, and deployment model
-- [Match Lifecycle](docs/match-lifecycle.md) - reasoning across upcoming, live, finished, and post-match states
-- [Reliability & Resilience](docs/reliability.md) - graceful degradation, data integrity, caching principles, and recovery
-- [Engineering Decisions](docs/engineering-decisions.md) - important architectural choices and trade-offs
-- [Security & Documentation Boundary](docs/security-boundary.md) - the line between useful public design documentation and sensitive operational detail
-
-The documents intentionally describe **patterns and decisions rather than production recipes**. Provider mappings, protected request contracts, authentication internals, exact thresholds, privileged routes, production identifiers, and detailed abuse/monitoring controls are not published.
-
----
-
 ## Match lifecycle
 
 NINETY models the fixture as a product journey rather than a static page. Upcoming, live, full-time and post-match states each have their own UI and recovery behavior.
@@ -106,21 +92,9 @@ The lifecycle layer does not trust one upstream flag blindly. It combines fixtur
 
 This is the public HLD view of NINETY. It shows the major trust boundaries and application layers without exposing private provider mappings, credentials, internal identifiers or privileged operational details.
 
-\`\`\`mermaid
-flowchart LR
-    A["⚽ Matchday UI<br/>Discovery · Watch · Match center"] --> B["☁️ Edge Application<br/>Access · Routing · Caching"]
-    B --> C["⚙️ Match Services<br/>Lifecycle · Normalize · Resilience"]
-    C --> D["◌ External Services<br/>Match data · Content"]
-
-    classDef client fill:#10212d,stroke:#38d9f5,color:#f7fbff,stroke-width:2px;
-    classDef edge fill:#15251b,stroke:#f48120,color:#f7fbff,stroke-width:2px;
-    classDef service fill:#111e2b,stroke:#7a9cff,color:#f7fbff,stroke-width:2px;
-    classDef external fill:#282315,stroke:#ffd65a,color:#f7fbff,stroke-width:2px;
-    class A client;
-    class B edge;
-    class C service;
-    class D external;
-\`\`\`
+<p align="center">
+  <img src="docs/diagrams/high-level-architecture.svg" alt="NINETY high-level architecture" width="100%" />
+</p>
 
 The diagram deliberately abstracts external integrations behind server-side adapters. The browser receives normalized application data rather than provider credentials or private integration details.
 
@@ -149,6 +123,32 @@ The diagram deliberately abstracts external integrations behind server-side adap
 | Testing | Node test runner + targeted integration tests |
 | Package manager | pnpm |
 
+The README intentionally does **not** list external match/playback providers or credential names. Those are implementation details and may change independently of the product.
+
+---
+
+## Repository layout
+
+A simplified map of the project:
+
+```text
+app/
+├── api/                  Server-side application endpoints
+├── watch/                Match watching + match-center experience
+├── match-lifecycle.ts    Upcoming / live / finished safeguards
+├── account-storage.ts    Account-aware preference synchronization
+├── page.tsx              Main match discovery experience
+└── globals.css           Responsive visual system
+
+components/
+└── ui/                   Shared interface primitives
+
+public/                    Static application assets
+scripts/                   Build and development helpers
+tests/                     Focused behavior and integration tests
+```
+
+Some operational and provider-specific implementation details are intentionally omitted from this overview.
 
 ---
 
@@ -183,6 +183,22 @@ Run the focused automated tests:
 node --test tests/*.test.mjs
 ```
 
+### Environment configuration
+
+Runtime credentials and private configuration belong in the deployment environment - **never in source control**.
+
+This README intentionally does not provide:
+
+- production credentials
+- API keys or tokens
+- session secrets
+- friend/guest credentials
+- provider-specific identifiers
+- internal admin URLs
+- private infrastructure bindings
+
+Use local development values or your deployment platform's encrypted secret management.
+
 ---
 
 ## Reliability and safety
@@ -200,6 +216,64 @@ Examples of defensive behavior include:
 - source rejection and replacement checks when a user identifies an incorrect broadcast
 - graceful unavailable states instead of broken player surfaces
 
+### Security posture
+
+The public repository should explain **what the application does**, not provide a map for attacking a deployment.
+
+Accordingly, documentation avoids publishing:
+
+- secrets or example production credentials
+- detailed authentication internals
+- exact rate-limit thresholds
+- production storage identifiers
+- privileged operational routes
+- provider request formats and private source mappings
+- internal monitoring implementation
+- infrastructure account identifiers
+
+Security-sensitive operational documentation should remain private.
+
+If you discover a security issue, please report it privately rather than opening a public issue containing exploit details.
+
+---
+
+## Product gallery
+
+The best README layout is to keep one strong hero image near the top, then use a compact gallery here for supporting states.
+
+### Recommended placement
+
+| Media | Best location | Purpose |
+| --- | --- | --- |
+| Desktop homepage screenshot | Directly after **Overview** | Immediate product context |
+| Mobile homepage screenshot | Product gallery | Responsive design proof |
+| Upcoming match screenshot | Product gallery | Countdown and warm-up state |
+| Full-time screenshot | Product gallery | Post-match result experience |
+| 8 to 12 second GIF | Directly below this gallery | Search to match to match-center flow |
+| Longer video | External link only | Full walkthrough without bloating the repository |
+
+For GitHub, an optimized GIF is the safest inline motion format. Keep it short, around 8 to 12 fps, and ideally below 5 MB. A WebM or MP4 will usually be much smaller, but GitHub README playback is less consistent, so longer demos are better linked externally instead of committed to the repository.
+
+Store public media under:
+
+```text
+docs/
+├── diagrams/
+│   ├── high-level-architecture.svg
+│   └── match-lifecycle.svg
+└── media/
+    ├── home-desktop.webp
+    ├── home-mobile.webp
+    ├── upcoming-match.webp
+    ├── full-time.webp
+    └── demo.gif
+```
+
+### Screenshot rules
+
+Before adding media, crop out browser profiles, account names, developer tools, tokens, request headers, admin surfaces, provider names, private URLs and any third-party video content you do not have permission to redistribute.
+
+The application UI itself is safe to showcase. Screenshots should focus on the product surface: match discovery, filters, cards, countdowns, lineups, event timelines and the full-time experience.
 
 ---
 
@@ -213,6 +287,16 @@ The project is actively evolving around:
 - richer post-match presentation
 - mobile polish
 - owner-only operational tooling kept separate from public-facing product documentation
+
+---
+
+## Usage & rights
+
+NINETY does not grant rights to third-party broadcasts, logos, sports data, or media.
+
+Use of any external source must comply with the applicable provider terms, copyright requirements, embedding permissions, and distribution rights.
+
+This repository contains application code for a personal project and is **not an authorization to redistribute protected content**.
 
 ---
 
