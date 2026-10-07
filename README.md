@@ -107,7 +107,7 @@ The lifecycle layer does not trust one upstream flag blindly. It combines fixtur
 This is the public HLD view of NINETY. It shows the major trust boundaries and application layers without exposing private provider mappings, credentials, internal identifiers or privileged operational details.
 
 <p align="center">
-  <img src="docs/diagrams/high-level-architecture.svg" alt="NINETY high-level architecture" width="100%" />
+  <img src="https://raw.githubusercontent.com/AnamolAdhikari/Ninety/main/docs/diagrams/high-level-architecture.svg?v=351a47f" alt="NINETY high-level architecture" width="100%" />
 </p>
 
 The diagram deliberately abstracts external integrations behind server-side adapters. The browser receives normalized application data rather than provider credentials or private integration details.
