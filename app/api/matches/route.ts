@@ -147,7 +147,7 @@ export async function GET(){
       const stadium=stadiums[alias];
       return stadium
         ? {...match,...stadium}
-        : {...match,venueImage:"/stadiums/ninety-stadium.svg",venuePosition:"center"};
+        : {...match,venueImage:"/stadiums/Default.jpg",venuePosition:"center"};
     });
     return Response.json({matches,sports:[{id:"football",name:"Football"}]},{headers:{"Cache-Control":"public, max-age=30, s-maxage=60"}});
   }catch{await recordHealth("match-feed-error");return Response.json({error:"Live event feed is temporarily unavailable."},{status:502});}
