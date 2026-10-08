@@ -51,6 +51,7 @@ export async function GET(){
         venueName: "Etihad Stadium",
         venueCity: "Manchester",
         venueImage: "/stadiums/ManCity.jpg",
+        venuePosition: "center 38%",
       },
       "arsenal": {
         venueName: "Emirates Stadium",
@@ -66,6 +67,7 @@ export async function GET(){
         venueName: "Stamford Bridge",
         venueCity: "London",
         venueImage: "/stadiums/Chealsea.jpg",
+        venuePosition: "center 34%",
       },
       "tottenham": {
         venueName: "Tottenham Hotspur Stadium",
@@ -86,6 +88,7 @@ export async function GET(){
         venueName: "Signal Iduna Park",
         venueCity: "Dortmund",
         venueImage: "/stadiums/Dortmund.webp",
+        venuePosition: "center 38%",
       },
       "paris saint-germain": {
         venueName: "Parc des Princes",
@@ -106,6 +109,7 @@ export async function GET(){
         venueName: "San Siro",
         venueCity: "Milan",
         venueImage: "/stadiums/Inter-Milan.jpg",
+        venuePosition: "center 36%",
       },
       "inter": {
         venueName: "San Siro",
@@ -116,6 +120,7 @@ export async function GET(){
         venueName: "Metropolitano",
         venueCity: "Madrid",
         venueImage: "/stadiums/Atle%CC%81tico.jpg",
+        venuePosition: "center 36%",
       },
     };
     const stadiumAliases: Record<string,string> = {
