@@ -87,8 +87,27 @@ The public architecture intentionally stays at this level. Provider mappings, cr
 
 ## Tech stack
 
+NINETY uses a modern TypeScript/React stack at the edge, with the supporting libraries chosen around responsive product UX, validation, persistence, media handling, and reliability.
+
 | Area | Technology |
 | --- | --- |
+| Language | TypeScript 5.9 |
+| Frontend | React 19, React DOM |
+| Application / build | Vinext, Vite 8, Next-compatible application tooling |
+| Edge runtime & deployment | Cloudflare Workers, Wrangler, Cloudflare Vite plugin |
+| Data & persistence | Drizzle ORM, Cloudflare edge persistence |
+| Validation & forms | Zod, React Hook Form |
+| UI system | Base UI, Radix UI, shadcn/react, Tailwind CSS 4 |
+| Interaction & visualization | Embla Carousel, Recharts, Lucide React |
+| Media | HLS.js |
+| Quality | ESLint, Node-based automated/integration tests |
+| Browser E2E | Playwright / Selenium *(test automation direction)* |
+| Package management | pnpm |
+| Observability | Grafana *(planned)* |
+
+The table intentionally describes the engineering stack without exposing provider-specific integrations, credentials, private infrastructure bindings, or operational internals.
+
+--- | --- |
 | Frontend | React 19, TypeScript |
 | Build / application layer | Vite / Vinext |
 | Runtime | Cloudflare Workers |
