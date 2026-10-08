@@ -39,7 +39,7 @@ export async function GET(){
       "real madrid": {
         venueName: "Santiago Bernabéu",
         venueCity: "Madrid",
-        venueImage: "/stadiums/wp13800810-santiago-bernabeu-stadium-pc-wallpapers.jpg",
+        venueImage: "/stadiums/Real%20Madrid%20Santiago%20Bernabeu%20Stadium%20Wallpaper%20Net.jpg",
         venuePosition: "center 72%",
       },
       "liverpool": {
