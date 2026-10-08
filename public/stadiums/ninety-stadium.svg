@@ -1,19 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 720" role="img" aria-label="NINETY stadium backdrop">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 720">
 <defs>
- <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#050914"/><stop offset=".55" stop-color="#0b1720"/><stop offset="1" stop-color="#07100f"/></linearGradient>
- <radialGradient id="glow" cx=".5" cy=".6" r=".55"><stop stop-color="#bfff24" stop-opacity=".18"/><stop offset="1" stop-color="#bfff24" stop-opacity="0"/></radialGradient>
- <linearGradient id="pitch" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#17351f"/><stop offset="1" stop-color="#07160e"/></linearGradient>
- <filter id="blur"><feGaussianBlur stdDeviation="16"/></filter>
+<linearGradient id="sky" x2="0" y2="1"><stop stop-color="#020611"/><stop offset=".62" stop-color="#09131c"/><stop offset="1" stop-color="#03080b"/></linearGradient>
+<linearGradient id="stand" x2="0" y2="1"><stop stop-color="#202d38"/><stop offset=".5" stop-color="#0c151d"/><stop offset="1" stop-color="#05090d"/></linearGradient>
+<linearGradient id="pitch" x2="0" y2="1"><stop stop-color="#3a7d3f"/><stop offset="1" stop-color="#102f1b"/></linearGradient>
+<radialGradient id="lamp"><stop stop-color="#fff"/><stop offset=".12" stop-color="#e9fbff" stop-opacity=".95"/><stop offset=".45" stop-color="#bfe8ff" stop-opacity=".2"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<radialGradient id="atmo"><stop stop-color="#8ecfff" stop-opacity=".16"/><stop offset="1" stop-color="#8ecfff" stop-opacity="0"/></radialGradient>
+<pattern id="crowd" width="19" height="13" patternUnits="userSpaceOnUse"><circle cx="3" cy="4" r="1.4" fill="#c9d2d8"/><circle cx="11" cy="8" r="1.2" fill="#647482"/><circle cx="17" cy="3" r="1" fill="#a9b5bd"/></pattern>
 </defs>
 <rect width="1920" height="720" fill="url(#sky)"/>
-<ellipse cx="960" cy="360" rx="850" ry="300" fill="none" stroke="#18252d" stroke-width="92"/>
-<ellipse cx="960" cy="370" rx="760" ry="235" fill="#080d12" stroke="#243139" stroke-width="34"/>
-<g opacity=".8"><path d="M180 305Q960 40 1740 305" fill="none" stroke="#53616a" stroke-width="5"/><path d="M220 322Q960 105 1700 322" fill="none" stroke="#9aa5a9" stroke-width="2"/></g>
-<g fill="#d9ffe5" opacity=".8" filter="url(#blur)"><ellipse cx="340" cy="270" rx="95" ry="22"/><ellipse cx="650" cy="180" rx="100" ry="20"/><ellipse cx="1270" cy="180" rx="100" ry="20"/><ellipse cx="1580" cy="270" rx="95" ry="22"/></g>
-<g fill="#fff" opacity=".72"><circle cx="300" cy="305" r="4"/><circle cx="360" cy="282" r="4"/><circle cx="620" cy="206" r="4"/><circle cx="690" cy="192" r="4"/><circle cx="1230" cy="192" r="4"/><circle cx="1300" cy="206" r="4"/><circle cx="1560" cy="282" r="4"/><circle cx="1620" cy="305" r="4"/></g>
-<path d="M430 420L1490 420L1710 720H210Z" fill="url(#pitch)"/>
-<path d="M960 420V720M430 420L1490 420M210 720H1710" stroke="#d7eadb" stroke-opacity=".38" stroke-width="3" fill="none"/>
-<ellipse cx="960" cy="560" rx="105" ry="44" fill="none" stroke="#d7eadb" stroke-opacity=".32" stroke-width="3"/>
-<rect width="1920" height="720" fill="url(#glow)"/>
-<rect width="1920" height="720" fill="#020509" opacity=".18"/>
+<ellipse cx="960" cy="340" rx="1040" ry="430" fill="url(#atmo)"/>
+<path d="M-40 210 Q960 -70 1960 210 L1840 365 Q960 135 80 365Z" fill="#071018" stroke="#344552" stroke-width="8"/>
+<path d="M20 270 Q960 30 1900 270" fill="none" stroke="#9fb4c2" stroke-opacity=".35" stroke-width="5"/>
+<g opacity=".95">
+<ellipse cx="250" cy="215" rx="155" ry="100" fill="url(#lamp)"/><ellipse cx="620" cy="105" rx="165" ry="105" fill="url(#lamp)"/>
+<ellipse cx="1300" cy="105" rx="165" ry="105" fill="url(#lamp)"/><ellipse cx="1670" cy="215" rx="155" ry="100" fill="url(#lamp)"/>
+</g>
+<path d="M40 320 Q960 90 1880 320 L1695 565 Q960 350 225 565Z" fill="url(#stand)"/>
+<path d="M80 345 Q960 135 1840 345 L1740 475 Q960 285 180 475Z" fill="url(#crowd)" opacity=".9"/>
+<path d="M165 420 Q960 245 1755 420" fill="none" stroke="#51626e" stroke-width="5"/>
+<path d="M335 500 Q960 370 1585 500 L1785 720 H135Z" fill="url(#pitch)"/>
+<path d="M960 408V720M335 500L1585 500M135 720H1785" stroke="#eef7ee" stroke-opacity=".48" stroke-width="3" fill="none"/>
+<ellipse cx="960" cy="586" rx="120" ry="54" fill="none" stroke="#eef7ee" stroke-opacity=".45" stroke-width="3"/>
+<path d="M570 470L675 720M1350 470L1245 720" stroke="#eef7ee" stroke-opacity=".28" stroke-width="3"/>
+<g opacity=".18" fill="#d9ff3f"><path d="M335 500L490 500L330 720H135Z"/><path d="M650 440L770 420L735 720H520Z"/><path d="M1270 420L1390 440L1400 720H1185Z"/><path d="M1430 500H1585L1785 720H1590Z"/></g>
+<rect width="1920" height="720" fill="none" stroke="#111d27" stroke-width="12"/>
 </svg>
