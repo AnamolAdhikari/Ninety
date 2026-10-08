@@ -39,7 +39,7 @@ export async function GET(){
       "real madrid": {
         venueName: "Santiago Bernabéu",
         venueCity: "Madrid",
-        venueImage: "/stadiums/Real%20Madrid%20Santiago%20Bernabeu%20Stadium%20Wallpaper%20Net.jpg",
+        venueImage: "/stadiums/wp13800810-santiago-bernabeu-stadium-pc-wallpapers.jpg",
         venuePosition: "center 72%",
       },
       "liverpool": {
@@ -51,6 +51,71 @@ export async function GET(){
         venueName: "Etihad Stadium",
         venueCity: "Manchester",
         venueImage: "/stadiums/ManCity.jpg",
+      },
+      "arsenal": {
+        venueName: "Emirates Stadium",
+        venueCity: "London",
+        venueImage: "/stadiums/Arsenal.jpg",
+      },
+      "manchester united": {
+        venueName: "Old Trafford",
+        venueCity: "Manchester",
+        venueImage: "/stadiums/Old%20Trafford.webp",
+      },
+      "chelsea": {
+        venueName: "Stamford Bridge",
+        venueCity: "London",
+        venueImage: "/stadiums/Chealsea.jpg",
+      },
+      "tottenham": {
+        venueName: "Tottenham Hotspur Stadium",
+        venueCity: "London",
+        venueImage: "/stadiums/Tottenham.jpg",
+      },
+      "tottenham hotspur": {
+        venueName: "Tottenham Hotspur Stadium",
+        venueCity: "London",
+        venueImage: "/stadiums/Tottenham.jpg",
+      },
+      "bayern munich": {
+        venueName: "Allianz Arena",
+        venueCity: "Munich",
+        venueImage: "/stadiums/Bayern.jpg",
+      },
+      "borussia dortmund": {
+        venueName: "Signal Iduna Park",
+        venueCity: "Dortmund",
+        venueImage: "/stadiums/Dortmund.webp",
+      },
+      "paris saint-germain": {
+        venueName: "Parc des Princes",
+        venueCity: "Paris",
+        venueImage: "/stadiums/PSG.jpg",
+      },
+      "psg": {
+        venueName: "Parc des Princes",
+        venueCity: "Paris",
+        venueImage: "/stadiums/PSG.jpg",
+      },
+      "juventus": {
+        venueName: "Allianz Stadium",
+        venueCity: "Turin",
+        venueImage: "/stadiums/Juventus.jpg",
+      },
+      "inter milan": {
+        venueName: "San Siro",
+        venueCity: "Milan",
+        venueImage: "/stadiums/Inter-Milan.jpg",
+      },
+      "inter": {
+        venueName: "San Siro",
+        venueCity: "Milan",
+        venueImage: "/stadiums/Inter-Milan.jpg",
+      },
+      "atletico madrid": {
+        venueName: "Metropolitano",
+        venueCity: "Madrid",
+        venueImage: "/stadiums/Atle%CC%81tico.jpg",
       },
     };
     matches = matches.map(match => {
