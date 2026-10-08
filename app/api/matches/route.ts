@@ -118,9 +118,30 @@ export async function GET(){
         venueImage: "/stadiums/Atle%CC%81tico.jpg",
       },
     };
+    const stadiumAliases: Record<string,string> = {
+      "fc barcelona":"barcelona","barca":"barcelona",
+      "real madrid cf":"real madrid",
+      "liverpool fc":"liverpool",
+      "man city":"manchester city","manchester city fc":"manchester city",
+      "arsenal fc":"arsenal",
+      "man united":"manchester united","man utd":"manchester united","manchester united fc":"manchester united",
+      "chelsea fc":"chelsea",
+      "spurs":"tottenham hotspur","tottenham hotspur fc":"tottenham hotspur",
+      "bayern":"bayern munich","fc bayern":"bayern munich","fc bayern munich":"bayern munich","bayern münchen":"bayern munich",
+      "dortmund":"borussia dortmund","bvb":"borussia dortmund",
+      "paris sg":"paris saint-germain","paris saint germain":"paris saint-germain",
+      "juventus fc":"juventus",
+      "internazionale":"inter milan","inter milano":"inter milan","fc internazionale":"inter milan",
+      "atlético madrid":"atletico madrid","atletico de madrid":"atletico madrid",
+    };
+    const normalizeTeam=(name:string)=>name.trim().toLocaleLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
     matches = matches.map(match => {
-      const stadium=stadiums[match.home.toLowerCase()];
-      return stadium?{...match,...stadium}:match;
+      const normalized=normalizeTeam(match.home);
+      const alias=stadiumAliases[normalized]??normalized;
+      const stadium=stadiums[alias];
+      return stadium
+        ? {...match,...stadium}
+        : {...match,venueImage:"/stadiums/ninety-stadium.svg",venuePosition:"center"};
     });
     return Response.json({matches,sports:[{id:"football",name:"Football"}]},{headers:{"Cache-Control":"public, max-age=30, s-maxage=60"}});
   }catch{await recordHealth("match-feed-error");return Response.json({error:"Live event feed is temporarily unavailable."},{status:502});}
