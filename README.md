@@ -107,16 +107,6 @@ NINETY uses a modern TypeScript/React stack at the edge, with the supporting lib
 
 The table intentionally describes the engineering stack without exposing provider-specific integrations, credentials, private infrastructure bindings, or operational internals.
 
---- | --- |
-| Frontend | React 19, TypeScript |
-| Build / application layer | Vite / Vinext |
-| Runtime | Cloudflare Workers |
-| Validation | Zod |
-| UI | Responsive application CSS and reusable components |
-| Testing | Node-based automated and integration tests |
-| Package management | pnpm |
-
-The specific external services behind match data and other integrations are intentionally treated as replaceable implementation details.
 
 ---
 
