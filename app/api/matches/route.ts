@@ -30,7 +30,7 @@ export async function GET(){
     }).sort((a,b)=>Number(b.live)-Number(a.live)||a.date-b.date);
     // Curated stadium artwork is intentionally independent from the football-data
     // provider so venue-plan/quota limits cannot block the featured hero.
-    const stadiums: Record<string,{venueName:string;venueCity:string;venueImage:string}> = {
+    const stadiums: Record<string,{venueName:string;venueCity:string;venueImage:string;venuePosition?:string}> = {
       "barcelona": {
         venueName: "Spotify Camp Nou",
         venueCity: "Barcelona",
@@ -40,6 +40,7 @@ export async function GET(){
         venueName: "Santiago Bernabéu",
         venueCity: "Madrid",
         venueImage: "/stadiums/Real%20Madrid%20Santiago%20Bernabeu%20Stadium%20Wallpaper%20Net.jpg",
+        venuePosition: "center 72%",
       },
       "liverpool": {
         venueName: "Anfield",
