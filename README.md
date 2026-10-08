@@ -26,8 +26,13 @@ The project also treats external data and playback availability as unreliable in
 
 > **Project note:** NINETY is a personal learning project. Playback is intended only for sources the operator is authorized to use. This repository does not document private provider credentials, internal access configuration, or deployment secrets.
 
-<!-- HERO_SCREENSHOT -->
-<!-- Recommended final asset: docs/media/home-desktop.webp -->
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AnamolAdhikari/AnamolAdhikari/main/assets/1.jpg" alt="NINETY football matchday interface" width="88%" />
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AnamolAdhikari/AnamolAdhikari/main/assets/2.jpg" alt="NINETY product interface" width="88%" />
+</p>
 
 
 ---
