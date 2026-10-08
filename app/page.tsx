@@ -109,7 +109,7 @@ export default function Home(){
     ["Juventus","Allianz Stadium","Turin","/stadiums/Juventus.jpg","center"],
     ["Inter Milan","San Siro","Milan","/stadiums/Inter-Milan.jpg","center 36%"],
     ["Atletico Madrid","Metropolitano","Madrid","/stadiums/Atle%CC%81tico.jpg","center 36%"],
-    ["NINETY fallback","Stadium","NINETY","/stadiums/ninety-stadium.svg","center"],
+    ["NINETY fallback","Stadium","NINETY","/stadiums/Default.jpg","center"],
   ] as const;
   const stadiumTest=owner&&stadiumTestIndex!==null?stadiumTests[stadiumTestIndex]:null;
   const displaySpotlight=activeSpotlight&&stadiumTest?{...activeSpotlight,home:stadiumTest[0],venueName:stadiumTest[1],venueCity:stadiumTest[2],venueImage:stadiumTest[3],venuePosition:stadiumTest[4]}:activeSpotlight;
