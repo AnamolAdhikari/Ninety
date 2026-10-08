@@ -47,6 +47,11 @@ export async function GET(){
         venueCity: "Liverpool",
         venueImage: "/stadiums/Anfield.jpg",
       },
+      "manchester city": {
+        venueName: "Etihad Stadium",
+        venueCity: "Manchester",
+        venueImage: "/stadiums/ManCity.jpg",
+      },
     };
     matches = matches.map(match => {
       const stadium=stadiums[match.home.toLowerCase()];
