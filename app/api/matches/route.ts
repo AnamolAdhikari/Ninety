@@ -115,6 +115,7 @@ export async function GET(){
         venueName: "San Siro",
         venueCity: "Milan",
         venueImage: "/stadiums/Inter-Milan.jpg",
+        venuePosition: "center 36%",
       },
       "atletico madrid": {
         venueName: "Metropolitano",
