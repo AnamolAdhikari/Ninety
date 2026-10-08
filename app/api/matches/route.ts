@@ -34,17 +34,17 @@ export async function GET(){
       "barcelona": {
         venueName: "Spotify Camp Nou",
         venueCity: "Barcelona",
-        venueImage: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Barcelona-Sevilla-Supercopa-2016-PARTIDO.jpg?width=1800",
+        venueImage: "/stadiums/fc-barcelona-camp-3840x2160-19432.jpeg",
       },
       "real madrid": {
         venueName: "Santiago Bernabéu",
         venueCity: "Madrid",
-        venueImage: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Santiago%20Bernab%C3%A9u%20Stadium%20Inside%20360%20degree%20view%20%2C%20Madrid%20in%202019.jpg?width=1800",
+        venueImage: "/stadiums/Real%20Madrid%20Santiago%20Bernabeu%20Stadium%20Wallpaper%20Net.jpg",
       },
-      "manchester city": {
-        venueName: "Etihad Stadium",
-        venueCity: "Manchester",
-        venueImage: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Etihad%20night.jpg?width=1800",
+      "liverpool": {
+        venueName: "Anfield",
+        venueCity: "Liverpool",
+        venueImage: "/stadiums/Anfield.jpg",
       },
     };
     matches = matches.map(match => {
