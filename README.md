@@ -32,6 +32,16 @@ The project also assumes that real-world data is imperfect. Information can arri
   <img src="https://raw.githubusercontent.com/AnamolAdhikari/AnamolAdhikari/main/assets/2.jpg" alt="NINETY match experience" width="88%" />
 </p>
 
+### Latest matchday screenshots
+
+<p align="center">
+  <img src="public/screenshots/ninety-live.png" alt="NINETY live football matchday interface" width="88%" />
+</p>
+
+<p align="center">
+  <img src="public/screenshots/ninety-watch.png" alt="NINETY watch page during a live match" width="88%" />
+</p>
+
 ---
 
 ## What it does
