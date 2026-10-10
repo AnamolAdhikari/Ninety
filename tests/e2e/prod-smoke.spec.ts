@@ -158,6 +158,39 @@ test.describe("NINETY authenticated production smoke", () => {
     expect(response.headers()["cache-control"] || "").toContain("no-store");
   });
 
+  test("private JSON APIs reject malformed and oversized writes safely", async ({ page }) => {
+    const malformed = await page.evaluate(async () => {
+      const response = await fetch("/api/preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{not-json",
+      });
+      return { status: response.status, cache: response.headers.get("cache-control") };
+    });
+    expect(malformed.status).toBe(400);
+    expect(malformed.cache || "").toContain("no-store");
+
+    const oversized = await page.evaluate(async () => {
+      const response = await fetch("/api/preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: "x".repeat(40_100) }),
+      });
+      return { status: response.status, cache: response.headers.get("cache-control") };
+    });
+    expect(oversized.status).toBe(413);
+    expect(oversized.cache || "").toContain("no-store");
+  });
+
+  test("private preference API rejects unsupported methods", async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const response = await fetch("/api/preferences", { method: "DELETE" });
+      return { status: response.status, cache: response.headers.get("cache-control") };
+    });
+    expect(result.status).toBe(405);
+    expect(result.cache || "").toContain("no-store");
+  });
+
   test("authenticated session cookie uses hardened browser flags", async ({ page }) => {
     const cookie = (await page.context().cookies()).find(item => item.name === "__Host-ninety-session");
     expect(cookie).toBeTruthy();
