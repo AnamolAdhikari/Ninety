@@ -46,7 +46,7 @@ test.describe("NINETY authenticated production smoke", () => {
     });
     expect(result.status).toBe(200);
     expect(Array.isArray(result.body.matches)).toBeTruthy();
-    expect(result.body.matches.length).toBeGreaterThan(0);
+    expect(result.body.matches?.length ?? 0).toBeGreaterThan(0);
     const keys = (result.body.matches ?? []).map((m: MatchApiItem) => [m.home?.toLowerCase(), m.away?.toLowerCase(), m.date].join("|"));
     expect(new Set(keys).size).toBe(keys.length);
   });
