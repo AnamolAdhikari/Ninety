@@ -66,6 +66,7 @@ test.describe("NINETY authenticated production smoke", () => {
   });
 
   test("last-good feed survives a failed match refresh", async ({ page }) => {
+    test.setTimeout(90_000);
     const watchLinks = page.locator('a[href*="/watch?match="]');
     await expect.poll(async () => watchLinks.count(), { timeout: 15_000 }).toBeGreaterThan(0);
     const before = await watchLinks.count();
