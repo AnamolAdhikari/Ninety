@@ -191,6 +191,32 @@ test.describe("NINETY authenticated production smoke", () => {
     expect(result.cache || "").toContain("no-store");
   });
 
+  test("owner observability endpoint returns private aggregate health data", async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const response = await fetch("/api/admin/accounts", { cache: "no-store" });
+      const body = await response.json() as {
+        health?: Array<{ day?: string; category?: string; count?: number }>;
+        services?: { accounts?: boolean; footballData?: boolean };
+      };
+      return {
+        status: response.status,
+        cache: response.headers.get("cache-control"),
+        body,
+      };
+    });
+    expect(result.status).toBe(200);
+    expect(result.cache || "").toContain("no-store");
+    expect(Array.isArray(result.body.health)).toBeTruthy();
+    expect(typeof result.body.services?.accounts).toBe("boolean");
+    expect(typeof result.body.services?.footballData).toBe("boolean");
+    for (const row of result.body.health ?? []) {
+      expect(row.day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(row.category).toMatch(/^(match-feed-error|stream-api-error|stream-unavailable|football-data-error|source-retry)$/);
+      expect(Number.isInteger(row.count)).toBeTruthy();
+      expect(row.count ?? 0).toBeGreaterThanOrEqual(0);
+    }
+  });
+
   test("authenticated session cookie uses hardened browser flags", async ({ page }) => {
     const cookie = (await page.context().cookies()).find(item => item.name === "__Host-ninety-session");
     expect(cookie).toBeTruthy();
