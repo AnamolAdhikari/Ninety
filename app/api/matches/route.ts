@@ -28,6 +28,15 @@ export async function GET(){
         homeBadge:badge(match.teams?.home?.badge),awayBadge:badge(match.teams?.away?.badge),
         apiSources:Array.isArray(preferredSources)?preferredSources.map(s=>({source:clean(s.source),id:clean(s.id)})).filter(s=>s.source&&s.id).slice(0,12):[]};
     }).sort((a,b)=>Number(b.live)-Number(a.live)||a.date-b.date);
+    // Collapse duplicate provider entries without changing legitimate fixtures.
+    // Team names + kickoff are more stable than provider IDs when feeds merge sources.
+    const seenFixtures=new Set<string>();
+    matches=matches.filter(match=>{
+      const key=`${match.home.toLocaleLowerCase()}|${match.away.toLocaleLowerCase()}|${match.date}`;
+      if(seenFixtures.has(key))return false;
+      seenFixtures.add(key);
+      return true;
+    }).slice(0,80);
     // Curated stadium artwork is intentionally independent from the football-data
     // provider so venue-plan/quota limits cannot block the featured hero.
     const stadiums: Record<string,{venueName:string;venueCity:string;venueImage:string;venuePosition?:string}> = {
