@@ -152,7 +152,8 @@ test.describe("NINETY authenticated production smoke", () => {
     }
   });
 
-  test("last-good feed survives a failed match refresh", async ({ page }) => {
+  test("last-good feed survives a failed match refresh", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name.includes("mobile"), "The 60-second refresh path is covered once on desktop; mobile fallback is covered by the immediate cached-refresh test.");
     test.setTimeout(90_000);
     const watchLinks = page.locator('a[href*="/watch?match="]');
     await expect.poll(async () => watchLinks.count(), { timeout: 15_000 }).toBeGreaterThan(0);
