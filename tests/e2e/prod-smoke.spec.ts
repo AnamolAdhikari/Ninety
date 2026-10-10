@@ -52,6 +52,36 @@ test.describe("NINETY access control", () => {
   });
 });
 
+test.describe("NINETY session security", () => {
+  test("cross-origin login POST is rejected", async ({ request }) => {
+    const response = await request.post("/auth/login", {
+      headers: {
+        Origin: "https://example.com",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      data: "username=test&password=test",
+      maxRedirects: 0,
+    });
+    expect(response.status()).toBe(403);
+  });
+
+  test("cross-origin logout POST is rejected", async ({ request }) => {
+    const response = await request.post("/auth/logout", {
+      headers: { Origin: "https://example.com" },
+      maxRedirects: 0,
+    });
+    expect(response.status()).toBe(403);
+  });
+
+  test("malformed session cookie cannot unlock private APIs", async ({ request }) => {
+    const response = await request.get("/api/account", {
+      headers: { Cookie: "__Host-ninety-session=owner.invalid.invalid.invalid" },
+    });
+    expect(response.status()).toBe(401);
+    expect(response.headers()["cache-control"] || "").toContain("no-store");
+  });
+});
+
 test.describe("NINETY authenticated production smoke", () => {
   test.beforeEach(async ({ page }) => { await signIn(page); });
 
@@ -83,6 +113,15 @@ test.describe("NINETY authenticated production smoke", () => {
         expect(source.id).toBeTruthy();
       }
     }
+  });
+
+  test("authenticated session cookie uses hardened browser flags", async ({ page }) => {
+    const cookie = (await page.context().cookies()).find(item => item.name === "__Host-ninety-session");
+    expect(cookie).toBeTruthy();
+    expect(cookie?.httpOnly).toBeTruthy();
+    expect(cookie?.secure).toBeTruthy();
+    expect(cookie?.sameSite).toBe("Strict");
+    expect(cookie?.path).toBe("/");
   });
 
   test("authenticated account boundary is private and identifies a role", async ({ page }) => {
