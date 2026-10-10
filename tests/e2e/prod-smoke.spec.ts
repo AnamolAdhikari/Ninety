@@ -1,9 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 type MatchApiItem = {
+  id?: string;
   home?: string;
   away?: string;
-  date?: string;
+  date?: number;
+  live?: boolean;
+  apiSources?: Array<{ source?: string; id?: string }>;
   venueImage?: string;
 };
 
@@ -25,9 +28,27 @@ async function signIn(page: import("@playwright/test").Page) {
 }
 
 test.describe("NINETY access control", () => {
-  test("anonymous match API is protected", async ({ request }) => {
-    const response = await request.get("/api/matches");
-    expect(response.status()).toBe(401);
+  test("anonymous APIs are protected and not cacheable", async ({ request }) => {
+    for (const path of ["/api/matches", "/api/account", "/api/preferences"]) {
+      const response = await request.get(path);
+      expect(response.status(), path).toBe(401);
+      expect(response.headers()["cache-control"] || "", path).toContain("no-store");
+    }
+  });
+
+  test("anonymous homepage redirects to private login", async ({ request }) => {
+    const response = await request.get("/", { maxRedirects: 0 });
+    expect(response.status()).toBe(303);
+    expect(response.headers()["location"]).toBe("/login");
+    expect(response.headers()["cache-control"] || "").toContain("no-store");
+  });
+
+  test("login page carries private security headers", async ({ request }) => {
+    const response = await request.get("/login");
+    expect(response.status()).toBe(200);
+    expect(response.headers()["cache-control"] || "").toContain("no-store");
+    expect(response.headers()["content-security-policy"] || "").toContain("frame-ancestors 'none'");
+    expect(response.headers()["x-content-type-options"]).toBe("nosniff");
   });
 });
 
@@ -49,6 +70,33 @@ test.describe("NINETY authenticated production smoke", () => {
     expect(result.body.matches?.length ?? 0).toBeGreaterThan(0);
     const keys = (result.body.matches ?? []).map((m: MatchApiItem) => [m.home?.toLowerCase(), m.away?.toLowerCase(), m.date].join("|"));
     expect(new Set(keys).size).toBe(keys.length);
+
+    for (const match of result.body.matches ?? []) {
+      expect(match.id).toBeTruthy();
+      expect(match.home).toBeTruthy();
+      expect(match.away).toBeTruthy();
+      expect(Number.isFinite(match.date)).toBeTruthy();
+      expect(Array.isArray(match.apiSources)).toBeTruthy();
+      expect(match.venueImage).toMatch(/^\/stadiums\//);
+      for (const source of match.apiSources ?? []) {
+        expect(source.source).toBeTruthy();
+        expect(source.id).toBeTruthy();
+      }
+    }
+  });
+
+  test("authenticated account boundary is private and identifies a role", async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const response = await fetch("/api/account", { cache: "no-store" });
+      return {
+        status: response.status,
+        cache: response.headers.get("cache-control"),
+        body: await response.json() as { role?: string },
+      };
+    });
+    expect(result.status).toBe(200);
+    expect(result.cache || "").toContain("no-store");
+    expect(["owner", "guest", "friend"]).toContain(result.body.role);
   });
 
   test("stadium assets resolve for mapped fixtures", async ({ page }) => {
