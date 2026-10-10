@@ -191,26 +191,33 @@ test.describe("NINETY authenticated production smoke", () => {
     expect(result.cache || "").toContain("no-store");
   });
 
-  test("owner observability endpoint returns private aggregate health data", async ({ page }) => {
+  test("owner-only observability boundary stays private", async ({ page }) => {
     const result = await page.evaluate(async () => {
+      const accountResponse = await fetch("/api/account", { cache: "no-store" });
+      const account = await accountResponse.json() as { role?: string };
       const response = await fetch("/api/admin/accounts", { cache: "no-store" });
-      const body = await response.json() as {
+      const body = await response.json().catch(() => ({})) as {
         health?: Array<{ day?: string; category?: string; count?: number }>;
         services?: { accounts?: boolean; footballData?: boolean };
       };
       return {
+        role: account.role,
         status: response.status,
         cache: response.headers.get("cache-control"),
         body,
       };
     });
-    expect(result.status).toBe(200);
     expect(result.cache || "").toContain("no-store");
+    if (result.role !== "owner") {
+      expect(result.status).toBe(403);
+      return;
+    }
+    expect(result.status).toBe(200);
     expect(Array.isArray(result.body.health)).toBeTruthy();
     expect(typeof result.body.services?.accounts).toBe("boolean");
     expect(typeof result.body.services?.footballData).toBe("boolean");
     for (const row of result.body.health ?? []) {
-      expect(row.day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(row.day).toMatch(/^\\d{4}-\\d{2}-\\d{2}$/);
       expect(row.category).toMatch(/^(match-feed-error|stream-api-error|stream-unavailable|football-data-error|source-retry)$/);
       expect(Number.isInteger(row.count)).toBeTruthy();
       expect(row.count ?? 0).toBeGreaterThanOrEqual(0);
