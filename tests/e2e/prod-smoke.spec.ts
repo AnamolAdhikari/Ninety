@@ -115,6 +115,49 @@ test.describe("NINETY authenticated production smoke", () => {
     }
   });
 
+  test("presence API rejects unsafe and malformed writes without touching live presence", async ({ page }) => {
+    const crossOrigin = await page.request.post("/api/presence", {
+      headers: {
+        Origin: "https://example.com",
+        "Content-Type": "application/json",
+      },
+      data: {
+        match: "test-match",
+        visitor: "11111111-1111-4111-8111-111111111111",
+        tab: "22222222-2222-4222-8222-222222222222",
+      },
+    });
+    expect(crossOrigin.status()).toBe(403);
+    expect(crossOrigin.headers()["cache-control"] || "").toContain("no-store");
+
+    const malformed = await page.evaluate(async () => {
+      const response = await fetch("/api/presence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          match: "../unsafe",
+          visitor: "not-a-uuid",
+          tab: "also-not-a-uuid",
+        }),
+      });
+      return { status: response.status, cache: response.headers.get("cache-control") };
+    });
+    expect(malformed.status).toBe(400);
+    expect(malformed.cache || "").toContain("no-store");
+  });
+
+  test("private preference writes reject cross-origin requests", async ({ page }) => {
+    const response = await page.request.post("/api/preferences", {
+      headers: {
+        Origin: "https://example.com",
+        "Content-Type": "application/json",
+      },
+      data: {},
+    });
+    expect(response.status()).toBe(403);
+    expect(response.headers()["cache-control"] || "").toContain("no-store");
+  });
+
   test("authenticated session cookie uses hardened browser flags", async ({ page }) => {
     const cookie = (await page.context().cookies()).find(item => item.name === "__Host-ninety-session");
     expect(cookie).toBeTruthy();
