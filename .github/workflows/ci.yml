@@ -37,13 +37,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Capture refreshed lockfile
-        uses: actions/upload-artifact@v4
-        with:
-          name: refreshed-pnpm-lock-${{ github.run_id }}-${{ github.run_attempt }}
-          path: pnpm-lock.yaml
-          retention-days: 1
-
       - name: Verify dependency manifest
         run: |
           git diff --exit-code -- package.json
@@ -58,10 +51,50 @@ jobs:
       - name: Build
         run: pnpm build
 
+  deploy:
+    name: Deploy to Cloudflare
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pinned pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.25.0 --activate
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Verify Cloudflare secrets
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Missing CLOUDFLARE_API_TOKEN repository secret"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Missing CLOUDFLARE_ACCOUNT_ID repository secret"; exit 1; }
+
+      - name: Build
+        run: pnpm build
+
+      - name: Deploy
+        run: pnpm deploy:cloudflare
+
   production-smoke:
     name: Production Playwright smoke
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    needs: quality
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: deploy
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
