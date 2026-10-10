@@ -40,13 +40,16 @@ jobs:
       - name: Verify dependency manifest
         run: |
           git diff --exit-code -- package.json
-          node -e "const p=require('./package.json'); if(!p.devDependencies['@playwright/test'] || !p.devDependencies['cross-env']) process.exit(1)"
+          node -e "const p=require('./package.json'); if(!p.devDependencies['@playwright/test'] || !p.devDependencies['cross-env'] || !p.devDependencies['vitest']) process.exit(1)"
 
       - name: Lint CI and test surfaces
         run: pnpm exec eslint tests playwright.config.ts
 
       - name: Typecheck CI and test surfaces
-        run: pnpm exec tsc --noEmit --skipLibCheck --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --types node tests/e2e/*.spec.ts playwright.config.ts
+        run: pnpm exec tsc --noEmit --skipLibCheck --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions --types node,vitest/globals tests/e2e/*.spec.ts tests/unit/*.test.ts playwright.config.ts
+
+      - name: Unit tests
+        run: pnpm test:unit
 
       - name: Build
         run: pnpm build
