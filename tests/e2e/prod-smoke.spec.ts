@@ -199,6 +199,8 @@ test.describe("NINETY authenticated production smoke", () => {
       const body = await response.json().catch(() => ({})) as {
         health?: Array<{ day?: string; category?: string; count?: number }>;
         services?: { accounts?: boolean; footballData?: boolean };
+        healthSummary?: { windowDays?: number; total?: number; totals?: Record<string, number> };
+        observedAt?: string;
       };
       return {
         role: account.role,
@@ -216,6 +218,10 @@ test.describe("NINETY authenticated production smoke", () => {
     expect(Array.isArray(result.body.health)).toBeTruthy();
     expect(typeof result.body.services?.accounts).toBe("boolean");
     expect(typeof result.body.services?.footballData).toBe("boolean");
+    expect(result.body.healthSummary?.windowDays).toBe(7);
+    expect(Number.isInteger(result.body.healthSummary?.total)).toBeTruthy();
+    expect(result.body.healthSummary?.total ?? 0).toBeGreaterThanOrEqual(0);
+    expect(Number.isNaN(Date.parse(result.body.observedAt ?? ""))).toBeFalsy();
     for (const row of result.body.health ?? []) {
       expect(row.day).toMatch(/^\\d{4}-\\d{2}-\\d{2}$/);
       expect(row.category).toMatch(/^(match-feed-error|stream-api-error|stream-unavailable|football-data-error|source-retry)$/);
