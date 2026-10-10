@@ -12,7 +12,9 @@
     "deploy:cloudflare": "wrangler deploy --config dist/server/wrangler.json",
     "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "test:e2e": "playwright test",
+    "test:e2e:prod": "PLAYWRIGHT_BASE_URL=https://live.n90.workers.dev playwright test"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -59,7 +61,8 @@
     "typescript": "5.9.3",
     "vinext": "1.0.0-beta.5",
     "vite": "8.0.13",
-    "wrangler": "4.92.0"
+    "wrangler": "4.92.0",
+    "@playwright/test": "^1.56.1"
   },
   "type": "module",
   "overrides": {
