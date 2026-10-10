@@ -1,0 +1,32 @@
+name: Generate Vitest Lock
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/generate-vitest-lock.yml
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: |
+          corepack enable
+          corepack prepare pnpm@11.25.0 --activate
+      - run: pnpm add -D vitest
+      - name: Publish generated lockfile branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B automation/vitest-lock
+          git add package.json pnpm-lock.yaml
+          git commit -m "chore: generate vitest lockfile"
+          git push --force origin automation/vitest-lock
