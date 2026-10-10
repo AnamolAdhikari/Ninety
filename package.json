@@ -14,7 +14,8 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "test:e2e": "playwright test",
-    "test:e2e:prod": "cross-env PLAYWRIGHT_BASE_URL=https://live.n90.workers.dev playwright test"
+    "test:e2e:prod": "cross-env PLAYWRIGHT_BASE_URL=https://live.n90.workers.dev playwright test",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
