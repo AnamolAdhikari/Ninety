@@ -133,6 +133,45 @@ test.describe("NINETY authenticated production smoke", () => {
     await expect.poll(async () => watchLinks.count(), { timeout: 5_000 }).toBeGreaterThanOrEqual(before);
   });
 
+  test("cached matchday survives an immediate failed refresh", async ({ page }) => {
+    const watchLinks = page.locator('a[href*="/watch?match="]');
+    await expect.poll(async () => watchLinks.count(), { timeout: 15_000 }).toBeGreaterThan(0);
+    const before = await watchLinks.count();
+
+    await page.evaluate(() => {
+      const cached = window.sessionStorage.getItem("ninety-last-good-matches");
+      if (!cached) throw new Error("Expected last-good match cache after a successful feed load.");
+    });
+
+    await page.route("**/api/matches", route => route.fulfill({
+      status: 502,
+      contentType: "application/json",
+      body: '{"error":"test outage"}',
+    }));
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByText(/Featured fixtures/i)).toBeVisible({ timeout: 15_000 });
+    await expect.poll(async () => watchLinks.count(), { timeout: 5_000 }).toBeGreaterThanOrEqual(before);
+  });
+
+  test("primary matchday controls stay inside the mobile viewport", async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.includes("mobile"), "Mobile viewport guard.");
+    const result = await page.evaluate(() => {
+      const viewport = document.documentElement.clientWidth;
+      const selectors = ["header", "nav", "main", ".match-ticker"];
+      return selectors.flatMap(selector =>
+        [...document.querySelectorAll<HTMLElement>(selector)].map(element => {
+          const rect = element.getBoundingClientRect();
+          return { selector, left: rect.left, right: rect.right, width: rect.width, viewport };
+        })
+      );
+    });
+    for (const item of result) {
+      expect(item.left, JSON.stringify(item)).toBeGreaterThanOrEqual(-2);
+      expect(item.right, JSON.stringify(item)).toBeLessThanOrEqual(item.viewport + 2);
+    }
+  });
+
   test("page has no horizontal overflow", async ({ page }) => {
     const result = await page.evaluate(() => {
       const root = document.documentElement;
