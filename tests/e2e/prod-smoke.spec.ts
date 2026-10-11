@@ -222,6 +222,15 @@ test.describe("NINETY authenticated production smoke", () => {
     expect(Number.isInteger(result.body.healthSummary?.total)).toBeTruthy();
     expect(result.body.healthSummary?.total ?? 0).toBeGreaterThanOrEqual(0);
     expect(["healthy", "attention"]).toContain(result.body.healthSummary?.status);
+    const rowTotal = (result.body.health ?? []).reduce((sum, row) => sum + (row.count ?? 0), 0);
+    expect(result.body.healthSummary?.total).toBe(rowTotal);
+    const categoryTotals = Object.fromEntries(
+      ["match-feed-error", "stream-api-error", "stream-unavailable", "football-data-error", "source-retry"].map(category => [
+        category,
+        (result.body.health ?? []).filter(row => row.category === category).reduce((sum, row) => sum + (row.count ?? 0), 0),
+      ]),
+    );
+    expect(result.body.healthSummary?.totals).toEqual(categoryTotals);
     expect(Number.isNaN(Date.parse(result.body.observedAt ?? ""))).toBeFalsy();
     for (const row of result.body.health ?? []) {
       expect(row.day).toMatch(/^\\d{4}-\\d{2}-\\d{2}$/);
