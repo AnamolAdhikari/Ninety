@@ -345,7 +345,13 @@ test.describe("NINETY authenticated production smoke", () => {
         })
         .filter(item => item.left < -2 || item.right > viewport + 2)
         .slice(0, 12);
-      const structuralOffenders = offenders.filter(item => !String(item.className).includes("ticker-marquee") && !String(item.className).includes("ticker-group") && !String(item.className).includes("ticker-item"));
+      const structuralOffenders = offenders.filter(item => {
+        const element = Array.from(document.querySelectorAll("*")).find(node => {
+          const rect = node.getBoundingClientRect();
+          return node.tagName.toLowerCase() === item.tag && Math.round(rect.left) === Math.round(item.left) && Math.round(rect.right) === Math.round(item.right);
+        });
+        return !element?.closest(".ticker-marquee");
+      });
       return { overflow: root.scrollWidth - viewport, viewport, offenders, structuralOffenders };
     });
     expect(result.structuralOffenders, JSON.stringify(result)).toHaveLength(0);
