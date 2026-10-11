@@ -191,6 +191,12 @@ test.describe("NINETY authenticated production smoke", () => {
     expect(result.cache || "").toContain("no-store");
   });
 
+  test("anonymous observability endpoint stays private", async ({ request }) => {
+    const response = await request.get("/api/admin/accounts", { headers: { cookie: "" } });
+    expect(response.status()).toBe(401);
+    expect(response.headers()["cache-control"] || "").toContain("no-store");
+  });
+
   test("owner-only observability boundary stays private", async ({ page }) => {
     const result = await page.evaluate(async () => {
       const accountResponse = await fetch("/api/account", { cache: "no-store" });
