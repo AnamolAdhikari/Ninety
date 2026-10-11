@@ -8,6 +8,7 @@ import { MatchEvents } from "./match-events";
 import { MatchPresenceBadge } from "./match-presence";
 import { highlightsSearchUrl } from "../highlights";
 import { accountStorage, initializeAccountStorage } from "../account-storage";
+import { MatchTelemetry, WatchOpenTelemetry, telemetry } from "./match-telemetry";
 
 type ApiSource={source:string;id:string};
 type Match={id:string;home:string;away:string;time:string;date?:number;live?:boolean;matchStatus?:string;homeBadge?:string;awayBadge?:string;apiSources?:ApiSource[]};
@@ -36,6 +37,7 @@ function countdown(target:number,now:number){
 }
 
 export default function WatchPage(){
+  const requestedMatchId=typeof window!=="undefined"?(new URLSearchParams(window.location.search).get("match")??""):"";
   const [match,setMatch]=useState<Match|null>(null),[streams,setStreams]=useState<ApiStream[]>([]),[selected,setSelected]=useState(0);
   const [status,setStatus]=useState<"loading"|"ready"|"error"|"scheduled"|"ended">("loading"),[playerKey,setPlayerKey]=useState(0),[retryKey,setRetryKey]=useState(0),[now,setNow]=useState(Date.now());
   const [fixtures,setFixtures]=useState<Match[]>([]),[cinema,setCinema]=useState(false),[detailsTab,setDetailsTab]=useState<"lineups"|"highlights"|"events">("events");
@@ -154,11 +156,12 @@ export default function WatchPage(){
   const reportRetry=()=>{void fetch("/api/playback-report",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}).catch(()=>{});};
   const tryNext=()=>{reportRetry();if(streams.length>1){chooseStream((selected+1)%streams.length);setRecoveryMessage("Switched broadcast source. Press Play in the player if needed.");}else{setRetryKey(key=>key+1);setRecoveryMessage("Checking the provider again for a corrected or additional source…");}};
   const rejectCurrent=()=>{if(!stream)return;rejectedSources.current.add(stream.embedUrl);reportRetry();setStreams(current=>current.filter(item=>item.embedUrl!==stream.embedUrl));setSelected(0);setStatus("error");setRecoveryMessage("Wrong broadcast hidden for this session. Checking for a replacement source…");setRetryKey(key=>key+1);};
-  const frameError=()=>{if(!stream||!online)return;failedSources.current.add(stream.embedUrl);const next=streams.findIndex(item=>!failedSources.current.has(item.embedUrl));reportRetry();if(next>=0){chooseStream(next);setRecoveryMessage("The player could not load. Trying another listed source.");}else{setStreams([]);setStatus("error");}};
+  const frameError=()=>{if(!stream||!online)return;telemetry("source-failure",{matchId:match?.id,source:stream.source,streamNo:stream.streamNo});failedSources.current.add(stream.embedUrl);const next=streams.findIndex(item=>!failedSources.current.has(item.embedUrl));reportRetry();if(next>=0){chooseStream(next);setRecoveryMessage("The player could not load. Trying another listed source.");}else{setStreams([]);setStatus("error");}};
   useEffect(()=>{const refresh=()=>{if(match)try{setSaved((JSON.parse(accountStorage.getItem("ninety-favorites")||"[]") as string[]).includes(match.id));}catch{}};window.addEventListener("ninety-preferences",refresh);return()=>window.removeEventListener("ninety-preferences",refresh);},[match]);
   const toggleSaved=()=>{if(!match)return;let ids:string[]=[];try{ids=JSON.parse(accountStorage.getItem("ninety-favorites")||"[]");}catch{}const next=ids.includes(match.id)?ids.filter(id=>id!==match.id):[...ids,match.id];accountStorage.setItem("ninety-favorites",JSON.stringify(next));setSaved(next.includes(match.id));toast.success(next.includes(match.id)?"Match saved":"Removed from saved matches");};
   const share=async()=>{if(!match)return;try{if(navigator.share)await navigator.share({title:`${match.home} vs ${match.away} | NINETY Live`,url:window.location.href});else{await navigator.clipboard.writeText(window.location.href);toast.success("Match link copied");}}catch(error){if((error as Error).name!=="AbortError")toast.error("Could not share this match");}};
-  return <main className={"watch-page"+(cinema?" cinema-mode":"")}>
+  return <main className={"watch-page"+(cinema?" cinema-mode":"")}><WatchOpenTelemetry requestedMatchId={requestedMatchId}/>
+    {match&&<MatchTelemetry matchId={match.id} home={match.home} away={match.away} playing={Boolean(stream&&!ended&&!scheduled&&status==="ready")} source={stream?`${stream.source}|${stream.streamNo}`:undefined}/>}
     <header className="watch-header"><a className="brand" href="/" aria-label="Back to NINETY Live"><img className="brand-mark" src="/ninety-mark.svg" alt="" aria-hidden="true"/><strong>NINETY</strong><em>LIVE</em></a><a className="back-link" href="/"><ArrowLeft size={17}/>All football matches</a></header>
     <div className="watch-wrap">
       <div className="watch-title"><div><span className="eyebrow"><i/> {ended?"FULL TIME":scheduled?"UPCOMING MATCH":"MATCHDAY"}</span><h1>{match?`${match.home} vs ${match.away}`:"Loading match…"}</h1>{match&&<p>Kick-off · {match.date?new Date(match.date).toLocaleString([], {weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"}):match.time} <span className="local-time-note">· Your local time</span></p>}<div className="watch-title-actions">{match&&<MatchPresenceBadge matchId={match.id}/>}<button className={saved?"active":""} onClick={toggleSaved}><Star size={15} fill={saved?"currentColor":"none"}/>{saved?"Saved":"Save match"}</button><button onClick={()=>void share()}><Share2 size={15}/>Share</button></div></div><div className="watch-badges">{match?.homeBadge&&<img src={match.homeBadge} alt={match.home} decoding="async"/>}<strong>VS</strong>{match?.awayBadge&&<img src={match.awayBadge} alt={match.away} decoding="async"/>}</div></div>
