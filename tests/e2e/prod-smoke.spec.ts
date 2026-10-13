@@ -416,6 +416,59 @@ test.describe("NINETY authenticated production smoke", () => {
     expect(unsupported.cache || "").toContain("no-store");
   });
 
+  test("telemetry accepts approved events but discards unknown detail fields", async ({ page }) => {
+    const account = await page.evaluate(async () => {
+      const response = await fetch("/api/account", { cache: "no-store" });
+      return response.json() as Promise<{ role?: string }>;
+    });
+    test.skip(account.role !== "owner", "Telemetry audit verification requires owner credentials.");
+
+    const marker = "privacy-" + Date.now();
+    const write = await page.evaluate(async markerValue => {
+      const response = await fetch("/api/telemetry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "match-open",
+          detail: { matchId: markerValue, home: "Privacy Home", away: "Privacy Away", secret: "must-not-persist", ip: "203.0.113.10" },
+        }),
+      });
+      return response.status;
+    }, marker);
+    expect(write).toBe(200);
+
+    await expect.poll(async () => {
+      return page.evaluate(async markerValue => {
+        const response = await fetch("/api/admin/telemetry", { cache: "no-store" });
+        const body = await response.json() as { events?: Array<{ event?: string; detail?: string | null }> };
+        const row = (body.events ?? []).find(event => event.event === "match-open" && (event.detail ?? "").includes(markerValue));
+        if (!row?.detail) return null;
+        return JSON.parse(row.detail) as Record<string, unknown>;
+      }, marker);
+    }, { timeout: 10_000 }).toEqual({ matchId: marker, home: "Privacy Home", away: "Privacy Away" });
+  });
+
+  test("telemetry rejects events outside the approved allowlist", async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const response = await fetch("/api/telemetry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: "arbitrary-private-event", detail: { secret: "nope" } }),
+      });
+      return { status: response.status, cache: response.headers.get("cache-control") };
+    });
+    expect(result.status).toBe(400);
+    expect(result.cache || "").toContain("no-store");
+  });
+
+  test("anonymous telemetry and security admin endpoints stay private", async ({ request }) => {
+    for (const path of ["/api/admin/telemetry", "/api/admin/security"]) {
+      const response = await request.get(path, { headers: { cookie: "" } });
+      expect(response.status(), path).toBe(401);
+      expect(response.headers()["cache-control"] || "", path).toContain("no-store");
+    }
+  });
+
   test("stadium assets resolve for mapped fixtures", async ({ page }) => {
     const result = await page.evaluate(async () => {
       const response = await fetch("/api/matches", { cache: "no-store" });
