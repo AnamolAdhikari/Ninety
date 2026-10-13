@@ -13,7 +13,16 @@ export async function GET(){
     if(!matchesResponse.ok)throw new Error(`matches ${matchesResponse.status}`);
     const raw=await matchesResponse.json() as RawMatch[], now=Date.now();
     if(!Array.isArray(raw))throw new Error("Invalid match feed payload");
-    const liveRaw=liveResponse?.ok?await liveResponse.json() as RawMatch[]:[];
+    let liveRaw:RawMatch[]=[];
+    if(liveResponse?.ok){
+      try{
+        const livePayload=await liveResponse.json() as unknown;
+        if(Array.isArray(livePayload))liveRaw=livePayload as RawMatch[];
+        else await recordHealth("match-feed-error");
+      }catch{
+        await recordHealth("match-feed-error");
+      }
+    }
     const liveById=new Map(liveRaw.map(item=>[clean(item.id),item]).filter(([id])=>Boolean(id)));
     let matches=raw.slice(0,80).map((match,index)=>{
       const title=clean(match.title,"Live event"), [titleHome,titleAway]=title.split(/\s+vs\.?\s+/i);
