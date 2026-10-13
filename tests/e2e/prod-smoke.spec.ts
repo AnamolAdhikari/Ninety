@@ -269,6 +269,79 @@ test.describe("NINETY authenticated production smoke", () => {
     expect(["owner", "guest", "friend"]).toContain(result.body.role);
   });
 
+  test("owner Control Center navigation and sections stay usable", async ({ page }) => {
+    const account = await page.evaluate(async () => {
+      const response = await fetch("/api/account", { cache: "no-store" });
+      return response.json() as Promise<{ role?: string }>;
+    });
+    test.skip(account.role !== "owner", "Control Center UI is owner-only.");
+
+    const controlCenter = page.getByRole("button", { name: "Open owner Control Center" });
+    await expect(controlCenter).toBeVisible();
+    await controlCenter.click();
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page.getByRole("navigation", { name: "Control Center sections" })).toBeVisible();
+
+    for (const tab of ["Overview", "Live Users", "Activity", "System Health", "Security", "Accounts"]) {
+      const button = page.getByRole("button", { name: tab, exact: true });
+      await expect(button).toBeVisible();
+      await button.click();
+      await expect(button).toHaveClass(/active/);
+    }
+  });
+
+  test("owner Control Center stays inside the viewport", async ({ page }) => {
+    const account = await page.evaluate(async () => {
+      const response = await fetch("/api/account", { cache: "no-store" });
+      return response.json() as Promise<{ role?: string }>;
+    });
+    test.skip(account.role !== "owner", "Control Center UI is owner-only.");
+
+    await page.goto("/admin", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("navigation", { name: "Control Center sections" })).toBeVisible({ timeout: 15_000 });
+
+    for (const tab of ["Overview", "Live Users", "Activity", "System Health", "Security", "Accounts"]) {
+      await page.getByRole("button", { name: tab, exact: true }).click();
+      const result = await page.evaluate(() => {
+        const root = document.documentElement;
+        const viewport = root.clientWidth;
+        const offenders = [...document.querySelectorAll<HTMLElement>("body *")]
+          .filter(element => !element.closest(".control-tabs"))
+          .map(element => {
+            const rect = element.getBoundingClientRect();
+            return { tag: element.tagName.toLowerCase(), className: typeof element.className === "string" ? element.className : "", left: Math.round(rect.left), right: Math.round(rect.right) };
+          })
+          .filter(item => item.left < -2 || item.right > viewport + 2)
+          .slice(0, 12);
+        return { overflow: root.scrollWidth - viewport, viewport, offenders };
+      });
+      expect(result.overflow, JSON.stringify({ tab, ...result })).toBeLessThanOrEqual(2);
+      expect(result.offenders, JSON.stringify({ tab, ...result })).toHaveLength(0);
+    }
+  });
+
+  test("owner Control Center telemetry APIs remain private and healthy", async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const accountResponse = await fetch("/api/account", { cache: "no-store" });
+      const account = await accountResponse.json() as { role?: string };
+      const paths = ["/api/admin/telemetry", "/api/admin/security"];
+      const responses = await Promise.all(paths.map(async path => {
+        const response = await fetch(path, { cache: "no-store" });
+        return { path, status: response.status, cache: response.headers.get("cache-control"), body: await response.json().catch(() => null) };
+      }));
+      return { role: account.role, responses };
+    });
+    if (result.role !== "owner") {
+      for (const response of result.responses) expect(response.status).toBe(403);
+      return;
+    }
+    for (const response of result.responses) {
+      expect(response.status, response.path).toBe(200);
+      expect(response.cache || "", response.path).toContain("no-store");
+      expect(response.body, response.path).toBeTruthy();
+    }
+  });
+
   test("stadium assets resolve for mapped fixtures", async ({ page }) => {
     const result = await page.evaluate(async () => {
       const response = await fetch("/api/matches", { cache: "no-store" });
