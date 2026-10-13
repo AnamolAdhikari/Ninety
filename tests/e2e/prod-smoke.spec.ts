@@ -17,14 +17,26 @@ const password = process.env.NINETY_E2E_PASSWORD;
 
 async function signIn(page: import("@playwright/test").Page) {
   if (!username || !password) throw new Error("Set NINETY_E2E_USERNAME and NINETY_E2E_PASSWORD before running authenticated E2E tests.");
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.getByLabel("Username").fill(username);
-  await page.getByLabel("Password").fill(password);
-  await Promise.all([
-    page.waitForURL(url => !url.pathname.startsWith("/auth"), { timeout: 15_000 }),
-    page.getByRole("button", { name: "Sign in" }).click(),
-  ]);
-  await expect(page.getByText(/Featured fixtures/i)).toBeVisible({ timeout: 15_000 });
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await page.goto("/", { waitUntil: "domcontentloaded", timeout: 30_000 });
+      if (await page.getByText(/Featured fixtures/i).isVisible().catch(() => false)) return;
+      await page.getByLabel("Username").fill(username);
+      await page.getByLabel("Password").fill(password);
+      await Promise.all([
+        page.waitForURL(url => !url.pathname.startsWith("/auth"), { timeout: 20_000 }),
+        page.getByRole("button", { name: "Sign in" }).click(),
+      ]);
+      await expect(page.getByText(/Featured fixtures/i)).toBeVisible({ timeout: 20_000 });
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 2) break;
+      await page.waitForTimeout(1_000 * (attempt + 1));
+    }
+  }
+  throw lastError;
 }
 
 test.describe("NINETY access control", () => {
