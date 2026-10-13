@@ -217,7 +217,7 @@ test.describe("NINETY authenticated production smoke", () => {
     });
     expect(result.cache || "").toContain("no-store");
     if (result.role !== "owner") {
-      expect(result.status).toBe(403);
+      expect(result.status).toBe(404);
       return;
     }
     expect(result.status).toBe(200);
@@ -332,7 +332,7 @@ test.describe("NINETY authenticated production smoke", () => {
       return { role: account.role, responses };
     });
     if (result.role !== "owner") {
-      for (const response of result.responses) expect(response.status).toBe(403);
+      for (const response of result.responses) expect(response.status).toBe(404);
       return;
     }
     for (const response of result.responses) {
@@ -479,7 +479,7 @@ test.describe("NINETY authenticated production smoke", () => {
       const response = await page.request.get(path);
       expect(response.headers()["cache-control"] || "", path).toContain("no-store");
       if (role === "owner") expect(response.status(), path).toBe(200);
-      else expect(response.status(), path).toBe(403);
+      else expect(response.status(), path).toBe(404);
     }
   });
 
