@@ -85,6 +85,16 @@ test.describe("NINETY session security", () => {
     expect(response.status()).toBe(403);
   });
 
+  test("invalid session recovers to login instead of exposing a broken private page", async ({ request }) => {
+    const response = await request.get("/", {
+      headers: { Cookie: "__Host-ninety-session=owner.invalid.invalid.invalid" },
+      maxRedirects: 0,
+    });
+    expect(response.status()).toBe(303);
+    expect(response.headers()["location"]).toBe("/login");
+    expect(response.headers()["cache-control"] || "").toContain("no-store");
+  });
+
   test("malformed session cookie cannot unlock private APIs", async ({ request }) => {
     const response = await request.get("/api/account", {
       headers: { Cookie: "__Host-ninety-session=owner.invalid.invalid.invalid" },
