@@ -523,6 +523,27 @@ test.describe("NINETY authenticated production smoke", () => {
     }
   });
 
+  test("last-good feed survives an empty match refresh", async ({ page }) => {
+    const watchLinks = page.locator('a[href*="/watch?match="]');
+    await expect.poll(async () => watchLinks.count(), { timeout: 15_000 }).toBeGreaterThan(0);
+    const before = await watchLinks.count();
+
+    await page.evaluate(() => {
+      const cached = window.sessionStorage.getItem("ninety-last-good-matches");
+      if (!cached) throw new Error("Expected last-good match cache after a successful feed load.");
+    });
+
+    await page.route("**/api/matches", route => route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: '{"matches":[]}',
+    }));
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByText(/Featured fixtures/i)).toBeVisible({ timeout: 20_000 });
+    await expect.poll(async () => watchLinks.count(), { timeout: 8_000 }).toBeGreaterThanOrEqual(before);
+  });
+
   test("last-good feed survives a failed match refresh", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name.includes("mobile"), "The 60-second refresh path is covered once on desktop; mobile fallback is covered by the immediate cached-refresh test.");
     test.setTimeout(90_000);
