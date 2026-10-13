@@ -469,6 +469,34 @@ test.describe("NINETY authenticated production smoke", () => {
     }
   });
 
+  test("owner Control Center APIs require an authenticated owner role", async ({ page }) => {
+    const role = await page.evaluate(async () => {
+      const response = await fetch("/api/account", { cache: "no-store" });
+      const body = await response.json() as { role?: string };
+      return body.role;
+    });
+    for (const path of ["/api/admin/accounts", "/api/admin/telemetry", "/api/admin/security"]) {
+      const response = await page.request.get(path);
+      expect(response.headers()["cache-control"] || "", path).toContain("no-store");
+      if (role === "owner") expect(response.status(), path).toBe(200);
+      else expect(response.status(), path).toBe(403);
+    }
+  });
+
+  test("non-owner sessions cannot render the owner Control Center", async ({ page }) => {
+    const role = await page.evaluate(async () => {
+      const response = await fetch("/api/account", { cache: "no-store" });
+      const body = await response.json() as { role?: string };
+      return body.role;
+    });
+    test.skip(role === "owner", "Current CI credential is owner; owner rendering is covered separately.");
+
+    const response = await page.request.get("/admin", { maxRedirects: 0 });
+    expect(response.status()).toBe(403);
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: "Open owner Control Center" })).toHaveCount(0);
+  });
+
   test("stadium assets resolve for mapped fixtures", async ({ page }) => {
     const result = await page.evaluate(async () => {
       const response = await fetch("/api/matches", { cache: "no-store" });
