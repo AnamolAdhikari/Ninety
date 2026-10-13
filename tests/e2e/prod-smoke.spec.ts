@@ -342,6 +342,80 @@ test.describe("NINETY authenticated production smoke", () => {
     }
   });
 
+  test("security headers harden authenticated application responses", async ({ page }) => {
+    const response = await page.request.get("/");
+    expect(response.status()).toBe(200);
+    const headers = response.headers();
+    expect(headers["strict-transport-security"] || "").toContain("max-age=31536000");
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["x-frame-options"]).toBe("DENY");
+    expect(headers["permissions-policy"] || "").toContain("camera=()");
+    expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+    expect(headers["content-security-policy"] || "").toContain("frame-ancestors 'none'");
+  });
+
+  test("telemetry write boundary rejects cross-origin malformed oversized and unsupported writes", async ({ page }) => {
+    const crossOrigin = await page.request.post("/api/telemetry", {
+      headers: { Origin: "https://example.com", "Content-Type": "application/json" },
+      data: { event: "session-active" },
+    });
+    expect(crossOrigin.status()).toBe(403);
+
+    const malformed = await page.evaluate(async () => {
+      const response = await fetch("/api/telemetry", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{broken" });
+      return { status: response.status, cache: response.headers.get("cache-control") };
+    });
+    expect(malformed.status).toBe(400);
+    expect(malformed.cache || "").toContain("no-store");
+
+    const oversized = await page.evaluate(async () => {
+      const response = await fetch("/api/telemetry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: "session-active", value: "x".repeat(40_100) }) });
+      return { status: response.status, cache: response.headers.get("cache-control") };
+    });
+    expect(oversized.status).toBe(413);
+    expect(oversized.cache || "").toContain("no-store");
+
+    const unsupported = await page.evaluate(async () => {
+      const response = await fetch("/api/telemetry", { method: "DELETE" });
+      return { status: response.status, cache: response.headers.get("cache-control") };
+    });
+    expect(unsupported.status).toBe(405);
+    expect(unsupported.cache || "").toContain("no-store");
+  });
+
+  test("stream endpoint rejects malformed references before provider lookup", async ({ page }) => {
+    for (const path of [
+      "/api/streams?source=../unsafe&id=test",
+      "/api/streams?source=football&id=../unsafe",
+      "/api/streams?source=football&id=" + "x".repeat(181),
+    ]) {
+      const response = await page.request.get(path);
+      expect(response.status(), path).toBe(400);
+      expect(response.headers()["cache-control"] || "", path).toContain("no-store");
+    }
+  });
+
+  test("owner admin mutation boundaries reject cross-origin and unsupported requests", async ({ page }) => {
+    const account = await page.evaluate(async () => {
+      const response = await fetch("/api/account", { cache: "no-store" });
+      return response.json() as Promise<{ role?: string }>;
+    });
+    test.skip(account.role !== "owner", "Admin mutation checks require owner credentials.");
+
+    const crossOrigin = await page.request.post("/api/admin/account", {
+      headers: { Origin: "https://example.com", "Content-Type": "application/json" },
+      data: { id: "test", enabled: false },
+    });
+    expect(crossOrigin.status()).toBe(403);
+
+    const unsupported = await page.evaluate(async () => {
+      const response = await fetch("/api/admin/account", { method: "DELETE" });
+      return { status: response.status, cache: response.headers.get("cache-control") };
+    });
+    expect(unsupported.status).toBe(405);
+    expect(unsupported.cache || "").toContain("no-store");
+  });
+
   test("stadium assets resolve for mapped fixtures", async ({ page }) => {
     const result = await page.evaluate(async () => {
       const response = await fetch("/api/matches", { cache: "no-store" });
