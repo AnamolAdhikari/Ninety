@@ -84,7 +84,8 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
     if(!role) {
       if(!env.NINETY_ACCOUNTS)return page("Incorrect username or password.",401);
       const response=await accounts(env,"/verify",{username,password});
-      const data=await response.json() as {account?:{id:string;version:number}};
+      if(!response.ok)return page("Sign-in service is temporarily unavailable. Please try again.",503);
+      const data=await response.json().catch(()=>null) as {account?:{id:string;version:number}}|null;
       if(!data.account){await security(env,"login-failure",null,{method:"password"});return page("Incorrect username or password.",401);}
       const expiry=Math.floor(Date.now()/1000)+ttl,nonce=hex(crypto.getRandomValues(new Uint8Array(16)).buffer);
       const prefix=`friend.${data.account.id}.${data.account.version}.${expiry}.${nonce}`;
