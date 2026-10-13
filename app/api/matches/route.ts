@@ -11,6 +11,8 @@ export async function GET(){
       fetch(`${API}/api/matches/live`,{headers:{Accept:"application/json"},cache:"no-store"}).catch(()=>null)
     ]);
     if(!matchesResponse.ok)throw new Error(`matches ${matchesResponse.status}`);
+    const contentType=matchesResponse.headers.get("content-type")?.toLowerCase()??"";
+    if(!contentType.includes("application/json"))throw new Error("Invalid match feed content type");
     const raw=await matchesResponse.json() as RawMatch[], now=Date.now();
     if(!Array.isArray(raw))throw new Error("Invalid match feed payload");
     let liveRaw:RawMatch[]=[];
