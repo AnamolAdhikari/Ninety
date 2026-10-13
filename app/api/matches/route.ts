@@ -11,7 +11,7 @@ export async function GET(){
       fetch(`${API}/api/matches/live`,{headers:{Accept:"application/json"},cache:"no-store"}).catch(()=>null)
     ]);
     if(!matchesResponse.ok)throw new Error(`matches ${matchesResponse.status}`);
-    const raw=await matchesResponse.json() as RawMatch[], now=Date.now();
+    const raw=await matchesResponse.json() as RawMatch[], now=Date.now();\n    if(!Array.isArray(raw))throw new Error("Invalid match feed payload");
     const liveRaw=liveResponse?.ok?await liveResponse.json() as RawMatch[]:[];
     const liveById=new Map(liveRaw.map(item=>[clean(item.id),item]).filter(([id])=>Boolean(id)));
     let matches=raw.slice(0,80).map((match,index)=>{
