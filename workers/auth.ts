@@ -43,9 +43,10 @@ async function valid(request: Request,env: AuthEnv): Promise<Identity|null> {
     const now=Math.floor(Date.now()/1000);if(Number(expiry)<=now||Number(expiry)>now+ttl)return null;
     const bytes=new Uint8Array(signature.match(/../g)!.map(h=>parseInt(h,16)));
     if(!await crypto.subtle.verify("HMAC",await key(env.NINETY_SESSION_SECRET!),bytes,encoder.encode(parts.slice(0,5).join("."))))return null;
-    const response=await accounts(env,"/session",{id,version:Number(version)});
+    let response:Response;
+    try{response=await accounts(env,"/session",{id,version:Number(version)});}catch{return null;}
     if(!response.ok)return null;
-    const data=await response.json() as {account?:unknown};
+    const data=await response.json().catch(()=>null) as {account?:unknown}|null;
     return data.account?{role:"friend",storageId:"friend:"+id}:null;
   }
   const legacy=parts.length===3;
