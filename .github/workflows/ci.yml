@@ -12,7 +12,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel a production validation after deployment has started. Each main commit must finish its smoke gate.
+  cancel-in-progress: false
 
 jobs:
   quality:
