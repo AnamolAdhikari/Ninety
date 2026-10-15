@@ -30,6 +30,11 @@ const aliases:Record<string,string>={
 };
 
 function normalized(value:string){return value.toLocaleLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim()}
+const clubWords=new Set(["fc","cf","afc","ac","sc","bk","ff","if","fk","sk","club","calcio"]);
+function coreName(value:string){return normalized(value).split(" ").filter(word=>word&&!clubWords.has(word)).join(" ")}
+function candidateNames(team:SportsDbTeam){return [team.strTeam??"",...(team.strTeamAlternate??"").split(",")].filter(Boolean)}
+function matchScore(candidate:string,requested:string){const a=normalized(candidate),b=normalized(requested),ac=coreName(candidate),bc=coreName(requested);if(a===b)return 100;if(ac&&ac===bc)return 90;if(ac&&bc&&(ac.includes(bc)||bc.includes(ac)))return 70;const aw=new Set(ac.split(" ").filter(Boolean)),bw=new Set(bc.split(" ").filter(Boolean)),shared=[...aw].filter(word=>bw.has(word)).length,largest=Math.max(aw.size,bw.size);return largest?Math.round(shared/largest*50):0}
+function bestTeam(teams:SportsDbTeam[],requested:string){return teams.map(team=>({team,score:Math.max(...candidateNames(team).map(name=>matchScore(name,requested)),0)})).sort((a,b)=>b.score-a.score)[0]?.score>=50?teams.map(team=>({team,score:Math.max(...candidateNames(team).map(name=>matchScore(name,requested)),0)})).sort((a,b)=>b.score-a.score)[0].team:undefined}
 
 export async function GET(request:Request){
   const requested=new URL(request.url).searchParams.get("name")?.trim()??"";
@@ -40,10 +45,10 @@ export async function GET(request:Request){
     if(!response.ok)throw new Error(`badge ${response.status}`);
     const data=await response.json() as {teams?:SportsDbTeam[]|null};
     const teams=(data.teams??[]).filter(team=>team.strSport==="Soccer"&&team.strBadge);
-    const key=normalized(query),team=teams.find(item=>normalized(item.strTeam??"")===key||(item.strTeamAlternate??"").split(",").some(alias=>normalized(alias)===key))??teams[0];
+    const team=bestTeam(teams,query);
     if(team?.strBadge)return Response.json({badge:team.strBadge},{headers:{"Cache-Control":"public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000"}});
     const fallbackResponse=query===requested?null:await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(requested)}`,{headers:{Accept:"application/json"},next:{revalidate:604800}});
-    if(fallbackResponse?.ok){const fallbackData=await fallbackResponse.json() as {teams?:SportsDbTeam[]|null};const requestedKey=normalized(requested),fallbackTeams=(fallbackData.teams??[]).filter(item=>item.strSport==="Soccer"&&item.strBadge),fallbackTeam=fallbackTeams.find(item=>normalized(item.strTeam??"")===requestedKey||(item.strTeamAlternate??"").split(",").some(alias=>normalized(alias)===requestedKey))??fallbackTeams[0];if(fallbackTeam?.strBadge)return Response.json({badge:fallbackTeam.strBadge},{headers:{"Cache-Control":"public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000"}});}
+    if(fallbackResponse?.ok){const fallbackData=await fallbackResponse.json() as {teams?:SportsDbTeam[]|null};const fallbackTeams=(fallbackData.teams??[]).filter(item=>item.strSport==="Soccer"&&item.strBadge),fallbackTeam=bestTeam(fallbackTeams,requested);if(fallbackTeam?.strBadge)return Response.json({badge:fallbackTeam.strBadge},{headers:{"Cache-Control":"public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000"}});}
     return Response.json({badge:null},{headers:{"Cache-Control":"public, max-age=3600, s-maxage=86400"}});
   }catch{return Response.json({badge:null},{headers:{"Cache-Control":"public, max-age=3600, s-maxage=86400"}})}
 }
