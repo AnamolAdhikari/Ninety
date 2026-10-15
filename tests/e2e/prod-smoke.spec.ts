@@ -249,7 +249,12 @@ test.describe("NINETY authenticated production smoke", () => {
     expect(result.body.healthSummary?.windowDays).toBe(7);
     expect(Number.isInteger(result.body.healthSummary?.total)).toBeTruthy();
     expect(result.body.healthSummary?.total ?? 0).toBeGreaterThanOrEqual(0);
-    expect(["healthy", "attention"]).toContain(result.body.healthSummary?.status);\n    expect(Number.isInteger(result.body.healthSummary?.recent6Hours)).toBeTruthy();\n    expect(Number.isInteger(result.body.healthSummary?.recent24Hours)).toBeTruthy();\n    expect(result.body.healthSummary?.recent6Hours ?? 0).toBeGreaterThanOrEqual(0);\n    expect(result.body.healthSummary?.recent24Hours ?? 0).toBeGreaterThanOrEqual(result.body.healthSummary?.recent6Hours ?? 0);\n    if (result.body.healthSummary?.lastIssueAt) expect(result.body.healthSummary.lastIssueAt).toMatch(/^\\d{4}-\\d{2}-\\d{2}$/);
+    expect(["healthy", "attention"]).toContain(result.body.healthSummary?.status);
+    expect(Number.isInteger(result.body.healthSummary?.recent6Hours)).toBeTruthy();
+    expect(Number.isInteger(result.body.healthSummary?.recent24Hours)).toBeTruthy();
+    expect(result.body.healthSummary?.recent6Hours ?? 0).toBeGreaterThanOrEqual(0);
+    expect(result.body.healthSummary?.recent24Hours ?? 0).toBeGreaterThanOrEqual(result.body.healthSummary?.recent6Hours ?? 0);
+    if (result.body.healthSummary?.lastIssueAt) expect(result.body.healthSummary.lastIssueAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     const rowTotal = (result.body.health ?? []).reduce((sum, row) => sum + (row.count ?? 0), 0);
     expect(result.body.healthSummary?.total).toBe(rowTotal);
     const categoryTotals = Object.fromEntries(
