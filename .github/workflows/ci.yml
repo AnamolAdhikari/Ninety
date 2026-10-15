@@ -135,6 +135,15 @@ jobs:
       - name: Run production smoke suite
         run: pnpm test:e2e:prod
 
+      - name: Verify deployed revision
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          DEPLOYMENT_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/deployments?environment=production&per_page=1" --jq '.[0].sha // empty')"
+          test -n "$DEPLOYMENT_SHA" || { echo "::error::No production deployment record found"; exit 1; }
+          test "$DEPLOYMENT_SHA" = "$GITHUB_SHA" || { echo "::error::Production deployment record points to $DEPLOYMENT_SHA, expected $GITHUB_SHA"; exit 1; }
+
       - name: Upload Playwright diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
