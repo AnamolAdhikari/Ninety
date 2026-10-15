@@ -227,7 +227,7 @@ test.describe("NINETY authenticated production smoke", () => {
       const body = await response.json().catch(() => ({})) as {
         health?: Array<{ day?: string; category?: string; count?: number }>;
         services?: { accounts?: boolean; footballData?: boolean };
-        healthSummary?: { windowDays?: number; total?: number; totals?: Record<string, number>; status?: string; lastIssueAt?: string | null; recent24Hours?: number; recent6Hours?: number };
+        healthSummary?: { windowDays?: number; total?: number; totals?: Record<string, number>; recentTotals?: Record<string, number>; status?: string; lastIssueAt?: string | null; recent24Hours?: number; recent6Hours?: number };
         observedAt?: string;
       };
       return {
@@ -254,6 +254,8 @@ test.describe("NINETY authenticated production smoke", () => {
     expect(Number.isInteger(result.body.healthSummary?.recent24Hours)).toBeTruthy();
     expect(result.body.healthSummary?.recent6Hours ?? 0).toBeGreaterThanOrEqual(0);
     expect(result.body.healthSummary?.recent24Hours ?? 0).toBeGreaterThanOrEqual(result.body.healthSummary?.recent6Hours ?? 0);
+    const recentCategoryTotal = Object.values(result.body.healthSummary?.recentTotals ?? {}).reduce((sum, count) => sum + count, 0);
+    expect(recentCategoryTotal).toBe(result.body.healthSummary?.recent24Hours ?? 0);
     if (result.body.healthSummary?.lastIssueAt) expect(result.body.healthSummary.lastIssueAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     const rowTotal = (result.body.health ?? []).reduce((sum, row) => sum + (row.count ?? 0), 0);
     expect(result.body.healthSummary?.total).toBe(rowTotal);
