@@ -30,6 +30,9 @@ export async function GET(request:Request){
     const data=await response.json() as {teams?:SportsDbTeam[]|null};
     const teams=(data.teams??[]).filter(team=>team.strSport==="Soccer"&&team.strBadge);
     const key=normalized(query),team=teams.find(item=>normalized(item.strTeam??"")===key||(item.strTeamAlternate??"").split(",").some(alias=>normalized(alias)===key))??teams[0];
-    return Response.json({badge:team?.strBadge??null},{headers:{"Cache-Control":"public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000"}});
+    if(team?.strBadge)return Response.json({badge:team.strBadge},{headers:{"Cache-Control":"public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000"}});
+    const fallbackResponse=query===requested?null:await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(requested)}`,{headers:{Accept:"application/json"},next:{revalidate:604800}});
+    if(fallbackResponse?.ok){const fallbackData=await fallbackResponse.json() as {teams?:SportsDbTeam[]|null};const requestedKey=normalized(requested),fallbackTeams=(fallbackData.teams??[]).filter(item=>item.strSport==="Soccer"&&item.strBadge),fallbackTeam=fallbackTeams.find(item=>normalized(item.strTeam??"")===requestedKey||(item.strTeamAlternate??"").split(",").some(alias=>normalized(alias)===requestedKey))??fallbackTeams[0];if(fallbackTeam?.strBadge)return Response.json({badge:fallbackTeam.strBadge},{headers:{"Cache-Control":"public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000"}});}
+    return Response.json({badge:null},{headers:{"Cache-Control":"public, max-age=3600, s-maxage=86400"}});
   }catch{return Response.json({badge:null},{headers:{"Cache-Control":"public, max-age=3600, s-maxage=86400"}})}
 }
