@@ -12,7 +12,7 @@ const aliases:Record<string,string>={
   "hammarby if":"Hammarby",
   "fc groningen":"Groningen",
   "as monaco":"Monaco",
-  "paris saint germain":"Paris SG",
+  "paris saint germain":"Paris Saint-Germain",
   "lille":"Lille OSC",
   "necaxa":"Club Necaxa",
   "atlas":"Atlas FC",
