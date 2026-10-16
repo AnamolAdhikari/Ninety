@@ -100,7 +100,7 @@ jobs:
 
   production-smoke:
     name: Production Playwright smoke
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && (github.event_name == 'schedule' || needs.deploy.result == 'success')
     needs: deploy
     runs-on: ubuntu-latest
     timeout-minutes: 15
