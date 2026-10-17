@@ -213,3 +213,17 @@
 
 /* Phase 6 · personalized matchday pulse */
 .matchday-pulse{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:0 0 18px;padding:16px 18px;border:1px solid #26313e;border-left:3px solid var(--lime);border-radius:8px;background:linear-gradient(110deg,#101720,#0a0f15);box-shadow:0 12px 32px rgb(0 0 0 / 16%)}.matchday-pulse>div{min-width:0;display:grid;gap:4px}.matchday-pulse span{color:var(--lime);font-size:.62rem;font-weight:900;letter-spacing:.14em}.matchday-pulse strong{font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.matchday-pulse small{color:#7f8b99;font-size:.74rem}.matchday-pulse button{flex:0 0 auto;display:flex;align-items:center;gap:6px;border:1px solid #364353;border-radius:5px;background:#141c26;color:#dbe2ea;padding:9px 11px;font-size:.74rem;font-weight:850;cursor:pointer}.matchday-pulse button:hover{border-color:var(--lime);color:var(--lime)}@media(max-width:640px){.matchday-pulse{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.matchday-pulse button{width:100%;justify-content:space-between}.matchday-pulse strong{font-size:.92rem}}
+
+/* Compact match timeline: recent events first, full history on demand. */
+.match-events-panel{padding:18px 20px;margin-bottom:28px}
+.match-events-panel ol{margin:14px 0 8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.match-events-panel li{min-width:0;display:flex;align-items:flex-start;gap:11px;padding:12px;border:1px solid #263c4c;border-radius:10px;background:#111f2c}
+.match-events-panel li time{min-width:37px;font-size:.85rem;line-height:1.5}
+.match-events-panel li div{min-width:0;gap:4px}
+.match-events-panel li strong{font-size:.82rem;line-height:1.35}
+.match-events-panel li span{font-size:.78rem;line-height:1.45;overflow-wrap:anywhere}
+.match-events-panel li small{font-size:.7rem}
+.match-events-more{display:block;width:100%;margin-top:12px;padding:11px;border:1px solid #3a5142;border-radius:9px;background:#16251e;color:var(--lime);font:inherit;font-size:.8rem;font-weight:750;cursor:pointer}
+.match-events-more:hover{background:#203429;border-color:var(--lime)}
+.match-events-more:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+@media(max-width:700px){.match-events-panel ol{grid-template-columns:1fr}.match-events-panel{padding:15px}.match-events-panel li{padding:10px}}
