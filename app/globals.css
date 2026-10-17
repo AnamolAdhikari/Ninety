@@ -240,3 +240,10 @@
 .match-events-panel .match-events-more{margin-top:8px;border-color:#3b5847;background:#1a2b23;transition:background .2s ease}
 @media(max-width:700px){.match-events-panel .match-events-feed{grid-template-columns:none}.match-events-panel .match-events-feed .match-event-card{grid-template-columns:43px minmax(0,1fr);gap:10px;padding:10px}.match-events-panel .match-events-feed .match-event-card time{min-height:37px}}
 @media(prefers-reduced-motion:reduce){.match-events-panel .match-events-feed .match-event-card{transition:none}.match-events-panel .match-events-feed .match-event-card:hover{transform:none}}
+
+/* All four recent events stay readable; older events leave the list, not fade away. */
+.match-events-panel.match-events-collapsed .match-events-feed .match-event-card:nth-child(4),.match-events-panel .match-events-feed .match-event-card:nth-child(4){opacity:1;mask-image:none}
+.match-events-panel .match-events-feed .match-event-card{box-shadow:0 6px 16px rgb(0 0 0 / 12%)}
+.match-events-panel .match-events-feed .match-event-card.event-new{border-color:var(--lime);animation:match-event-arrive .35s ease-out}
+@keyframes match-event-arrive{from{opacity:.25;transform:translateY(-9px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.match-events-panel .match-events-feed .match-event-card.event-new{animation:none}}
