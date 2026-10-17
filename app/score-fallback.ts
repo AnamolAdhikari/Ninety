@@ -7,6 +7,8 @@ type SportsDbEvent = {
   intAwayScore?: string | number | null;
   dateEvent?: string | null;
   strStatus?: string | null;
+  strTimestamp?: string | null;
+  strTime?: string | null;
 };
 
 const asScore=(value:unknown):number|null=>{
@@ -27,10 +29,16 @@ export async function fallbackFinalScore(home:string,away:string,date:number):Pr
     if(!response.ok)return null;
     const data=await response.json() as {event?:SportsDbEvent[]|null;events?:SportsDbEvent[]|null};
     const events=data.event??data.events??[];
-    const match=events.find(item=>teamKey(item.strHomeTeam??"")===teamKey(home)&&teamKey(item.strAwayTeam??"")===teamKey(away));
+    const candidates=events.filter(item=>teamKey(item.strHomeTeam??"")===teamKey(home)&&teamKey(item.strAwayTeam??"")===teamKey(away)&&item.dateEvent===day);
+    // Never select an arbitrary result from an ambiguous same-day pairing.
+    if(candidates.length!==1)return null;
+    const match=candidates[0];
     if(!match)return null;
     const homeScore=asScore(match.intHomeScore),awayScore=asScore(match.intAwayScore);
-    if(homeScore===null||awayScore===null)return null;
+    if(homeScore===null||awayScore===null||!Number.isInteger(homeScore)||!Number.isInteger(awayScore)||homeScore<0||awayScore<0)return null;
+    // A final score must not be inferred from a live or scheduled event.
+    const finalStatuses=new Set(["match finished","finished","ft","full time","after extra time","aet","after penalties","pen"]);
+    if(!finalStatuses.has((match.strStatus??"").trim().toLowerCase()))return null;
     return {home:homeScore,away:awayScore,source:"TheSportsDB"};
   }catch{return null;}
 }
