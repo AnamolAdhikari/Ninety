@@ -4,17 +4,18 @@ import { env } from "cloudflare:workers";
 export { findFixture } from "./football-fixtures";
 export type { Fixture } from "./football-fixtures";
 export class FootballDataError extends Error {}
-const pending = new Map<string, Promise<{response:unknown[];checkedAt:number}>>();
+export type FootballDataMeta<T>={response:T[];checkedAt:number;freshness:"fresh"|"stale"};
+const pending = new Map<string, Promise<FootballDataMeta<unknown>>>();
 const STALE_TTL = 24 * 60 * 60;
 const staleKeyFor = (path:string) => new Request(`https://ninety-cache.invalid/football-v3-last-good/${encodeURIComponent(path)}`);
-export async function footballDataWithMeta<T>(path: string, ttl = 1800): Promise<{response:T[];checkedAt:number}> {
+export async function footballDataWithMeta<T>(path: string, ttl = 1800): Promise<FootballDataMeta<T>> {
   const key = (env as unknown as { API_FOOTBALL_KEY?: string }).API_FOOTBALL_KEY;
   if (!key) throw new FootballDataError("Lineup data is not connected yet.");
   const cacheKey = new Request(`https://ninety-cache.invalid/football-v3/${encodeURIComponent(path)}`);
   const cache = (caches as unknown as { default: Cache }).default;
   const cached = await cache?.match(cacheKey);
-  if (cached) { const data = await cached.json() as { response?: T[]; error?: string; checkedAt?:number }; if (data.error) throw new FootballDataError(data.error); return {response:data.response??[],checkedAt:data.checkedAt??0}; }
-  const existing = pending.get(path); if (existing) return existing as Promise<{response:T[];checkedAt:number}>;
+  if (cached) { const data = await cached.json() as { response?: T[]; error?: string; checkedAt?:number }; if (data.error) throw new FootballDataError(data.error); return {response:data.response??[],checkedAt:data.checkedAt??0,freshness:"fresh"}; }
+  const existing = pending.get(path); if (existing) return existing as Promise<FootballDataMeta<T>>;
   const task = (async () => {
     const response = await fetch(`https://v3.football.api-sports.io/${path}`, { headers: { "x-apisports-key": key }, signal: AbortSignal.timeout(10000) });
     const data = await response.json() as { response?: T[]; errors?: unknown };
@@ -24,7 +25,7 @@ export async function footballDataWithMeta<T>(path: string, ttl = 1800): Promise
       await cache?.put(cacheKey, Response.json({ error: message }, { headers: { "Cache-Control": "public, max-age=1800" } }));
       throw new FootballDataError(message);
     }
-    const result = {response:data.response??[],checkedAt:Date.now()};
+    const result:FootballDataMeta<T> = {response:data.response??[],checkedAt:Date.now(),freshness:"fresh"};
     await cache?.put(cacheKey, Response.json(result, { headers: { "Cache-Control": `public, max-age=${ttl}` } }));
     // Keep a longer-lived successful snapshot. A transient provider/quota failure must
     // not make confirmed match data disappear from the UI.
@@ -37,7 +38,7 @@ export async function footballDataWithMeta<T>(path: string, ttl = 1800): Promise
     const stale = await cache?.match(staleKeyFor(path));
     if (stale) {
       const data = await stale.json() as {response?:T[];checkedAt?:number};
-      return {response:data.response??[],checkedAt:data.checkedAt??0};
+      return {response:data.response??[],checkedAt:data.checkedAt??0,freshness:"stale"};
     }
     throw error;
   } finally { pending.delete(path); }
