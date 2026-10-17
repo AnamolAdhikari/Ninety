@@ -18,16 +18,21 @@ export async function GET(request: Request) {
     return secondary ? Response.json(secondary, {headers:{"Cache-Control":"public, max-age=120"}}) : unavailable(message);
   };
   try {
+    const secondaryPromise = sportsDbLineups(home, away, date);
+    const fastFallback = async (message: string) => {
+      const secondary = await secondaryPromise;
+      return secondary ? Response.json(secondary, {headers:{"Cache-Control":"public, max-age=120"}}) : unavailable(message);
+    };
     const matchDate = new Date(date).toISOString().slice(0, 10);
     const fixtures = await footballData<Fixture>(`fixtures?date=${matchDate}`);
     const fixture = findFixture(fixtures, home, away, date);
-    if (!fixture?.fixture?.id) return fallback("No verified lineup source currently covers this fixture.");
+    if (!fixture?.fixture?.id) return fastFallback("No verified lineup source currently covers this fixture.");
     const result = await footballDataWithMeta<TeamLineup>(`fixtures/lineups?fixture=${fixture.fixture.id}`, 300);
     const getTeam = (id: number | undefined) => result.response?.find(item => id && item.team?.id === id);
     const homeData = getTeam(fixture.teams?.home?.id), awayData = getTeam(fixture.teams?.away?.id);
     const players = (team: TeamLineup | undefined) => team?.startXI?.map(entry => entry.player).filter((player): player is Player => Boolean(player?.name));
     const homePlayers = players(homeData), awayPlayers = players(awayData);
-    if (!homePlayers?.length && !awayPlayers?.length) return fallback("Starting XIs have not been confirmed by the connected providers yet.");
+    if (!homePlayers?.length && !awayPlayers?.length) return fastFallback("Starting XIs have not been confirmed by the connected providers yet.");
     const portrait = (player: Player) => ({ ...player, photo: player.id && Number.isInteger(player.id) && player.id > 0 ? `https://media.api-sports.io/football/players/${player.id}.png` : undefined });
     const logo = (team: TeamLineup | undefined) => team?.team?.id && Number.isInteger(team.team.id) && team.team.id > 0 ? `https://media.api-sports.io/football/teams/${team.team.id}.png` : undefined;
     const side = (name:string, team:TeamLineup|undefined, starters:Player[]|undefined) => ({name,logo:logo(team),formation:team?.formation??null,confirmed:(starters?.length??0)===11,players:(starters??[]).map(portrait),substitutes:(team?.substitutes??[]).map(entry=>entry.player).filter((player):player is Player=>Boolean(player?.name)).map(portrait),coach:team?.coach?.name?team.coach:null});
