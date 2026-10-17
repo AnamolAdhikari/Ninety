@@ -14,7 +14,7 @@ export async function footballDataWithMeta<T>(path: string, ttl = 1800): Promise
   const cacheKey = new Request(`https://ninety-cache.invalid/football-v3/${encodeURIComponent(path)}`);
   const cache = (caches as unknown as { default: Cache }).default;
   const cached = await cache?.match(cacheKey);
-  if (cached) { const data = await cached.json() as { response?: T[]; error?: string; checkedAt?:number }; if (data.error) throw new FootballDataError(data.error); return {response:data.response??[],checkedAt:data.checkedAt??0,freshness:"fresh"}; }
+  if (cached) { const data = await cached.json() as { response?: T[]; error?: string; checkedAt?:number }; if (data.error) { const stale = await cache?.match(staleKeyFor(path)); if (stale) { const previous = await stale.json() as {response?:T[];checkedAt?:number}; if (previous.response?.length) return {response:previous.response,checkedAt:previous.checkedAt??0,freshness:"stale"}; } throw new FootballDataError(data.error); } return {response:data.response??[],checkedAt:data.checkedAt??0,freshness:"fresh"}; }
   const existing = pending.get(path); if (existing) return existing as Promise<FootballDataMeta<T>>;
   const task = (async () => {
     const response = await fetch(`https://v3.football.api-sports.io/${path}`, { headers: { "x-apisports-key": key }, signal: AbortSignal.timeout(10000) });
@@ -29,7 +29,7 @@ export async function footballDataWithMeta<T>(path: string, ttl = 1800): Promise
     await cache?.put(cacheKey, Response.json(result, { headers: { "Cache-Control": `public, max-age=${ttl}` } }));
     // Keep a longer-lived successful snapshot. A transient provider/quota failure must
     // not make confirmed match data disappear from the UI.
-    await cache?.put(staleKeyFor(path), Response.json(result, { headers: { "Cache-Control": `public, max-age=${STALE_TTL}` } }));
+    if (result.response.length > 0) await cache?.put(staleKeyFor(path), Response.json(result, { headers: { "Cache-Control": `public, max-age=${STALE_TTL}` } }));
     return result;
   })();
   pending.set(path, task);
