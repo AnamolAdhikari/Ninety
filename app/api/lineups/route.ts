@@ -1,7 +1,7 @@
 import { footballData, footballDataWithMeta, findFixture, FootballDataError, type Fixture } from "../../football-data";
 
 type Player = { id?: number; name?: string; photo?: string; number?: number | null; pos?: string };
-type TeamLineup = { team?: { id?: number; name?: string; logo?: string }; formation?: string; startXI?: Array<{ player?: Player }> };
+type TeamLineup = { team?: { id?: number; name?: string; logo?: string }; formation?: string; startXI?: Array<{ player?: Player }>; substitutes?: Array<{player?:Player}>; coach?:{name?:string;photo?:string} };
 const unavailable = (message: string) => Response.json({ status: "unavailable", message }, { headers: { "Cache-Control": "public, max-age=180, s-maxage=600" } });
 
 export async function GET(request: Request) {
@@ -22,10 +22,12 @@ export async function GET(request: Request) {
     const homeData = getTeam(fixture.teams?.home?.id), awayData = getTeam(fixture.teams?.away?.id);
     const players = (team: TeamLineup | undefined) => team?.startXI?.map(entry => entry.player).filter((player): player is Player => Boolean(player?.name));
     const homePlayers = players(homeData), awayPlayers = players(awayData);
-    if (homePlayers?.length !== 11 || awayPlayers?.length !== 11) return unavailable("Starting XIs have not been confirmed by the lineup provider yet.");
+    if (!homePlayers?.length && !awayPlayers?.length) return unavailable("Starting XIs have not been confirmed by the lineup provider yet.");
     const portrait = (player: Player) => ({ ...player, photo: player.id && Number.isInteger(player.id) && player.id > 0 ? `https://media.api-sports.io/football/players/${player.id}.png` : undefined });
     const logo = (team: TeamLineup | undefined) => team?.team?.id && Number.isInteger(team.team.id) && team.team.id > 0 ? `https://media.api-sports.io/football/teams/${team.team.id}.png` : undefined;
-    return Response.json({ status: "confirmed", source: "API-Football", checkedAt:result.checkedAt, freshness:result.freshness, home: { name: home, logo: logo(homeData), formation: homeData?.formation ?? null, players: homePlayers.map(portrait) }, away: { name: away, logo: logo(awayData), formation: awayData?.formation ?? null, players: awayPlayers.map(portrait) } }, { headers: { "Cache-Control": "public, max-age=180, s-maxage=600" } });
+    const side = (name:string, team:TeamLineup|undefined, starters:Player[]|undefined) => ({name,logo:logo(team),formation:team?.formation??null,confirmed:(starters?.length??0)===11,players:(starters??[]).map(portrait),substitutes:(team?.substitutes??[]).map(entry=>entry.player).filter((player):player is Player=>Boolean(player?.name)).map(portrait),coach:team?.coach?.name?team.coach:null});
+    const complete=(homePlayers?.length??0)===11&&(awayPlayers?.length??0)===11;
+    return Response.json({ status: complete ? "confirmed" : "partial", source: "API-Football", checkedAt:result.checkedAt, freshness:result.freshness, home: side(home,homeData,homePlayers), away: side(away,awayData,awayPlayers) }, { headers: { "Cache-Control": "public, max-age=180, s-maxage=600" } });
   } catch (error) {
     return unavailable(error instanceof FootballDataError ? error.message : "Lineup information is temporarily unavailable. Please try again later.");
   }
