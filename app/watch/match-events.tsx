@@ -44,9 +44,9 @@ export function MatchEvents({home,away,date,ended,active}:{home:string;away:stri
   },[home,away,date,ended,active,retry]);
 
   const events=[...(data?.events??[])].sort((a,b)=>((b.minute??-1)*100+(b.extra??0))-((a.minute??-1)*100+(a.extra??0)));
-  const visibleEvents=expanded?events:events.slice(0,6);
+  const visibleEvents=expanded?events:events.slice(0,4);
   const quotaBlocked=Boolean(data?.message&&/allowance|quota|request limit/i.test(data.message));
-  return <section id="events-panel" role="tabpanel" aria-labelledby="events-tab" className="match-events-panel">
+  return <section id="events-panel" role="tabpanel" aria-labelledby="events-tab" className={"match-events-panel"+(!expanded&&events.length>4?" match-events-collapsed":"")}>
     <div className="match-events-heading">
       <div>
         <div className="match-events-title-row"><h2>Match timeline</h2>{active&&!ended&&<span className="live-ticker-badge"><i/>LIVE</span>}</div>
@@ -54,7 +54,7 @@ export function MatchEvents({home,away,date,ended,active}:{home:string;away:stri
       </div>
       <button disabled={loading||(!active&&!ended)||quotaBlocked} onClick={()=>setRetry(x=>x+1)}><RefreshCw size={15}/>{loading?'Checking…':quotaBlocked?'Waiting for provider':'Refresh'}</button>
     </div>
-    {data?.status==='available'&&events.length?<ol>{visibleEvents.map((event,index)=>{const key=eventKey(event);return <li key={key||index} className={fresh.has(key)?'event-new':''}><time>{event.minute??'—'}{event.extra?'+'+event.extra:''}′</time><div><strong>{event.type==='subst'?'Substitution':event.detail||event.type}</strong><span>{event.player}{event.assist?(event.type==='subst'?' → ':' · Assist: ')+event.assist:''}</span><small>{event.team}</small></div></li>;})}</ol>:<p className="match-events-empty">{!data?'Checking live match reports…':data.message??'No match events have been reported by the connected provider yet.'}</p>}
-    {events.length>6&&<button type="button" className="match-events-more" aria-expanded={expanded} onClick={()=>setExpanded(value=>!value)}>{expanded?"Show recent events only":`View all ${events.length} match events`}</button>}
+    {data?.status==='available'&&events.length?<ol className="match-events-feed" aria-label="Match events, newest first">{visibleEvents.map((event,index)=>{const key=eventKey(event);return <li key={key||index} className={("match-event-card"+(fresh.has(key)?" event-new":""))}><time>{event.minute??'—'}{event.extra?'+'+event.extra:''}′</time><div><strong>{event.type==='subst'?'Substitution':event.detail||event.type}</strong><span>{event.player}{event.assist?(event.type==='subst'?' → ':' · Assist: ')+event.assist:''}</span><small>{event.team}</small></div></li>;})}</ol>:<p className="match-events-empty">{!data?'Checking live match reports…':data.message??'No match events have been reported by the connected provider yet.'}</p>}
+    {events.length>4&&<button type="button" className="match-events-more" aria-expanded={expanded} onClick={()=>setExpanded(value=>!value)}>{expanded?"Show latest 4 events":`Show all ${events.length} events`}</button>}
   </section>;
 }
