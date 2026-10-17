@@ -1,3 +1,4 @@
+import { sportsDbLineups } from "../../sportsdb-match-fallback";
 import { footballData, footballDataWithMeta, findFixture, FootballDataError, type Fixture } from "../../football-data";
 
 type Player = { id?: number; name?: string; photo?: string; number?: number | null; pos?: string };
@@ -12,23 +13,27 @@ export async function GET(request: Request) {
   if (!home || !away || home.length > 100 || away.length > 100 || !Number.isFinite(date) || Math.abs(Date.now() - date) > 7 * 86400000) {
     return Response.json({ error: "Invalid match" }, { status: 400 });
   }
+  const fallback = async (message: string) => {
+    const secondary = await sportsDbLineups(home, away, date);
+    return secondary ? Response.json(secondary, {headers:{"Cache-Control":"public, max-age=120"}}) : unavailable(message);
+  };
   try {
     const matchDate = new Date(date).toISOString().slice(0, 10);
     const fixtures = await footballData<Fixture>(`fixtures?date=${matchDate}`);
     const fixture = findFixture(fixtures, home, away, date);
-    if (!fixture?.fixture?.id) return unavailable("No matching fixture was found in the connected provider's coverage for this match.");
+    if (!fixture?.fixture?.id) return fallback("No verified lineup source currently covers this fixture.");
     const result = await footballDataWithMeta<TeamLineup>(`fixtures/lineups?fixture=${fixture.fixture.id}`, 300);
     const getTeam = (id: number | undefined) => result.response?.find(item => id && item.team?.id === id);
     const homeData = getTeam(fixture.teams?.home?.id), awayData = getTeam(fixture.teams?.away?.id);
     const players = (team: TeamLineup | undefined) => team?.startXI?.map(entry => entry.player).filter((player): player is Player => Boolean(player?.name));
     const homePlayers = players(homeData), awayPlayers = players(awayData);
-    if (!homePlayers?.length && !awayPlayers?.length) return unavailable("Starting XIs have not been confirmed by the lineup provider yet.");
+    if (!homePlayers?.length && !awayPlayers?.length) return fallback("Starting XIs have not been confirmed by the connected providers yet.");
     const portrait = (player: Player) => ({ ...player, photo: player.id && Number.isInteger(player.id) && player.id > 0 ? `https://media.api-sports.io/football/players/${player.id}.png` : undefined });
     const logo = (team: TeamLineup | undefined) => team?.team?.id && Number.isInteger(team.team.id) && team.team.id > 0 ? `https://media.api-sports.io/football/teams/${team.team.id}.png` : undefined;
     const side = (name:string, team:TeamLineup|undefined, starters:Player[]|undefined) => ({name,logo:logo(team),formation:team?.formation??null,confirmed:(starters?.length??0)===11,players:(starters??[]).map(portrait),substitutes:(team?.substitutes??[]).map(entry=>entry.player).filter((player):player is Player=>Boolean(player?.name)).map(portrait),coach:team?.coach?.name?team.coach:null});
     const complete=(homePlayers?.length??0)===11&&(awayPlayers?.length??0)===11;
     return Response.json({ status: complete ? "confirmed" : "partial", source: "API-Football", checkedAt:result.checkedAt, freshness:result.freshness, home: side(home,homeData,homePlayers), away: side(away,awayData,awayPlayers) }, { headers: { "Cache-Control": "public, max-age=180, s-maxage=600" } });
   } catch (error) {
-    return unavailable(error instanceof FootballDataError ? error.message : "Lineup information is temporarily unavailable. Please try again later.");
+    return fallback(error instanceof FootballDataError ? "Lineups are not currently available from the connected providers." : "Lineup information is temporarily unavailable. Please try again later.");
   }
 }
