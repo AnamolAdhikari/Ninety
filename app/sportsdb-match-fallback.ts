@@ -9,7 +9,7 @@ const root = "https://www.thesportsdb.com/api/v1/json/123/";
 const pending = new Map<string,Promise<unknown>>();
 async function get<T>(path:string, ttl:number):Promise<T|null> {
   const key = new Request("https://ninety-cache.invalid/sportsdb-v1/"+encodeURIComponent(path));
-  const cache = (caches as unknown as {default:Cache}).default;
+  const cache = typeof caches === "undefined" ? undefined : (caches as unknown as {default:Cache}).default;
   const previous = await cache?.match(key);
   if(previous) return await previous.json() as T;
   const existing = pending.get(path);
