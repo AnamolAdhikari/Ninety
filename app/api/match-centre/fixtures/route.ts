@@ -3,9 +3,10 @@ import { NextRequest } from "next/server";
 /** Independent match-centre fixture discovery. Never reads broadcast fixtures or stream state. */
 type SportsEvent = {
  idEvent?:string; strHomeTeam?:string;strAwayTeam?:string;dateEvent?:string;strTimestamp?:string;
- strTime?:string;strLeague?:string;strStatus?:string;intHomeScore?:string|null;intAwayScore?:string|null;strSport?:string;
+ strHomeTeamBadge?:string|null;strAwayTeamBadge?:string|null;strTime?:string;strLeague?:string;strStatus?:string;intHomeScore?:string|null;intAwayScore?:string|null;strSport?:string;
 };
 const upstream="https://www.thesportsdb.com/api/v1/json/123/";
+const safeBadge=(v:unknown)=>typeof v==="string"&&/^https:\/\/(?:www\.)?(?:thesportsdb\.com|r2\.thesportsdb\.com)\//i.test(v)?v:null;
 const safeScore=(v:unknown)=>v===null||v===undefined||v===""?null:/^\d+$/.test(String(v))?Number(v):null;
 export async function GET(request:NextRequest){
  const day=request.nextUrl.searchParams.get("date")??new Date().toISOString().slice(0,10);
@@ -15,7 +16,7 @@ export async function GET(request:NextRequest){
   if(!response.ok)throw new Error("Provider unavailable");
   const body=await response.json() as {events?:SportsEvent[]|null};
   const fixtures=(body.events??[]).filter(e=>/^\d+$/.test(e.idEvent??"")&&e.strHomeTeam&&e.strAwayTeam&&(!e.strSport||e.strSport==="Soccer")).map(e=>({
-   id:"sportsdb-"+e.idEvent,providerId:e.idEvent,home:e.strHomeTeam,away:e.strAwayTeam,league:e.strLeague??"Football",
+   id:"sportsdb-"+e.idEvent,providerId:e.idEvent,home:e.strHomeTeam,away:e.strAwayTeam,league:e.strLeague??"Football",homeBadge:safeBadge(e.strHomeTeamBadge),awayBadge:safeBadge(e.strAwayTeamBadge),
    kickoff:e.strTimestamp??(e.dateEvent?e.dateEvent+"T"+(e.strTime??"00:00:00")+"Z":null),
    score:{home:safeScore(e.intHomeScore),away:safeScore(e.intAwayScore)},status:e.strStatus??null,
    source:"TheSportsDB"
