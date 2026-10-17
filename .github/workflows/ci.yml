@@ -21,6 +21,7 @@ concurrency:
 jobs:
   quality:
     name: Lint, typecheck and build
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
