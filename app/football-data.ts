@@ -24,7 +24,7 @@ export async function footballDataWithMeta<T>(path: string, ttl = 1800): Promise
     const errors = data.errors && Object.keys(data.errors as object).length ? JSON.stringify(data.errors).toLowerCase() : "";
     if (!response.ok || errors) {
       const message = /limit|quota|requests/.test(errors) || response.status === 429 ? "The football data provider request allowance has been reached. Live match data will resume when it resets." : /plan|subscription|season/.test(errors) ? "This fixture is not available on the connected football data plan." : "The football data provider could not complete this request. Please try again later.";
-      await cache?.put(cacheKey, Response.json({ error: message }, { headers: { "Cache-Control": "public, max-age=${QUOTA_ERROR_TTL}" } }));
+      await cache?.put(cacheKey, Response.json({ error: message }, { headers: { "Cache-Control": `public, max-age=${QUOTA_ERROR_TTL}` } }));
       throw new FootballDataError(message);
     }
     const result:FootballDataMeta<T> = {response:data.response??[],checkedAt:Date.now(),freshness:"fresh"};
