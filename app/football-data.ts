@@ -8,7 +8,7 @@ export type FootballDataMeta<T>={response:T[];checkedAt:number;freshness:"fresh"
 const pending = new Map<string, Promise<FootballDataMeta<unknown>>>();
 const STALE_TTL = 24 * 60 * 60;
 const EMPTY_TTL = 90;
-const QUOTA_ERROR_TTL = 1800;
+const QUOTA_ERROR_TTL = 120;
 const staleKeyFor = (path:string) => new Request(`https://ninety-cache.invalid/football-v3-last-good/${encodeURIComponent(path)}`);
 export async function footballDataWithMeta<T>(path: string, ttl = 1800): Promise<FootballDataMeta<T>> {
   const key = (env as unknown as { API_FOOTBALL_KEY?: string }).API_FOOTBALL_KEY;
