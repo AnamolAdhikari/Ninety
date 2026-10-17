@@ -10,12 +10,13 @@ export async function GET(request:Request){
     return secondary?.length ? Response.json({status:"available",events:secondary,source:"TheSportsDB",checkedAt:Date.now(),freshness:"fresh",matchStatus:null,finalScore:null},{headers:{"Cache-Control":"private, no-store"}}) : null;
   };
   try{
+    const secondaryPromise=fallbackEvents();
     const fixtures=await footballData<Fixture>(`fixtures?date=${new Date(date).toISOString().slice(0,10)}`),fixture=findFixture(fixtures,home,away,date);
-    if(!fixture?.fixture?.id)return await fallbackEvents()??Response.json({status:'unavailable',message:'No verified event provider currently covers this fixture.'});
+    if(!fixture?.fixture?.id)return await secondaryPromise??Response.json({status:'unavailable',message:'No verified event provider currently covers this fixture.'});
     const finished=new Set(['FT','AET','PEN','CANC','ABD','AWD','WO']).has(fixture.fixture.status?.short??'');
     const result=await footballDataWithMeta<ApiFootballEvent>(`fixtures/events?fixture=${fixture.fixture.id}`,finished?21600:60);
     const events=normalizeApiFootballEvents(result.response);
-    if(!events.length){const secondary=await fallbackEvents();if(secondary)return secondary;}
+    if(!events.length){const secondary=await secondaryPromise;if(secondary)return secondary;}
     const snapshot=apiFootballMatchSnapshot(fixture,result.response,{provider:'API-Football',checkedAt:result.checkedAt,freshness:result.freshness});
     let finalScore={home:fixture.goals?.home??fixture.score?.fulltime?.home??null,away:fixture.goals?.away??fixture.score?.fulltime?.away??null,source:'API-Football'};
     if(finished&&(finalScore.home==null||finalScore.away==null)){
