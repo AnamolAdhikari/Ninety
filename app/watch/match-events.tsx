@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
 type MatchEvent={minute:number|null;extra:number|null;team:string;player:string;assist:string;type:string;detail:string};
-type Details={status:'available'|'unavailable';checkedAt?:number;message?:string;events?:MatchEvent[]};
+type Details={status:'available'|'unavailable';checkedAt?:number;message?:string;matchStatus?:string|null;events?:MatchEvent[]};
 
 const eventKey=(event:MatchEvent)=>[event.minute,event.extra,event.team,event.player,event.type,event.detail].join("|");
 
@@ -45,12 +45,13 @@ export function MatchEvents({home,away,date,ended,active}:{home:string;away:stri
 
   const events=[...(data?.events??[])].sort((a,b)=>((b.minute??-1)*100+(b.extra??0))-((a.minute??-1)*100+(a.extra??0)));
   const visibleEvents=expanded?events:events.slice(0,4);
+  const isFinished=ended||["FT","AET","PEN"].includes(data?.matchStatus??"");
   const quotaBlocked=Boolean(data?.message&&/allowance|quota|request limit/i.test(data.message));
-  return <section id="events-panel" role="tabpanel" aria-labelledby="events-tab" className={"match-events-panel"+(!expanded&&events.length>4?" match-events-collapsed":"")}>
+  return <section id="events-panel" role="tabpanel" aria-labelledby="events-tab" className="match-events-panel">
     <div className="match-events-heading">
       <div>
         <div className="match-events-title-row"><h2>Match timeline</h2>{active&&!ended&&<span className="live-ticker-badge"><i/>LIVE</span>}</div>
-        <p>{data?.checkedAt?'Updated '+new Date(data.checkedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):active&&!ended?'Live goals, cards, VAR and substitutions':'Reported goals, cards and substitutions'}</p>
+        <p>{isFinished?"Full time · Latest reported event "+(events[0]?.minute??"—")+"′ · No event required at 90′":data?.checkedAt?'Updated '+new Date(data.checkedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):active&&!ended?'Live goals, cards, VAR and substitutions':'Reported goals, cards and substitutions'}</p>
       </div>
       <button disabled={loading||(!active&&!ended)||quotaBlocked} onClick={()=>setRetry(x=>x+1)}><RefreshCw size={15}/>{loading?'Checking…':quotaBlocked?'Waiting for provider':'Refresh'}</button>
     </div>
