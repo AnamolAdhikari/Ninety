@@ -5,6 +5,8 @@ export { findFixture } from "./football-fixtures";
 export type { Fixture } from "./football-fixtures";
 export class FootballDataError extends Error {}
 const pending = new Map<string, Promise<{response:unknown[];checkedAt:number}>>();
+const STALE_TTL = 24 * 60 * 60;
+const staleKeyFor = (path:string) => new Request(`https://ninety-cache.invalid/football-v3-last-good/${encodeURIComponent(path)}`);
 export async function footballDataWithMeta<T>(path: string, ttl = 1800): Promise<{response:T[];checkedAt:number}> {
   const key = (env as unknown as { API_FOOTBALL_KEY?: string }).API_FOOTBALL_KEY;
   if (!key) throw new FootballDataError("Lineup data is not connected yet.");
@@ -24,10 +26,21 @@ export async function footballDataWithMeta<T>(path: string, ttl = 1800): Promise
     }
     const result = {response:data.response??[],checkedAt:Date.now()};
     await cache?.put(cacheKey, Response.json(result, { headers: { "Cache-Control": `public, max-age=${ttl}` } }));
+    // Keep a longer-lived successful snapshot. A transient provider/quota failure must
+    // not make confirmed match data disappear from the UI.
+    await cache?.put(staleKeyFor(path), Response.json(result, { headers: { "Cache-Control": `public, max-age=${STALE_TTL}` } }));
     return result;
   })();
   pending.set(path, task);
-  try { return await task; } catch(error){await recordHealth("football-data-error");throw error;} finally { pending.delete(path); }
+  try { return await task; } catch(error){
+    await recordHealth("football-data-error");
+    const stale = await cache?.match(staleKeyFor(path));
+    if (stale) {
+      const data = await stale.json() as {response?:T[];checkedAt?:number};
+      return {response:data.response??[],checkedAt:data.checkedAt??0};
+    }
+    throw error;
+  } finally { pending.delete(path); }
 }
 
 export async function footballData<T>(path:string,ttl=1800):Promise<T[]>{return (await footballDataWithMeta<T>(path,ttl)).response;}
