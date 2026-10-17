@@ -29,7 +29,7 @@ export function MatchEvents({home,away,date,ended,active}:{home:string;away:stri
           if(added.size)window.setTimeout(()=>setFresh(new Set()),5000);
         }
         previous.current=keys;
-        setData(result);
+        setData(current=>result.status==="unavailable"&&current?.status==="available"&&(current.events?.length??0)>0?current:result);
       }catch{
         if(!cancelled)setData({status:'unavailable',message:'Live match data is temporarily unavailable.'});
       }finally{
