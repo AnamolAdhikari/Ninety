@@ -227,3 +227,16 @@
 .match-events-more:hover{background:#203429;border-color:var(--lime)}
 .match-events-more:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
 @media(max-width:700px){.match-events-panel ol{grid-template-columns:1fr}.match-events-panel{padding:15px}.match-events-panel li{padding:10px}}
+
+/* Modern chronological event feed: four newest entries, with older cards tucked away. */
+.match-events-panel .match-events-feed{display:flex;flex-direction:column;gap:8px;position:relative;margin:15px 0 8px}
+.match-events-panel .match-events-feed .match-event-card{display:grid;grid-template-columns:50px minmax(0,1fr);align-items:center;gap:14px;border:1px solid #294252;border-radius:12px;padding:12px 15px;background:linear-gradient(115deg,#142635,#0d1b28);box-shadow:0 3px 12px rgb(0 0 0 / 10%);transition:background .2s ease,border-color .2s ease,transform .2s ease}
+.match-events-panel .match-events-feed .match-event-card:hover{border-color:#526a70;background:linear-gradient(115deg,#1a3040,#112331);transform:translateY(-1px)}
+.match-events-panel .match-events-feed .match-event-card time{display:flex;align-items:center;justify-content:center;min-width:0;min-height:40px;border-radius:9px;background:#223728;color:var(--lime);font-size:.9rem;font-weight:850;font-variant-numeric:tabular-nums}
+.match-events-panel .match-events-feed .match-event-card div{gap:3px}
+.match-events-panel .match-events-feed .match-event-card strong{font-size:.86rem}
+.match-events-panel .match-events-feed .match-event-card span{font-size:.79rem}
+.match-events-panel.match-events-collapsed .match-events-feed .match-event-card:nth-child(4){opacity:.62;mask-image:linear-gradient(to bottom,#000 25%,transparent 100%)}
+.match-events-panel .match-events-more{margin-top:8px;border-color:#3b5847;background:#1a2b23;transition:background .2s ease}
+@media(max-width:700px){.match-events-panel .match-events-feed{grid-template-columns:none}.match-events-panel .match-events-feed .match-event-card{grid-template-columns:43px minmax(0,1fr);gap:10px;padding:10px}.match-events-panel .match-events-feed .match-event-card time{min-height:37px}}
+@media(prefers-reduced-motion:reduce){.match-events-panel .match-events-feed .match-event-card{transition:none}.match-events-panel .match-events-feed .match-event-card:hover{transform:none}}
