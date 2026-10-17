@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     if (homePlayers?.length !== 11 || awayPlayers?.length !== 11) return unavailable("Starting XIs have not been confirmed by the lineup provider yet.");
     const portrait = (player: Player) => ({ ...player, photo: player.id && Number.isInteger(player.id) && player.id > 0 ? `https://media.api-sports.io/football/players/${player.id}.png` : undefined });
     const logo = (team: TeamLineup | undefined) => team?.team?.id && Number.isInteger(team.team.id) && team.team.id > 0 ? `https://media.api-sports.io/football/teams/${team.team.id}.png` : undefined;
-    return Response.json({ status: "confirmed", source: "API-Football", checkedAt:result.checkedAt, home: { name: home, logo: logo(homeData), formation: homeData?.formation ?? null, players: homePlayers.map(portrait) }, away: { name: away, logo: logo(awayData), formation: awayData?.formation ?? null, players: awayPlayers.map(portrait) } }, { headers: { "Cache-Control": "public, max-age=180, s-maxage=600" } });
+    return Response.json({ status: "confirmed", source: "API-Football", checkedAt:result.checkedAt, freshness:result.freshness, home: { name: home, logo: logo(homeData), formation: homeData?.formation ?? null, players: homePlayers.map(portrait) }, away: { name: away, logo: logo(awayData), formation: awayData?.formation ?? null, players: awayPlayers.map(portrait) } }, { headers: { "Cache-Control": "public, max-age=180, s-maxage=600" } });
   } catch (error) {
     return unavailable(error instanceof FootballDataError ? error.message : "Lineup information is temporarily unavailable. Please try again later.");
   }
