@@ -15,7 +15,7 @@ export async function GET(request:Request){
       const fallback=await fallbackFinalScore(home,away,date);
       if(fallback)finalScore=fallback;
     }
-    return Response.json({status:'available',checkedAt:result.checkedAt,source:'API-Football',events,matchStatus:fixture.fixture.status?.short??null,finalScore},{headers:{'Cache-Control':'private, no-store'}});
+    return Response.json({status:'available',checkedAt:result.checkedAt,freshness:result.freshness,source:'API-Football',events,matchStatus:fixture.fixture.status?.short??null,finalScore},{headers:{'Cache-Control':'private, no-store'}});
   }catch(error){
     const fallback=await fallbackFinalScore(home,away,date);
     if(fallback)return Response.json({status:'available',events:[],finalScore:fallback,message:error instanceof FootballDataError?error.message:undefined},{headers:{'Cache-Control':'private, no-store'}});
