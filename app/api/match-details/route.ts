@@ -1,6 +1,6 @@
 import { footballData, footballDataWithMeta, findFixture, FootballDataError, type Fixture } from "../../football-data";
 import { fallbackFinalScore } from "../../score-fallback";
-type Event={time?:{elapsed?:number;extra?:number|null};team?:{name?:string};player?:{name?:string};assist?:{name?:string};type?:string;detail?:string;comments?:string|null};
+import { apiFootballMatchSnapshot, normalizeApiFootballEvents, type ApiFootballEvent } from "../../api-football-adapter";
 export async function GET(request:Request){
   const url=new URL(request.url),home=url.searchParams.get('home')?.trim()??'',away=url.searchParams.get('away')?.trim()??'',date=Number(url.searchParams.get('date'));
   if(!home||!away||home.length>100||away.length>100||!Number.isFinite(date)||Math.abs(Date.now()-date)>7*86400000)return Response.json({error:'Invalid match'},{status:400});
@@ -8,14 +8,15 @@ export async function GET(request:Request){
     const fixtures=await footballData<Fixture>(`fixtures?date=${new Date(date).toISOString().slice(0,10)}`),fixture=findFixture(fixtures,home,away,date);
     if(!fixture?.fixture?.id)return Response.json({status:'unavailable',message:'The connected provider does not cover this fixture.'});
     const finished=new Set(['FT','AET','PEN','CANC','ABD','AWD','WO']).has(fixture.fixture.status?.short??'');
-    const result=await footballDataWithMeta<Event>(`fixtures/events?fixture=${fixture.fixture.id}`,finished?21600:60);
-    const events=result.response.filter(item=>['Goal','Card','subst','Var'].includes(item.type??'')).slice(0,150).map(item=>({minute:item.time?.elapsed??null,extra:item.time?.extra??null,team:item.team?.name??'',player:item.player?.name??'',assist:item.assist?.name??'',type:item.type,detail:item.detail??''}));
+    const result=await footballDataWithMeta<ApiFootballEvent>(`fixtures/events?fixture=${fixture.fixture.id}`,finished?21600:60);
+    const events=normalizeApiFootballEvents(result.response);
+    const snapshot=apiFootballMatchSnapshot(fixture,result.response,{provider:'API-Football',checkedAt:result.checkedAt,freshness:result.freshness});
     let finalScore={home:fixture.goals?.home??fixture.score?.fulltime?.home??null,away:fixture.goals?.away??fixture.score?.fulltime?.away??null,source:'API-Football'};
     if(finished&&(finalScore.home==null||finalScore.away==null)){
       const fallback=await fallbackFinalScore(home,away,date);
       if(fallback)finalScore=fallback;
     }
-    return Response.json({status:'available',checkedAt:result.checkedAt,freshness:result.freshness,source:'API-Football',events,matchStatus:fixture.fixture.status?.short??null,finalScore},{headers:{'Cache-Control':'private, no-store'}});
+    return Response.json({status:'available',checkedAt:result.checkedAt,freshness:result.freshness,source:'API-Football',events,matchStatus:fixture.fixture.status?.short??null,finalScore,snapshot},{headers:{'Cache-Control':'private, no-store'}});
   }catch(error){
     const fallback=await fallbackFinalScore(home,away,date);
     if(fallback)return Response.json({status:'available',events:[],finalScore:fallback,message:error instanceof FootballDataError?error.message:undefined},{headers:{'Cache-Control':'private, no-store'}});
