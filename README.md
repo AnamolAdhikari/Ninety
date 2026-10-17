@@ -9,7 +9,7 @@ A responsive football application built around the full match journey — discov
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-20232A?logo=react&logoColor=61DAFB)
 ![Cloudflare](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)
-![Status](https://img.shields.io/badge/status-active-brightgreen)
+[![Uptime](https://uptime.betterstack.com/status-badges/v2/monitor/508552.svg)](https://uptime.betterstack.com/?utm_source=github&utm_medium=badge)
 ![License](https://img.shields.io/badge/license-all%20rights%20reserved-lightgrey)
 
 </div>
@@ -113,7 +113,7 @@ NINETY uses a modern TypeScript/React stack at the edge, with the supporting lib
 | Quality | ESLint, Node-based automated/integration tests |
 | Browser E2E | Playwright / Selenium *(test automation direction)* |
 | Package management | pnpm |
-| Observability | Grafana *(planned)* |
+| Observability | Cloudflare observability, Better Stack uptime monitoring, GitHub Actions production watchdog |
 
 The table intentionally describes the engineering stack without exposing provider-specific integrations, credentials, private infrastructure bindings, or operational internals.
 
