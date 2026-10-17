@@ -27,12 +27,15 @@ async function get<T>(path:string, ttl:number):Promise<T|null> {
 async function resolve(home:string,away:string,date:number):Promise<Event|null>{
   const day=new Date(date).toISOString().slice(0,10);
   const query=new URLSearchParams({e:`${home}_vs_${away}`,d:day});
-  const data=await get<{event?:Event[]|null;events?:Event[]|null}>(`searchevents.php?${query}`,180);
-  const dayLookup=await get<{events?:Event[]|null}>(`eventsday.php?d=${day}&s=Soccer`,180);
+  const [data,dayLookup]=await Promise.all([
+    get<{event?:Event[]|null;events?:Event[]|null}>(`searchevents.php?${query}`,60),
+    get<{events?:Event[]|null}>(`eventsday.php?d=${day}&s=Soccer`,60),
+  ]);
   const pool=[...(data?.event??data?.events??[]),...(dayLookup?.events??[])];
   const unique=[...new Map(pool.filter(e=>e.idEvent).map(e=>[e.idEvent!,e])).values()];
+  const normalized=(name:string)=>teamKey(name).replace(/^(as|ac|ss)(?=[a-z])/, "").replace(/(cfc|calcio)$/,"");
   const matches=unique.filter(e=>{
-    if(teamKey(e.strHomeTeam??"")!==teamKey(home)||teamKey(e.strAwayTeam??"")!==teamKey(away))return false;
+    if(normalized(e.strHomeTeam??"")!==normalized(home)||normalized(e.strAwayTeam??"")!==normalized(away))return false;
     if(e.dateEvent!==day && e.dateEvent!==new Date(date-86400000).toISOString().slice(0,10) && e.dateEvent!==new Date(date+86400000).toISOString().slice(0,10))return false;
     if(e.strSport&&e.strSport!=="Soccer")return false;
     if(e.strTimestamp){const start=Date.parse(e.strTimestamp);if(Number.isFinite(start)&&Math.abs(start-date)>90*60000)return false;}
@@ -43,7 +46,7 @@ async function resolve(home:string,away:string,date:number):Promise<Event|null>{
 export async function sportsDbEvents(home:string,away:string,date:number):Promise<MatchEvent[]|null>{
   const event=await resolve(home,away,date);
   if(!event)return null;
-  const data=await get<{timeline?:Timeline[]|null}>(`lookuptimeline.php?id=${event.idEvent}`,120);
+  const data=await get<{timeline?:Timeline[]|null}>(`lookuptimeline.php?id=${event.idEvent}`,45);
   if(!data?.timeline?.length)return null;
   const types:Record<string,MatchEvent["type"]>={goal:"Goal",card:"Card",substitution:"subst",subst:"subst",var:"Var"};
   const events=data.timeline.flatMap(row=>{
@@ -57,7 +60,7 @@ export async function sportsDbEvents(home:string,away:string,date:number):Promis
 export async function sportsDbLineups(home:string,away:string,date:number):Promise<{status:"confirmed"|"partial";source:"TheSportsDB";checkedAt:number;freshness:"fresh";home:Side;away:Side}|null>{
   const event=await resolve(home,away,date);
   if(!event)return null;
-  const data=await get<{lineup?:Lineup[]|null}>(`lookuplineup.php?id=${event.idEvent}`,600);
+  const data=await get<{lineup?:Lineup[]|null}>(`lookuplineup.php?id=${event.idEvent}`,120);
   if(!data?.lineup?.length)return null;
   const side=(name:string,flag:string):Side=>{
     const convert=(sub:boolean)=>data.lineup!.filter(p=>p.strHome===flag&&p.strSubstitute===(sub?"Yes":"No")&&p.strPlayer?.trim()).map(p=>({
