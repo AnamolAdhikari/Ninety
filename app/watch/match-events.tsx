@@ -8,7 +8,7 @@ type Details={status:'available'|'unavailable';checkedAt?:number;message?:string
 const eventKey=(event:MatchEvent)=>[event.minute,event.extra,event.team,event.player,event.type,event.detail].join("|");
 
 export function MatchEvents({home,away,date,ended,active}:{home:string;away:string;date:number;ended:boolean;active:boolean}){
-  const [data,setData]=useState<Details|null>(null),[loading,setLoading]=useState(false),[retry,setRetry]=useState(0),[fresh,setFresh]=useState<Set<string>>(new Set());
+  const [data,setData]=useState<Details|null>(null),[loading,setLoading]=useState(false),[retry,setRetry]=useState(0),[fresh,setFresh]=useState<Set<string>>(new Set()),[expanded,setExpanded]=useState(false);
   const previous=useRef<Set<string>>(new Set());
 
   useEffect(()=>{
@@ -44,6 +44,7 @@ export function MatchEvents({home,away,date,ended,active}:{home:string;away:stri
   },[home,away,date,ended,active,retry]);
 
   const events=[...(data?.events??[])].sort((a,b)=>((b.minute??-1)*100+(b.extra??0))-((a.minute??-1)*100+(a.extra??0)));
+  const visibleEvents=expanded?events:events.slice(0,6);
   const quotaBlocked=Boolean(data?.message&&/allowance|quota|request limit/i.test(data.message));
   return <section id="events-panel" role="tabpanel" aria-labelledby="events-tab" className="match-events-panel">
     <div className="match-events-heading">
@@ -53,6 +54,7 @@ export function MatchEvents({home,away,date,ended,active}:{home:string;away:stri
       </div>
       <button disabled={loading||(!active&&!ended)||quotaBlocked} onClick={()=>setRetry(x=>x+1)}><RefreshCw size={15}/>{loading?'Checking…':quotaBlocked?'Waiting for provider':'Refresh'}</button>
     </div>
-    {data?.status==='available'&&events.length?<ol>{events.map((event,index)=>{const key=eventKey(event);return <li key={key||index} className={fresh.has(key)?'event-new':''}><time>{event.minute??'—'}{event.extra?'+'+event.extra:''}′</time><div><strong>{event.type==='subst'?'Substitution':event.detail||event.type}</strong><span>{event.player}{event.assist?(event.type==='subst'?' → ':' · Assist: ')+event.assist:''}</span><small>{event.team}</small></div></li>;})}</ol>:<p className="match-events-empty">{!data?'Checking live match reports…':data.message??'No match events have been reported by the connected provider yet.'}</p>}
+    {data?.status==='available'&&events.length?<ol>{visibleEvents.map((event,index)=>{const key=eventKey(event);return <li key={key||index} className={fresh.has(key)?'event-new':''}><time>{event.minute??'—'}{event.extra?'+'+event.extra:''}′</time><div><strong>{event.type==='subst'?'Substitution':event.detail||event.type}</strong><span>{event.player}{event.assist?(event.type==='subst'?' → ':' · Assist: ')+event.assist:''}</span><small>{event.team}</small></div></li>;})}</ol>:<p className="match-events-empty">{!data?'Checking live match reports…':data.message??'No match events have been reported by the connected provider yet.'}</p>}
+    {events.length>6&&<button type="button" className="match-events-more" aria-expanded={expanded} onClick={()=>setExpanded(value=>!value)}>{expanded?"Show recent events only":`View all ${events.length} match events`}</button>}
   </section>;
 }
