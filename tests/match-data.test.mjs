@@ -17,3 +17,14 @@ test('country aliases match while ambiguous fixtures are rejected',()=>{
  assert.equal(findFixture([fixture],'Czechia','England',date+2*3600000),undefined);
  assert.equal(teamKey('United States'),teamKey('USA'));
 });
+
+
+test('fixture resolver normalizes common club naming noise',()=>{
+ const fixture={fixture:{id:2,date:new Date(date).toISOString()},teams:{home:{name:'Manchester United FC'},away:{name:'Paris Saint-Germain FC'}}};
+ assert.equal(findFixture([fixture],'Manchester United','Paris Saint Germain',date)?.fixture.id,2);
+});
+
+test('fixture resolver rejects reversed home and away teams',()=>{
+ const fixture={fixture:{id:3,date:new Date(date).toISOString()},teams:{home:{name:'Arsenal'},away:{name:'Chelsea'}}};
+ assert.equal(findFixture([fixture],'Chelsea','Arsenal',date),undefined);
+});
