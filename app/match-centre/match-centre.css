@@ -36,3 +36,5 @@
 .mc-welcome{background:#15191f;border-color:#242a32}
 .mc-scoreboard{padding-top:48px;padding-bottom:48px}
 @media(min-width:1200px){.mc-shell{max-width:1590px;grid-template-columns:310px minmax(0,1fr);gap:28px}.mc-columns{grid-template-columns:minmax(0,1fr) 290px;gap:20px}}
+
+.mc-crest{overflow:hidden}.mc-crest img{width:83%;height:83%;object-fit:contain;display:block}.mc-team .mc-crest:has(img),.mc-fixture-teams .mc-crest:has(img){background:transparent;border-color:transparent}
