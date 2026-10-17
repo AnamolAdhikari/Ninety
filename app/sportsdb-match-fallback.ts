@@ -27,9 +27,13 @@ async function get<T>(path:string, ttl:number):Promise<T|null> {
 async function resolve(home:string,away:string,date:number):Promise<Event|null>{
   const day=new Date(date).toISOString().slice(0,10);
   const query=new URLSearchParams({e:`${home}_vs_${away}`,d:day});
-  const data=await get<{event?:Event[]|null;events?:Event[]|null}>(`searchevents.php?${query}`,600);
-  const matches=(data?.event??data?.events??[]).filter(e=>{
-    if(teamKey(e.strHomeTeam??"")!==teamKey(home)||teamKey(e.strAwayTeam??"")!==teamKey(away)||e.dateEvent!==day)return false;
+  const data=await get<{event?:Event[]|null;events?:Event[]|null}>(`searchevents.php?${query}`,180);
+  const dayLookup=await get<{events?:Event[]|null}>(`eventsday.php?d=${day}&s=Soccer`,180);
+  const pool=[...(data?.event??data?.events??[]),...(dayLookup?.events??[])];
+  const unique=[...new Map(pool.filter(e=>e.idEvent).map(e=>[e.idEvent!,e])).values()];
+  const matches=unique.filter(e=>{
+    if(teamKey(e.strHomeTeam??"")!==teamKey(home)||teamKey(e.strAwayTeam??"")!==teamKey(away))return false;
+    if(e.dateEvent!==day && e.dateEvent!==new Date(date-86400000).toISOString().slice(0,10) && e.dateEvent!==new Date(date+86400000).toISOString().slice(0,10))return false;
     if(e.strSport&&e.strSport!=="Soccer")return false;
     if(e.strTimestamp){const start=Date.parse(e.strTimestamp);if(Number.isFinite(start)&&Math.abs(start-date)>90*60000)return false;}
     return true;
