@@ -40,3 +40,5 @@
 .mc-crest{overflow:hidden}.mc-crest img{width:83%;height:83%;object-fit:contain;display:block}.mc-team .mc-crest:has(img),.mc-fixture-teams .mc-crest:has(img){background:transparent;border-color:transparent}
 
 .mc-live-filter{display:flex;gap:7px;padding:0 14px 13px}.mc-live-filter button{flex:1;border:1px solid #343c46;border-radius:7px;padding:9px 7px;background:#1c2229;color:#b7c1cb;font-size:11px;font-weight:750;cursor:pointer}.mc-live-filter button.active{background:#c7f52d;color:#10151a;border-color:#c7f52d}
+
+.mc-live-only-label{display:flex;align-items:center;gap:9px;color:#c6d1da;font-size:11px;font-weight:750;padding:7px 3px}.mc-live-only-label .mc-status-dot{flex-shrink:0}
