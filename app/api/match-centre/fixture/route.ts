@@ -22,13 +22,30 @@ async function footballFallback(home:string,away:string,kickoff:number){
   return {status:"available",fixture:{id:String(fixture.fixture.id),home,away,league:null,matchStatus:fixture.fixture.status?.short??null,kickoff:fixture.fixture.date??null,venue:fixture.fixture.venue?.name??null,score:{home:fixture.goals?.home??null,away:fixture.goals?.away??null}},events,lineups:{home:homeLineup,away:awayLineup},availability:{events:events.length>0,lineups:homeLineup.starters.length>0||awayLineup.starters.length>0,commentary:false,statistics:false,standings:false,headToHead:false},source:"API-Football",checkedAt:Date.now()};
  }catch{return null;}
 }
+
+async function directApiFixture(id:string){
+ try{
+  const fixtures=await footballData<Fixture & {league?:{name?:string}}>(`fixtures?id=${id}`,35);
+  const f=fixtures.find(x=>String(x.fixture?.id)===id);
+  if(!f)return null;
+  const [eventsResult,lineupsResult]=await Promise.allSettled([footballData<ApiFootballEvent>(`fixtures/events?fixture=${id}`,45),footballData<any>(`fixtures/lineups?fixture=${id}`,90)]);
+  const events=eventsResult.status==="fulfilled"?normalizeApiFootballEvents(eventsResult.value).map(e=>({minute:e.minute,type:e.type,team:e.team,player:e.player,detail:e.detail,assist:e.assist})):[];
+  const teams=lineupsResult.status==="fulfilled"?lineupsResult.value:[];
+  const lineup=(name:string,teamId?:number)=>{const found=teams.find((x:any)=>teamId?x.team?.id===teamId:String(x.team?.name??"").toLowerCase()===name.toLowerCase());return {starters:(found?.startXI??[]).map((x:any)=>({name:x.player?.name??"",number:x.player?.number??null,position:x.player?.pos??null})).filter((x:any)=>x.name),substitutes:(found?.substitutes??[]).map((x:any)=>({name:x.player?.name??""})).filter((x:any)=>x.name)};};
+  const home=f.teams?.home?.name??"Home",away=f.teams?.away?.name??"Away";
+  const homeLineup=lineup(home,f.teams?.home?.id),awayLineup=lineup(away,f.teams?.away?.id);
+  return {status:"available",fixture:{id,home,away,league:f.league?.name??null,matchStatus:f.fixture?.status?.short??null,kickoff:f.fixture?.date??null,venue:f.fixture?.venue?.name??null,score:{home:f.goals?.home??null,away:f.goals?.away??null}},events,lineups:{home:homeLineup,away:awayLineup},availability:{events:events.length>0,lineups:homeLineup.starters.length>0||awayLineup.starters.length>0,commentary:false,statistics:false,standings:false,headToHead:false},source:"API-Football",checkedAt:Date.now()};
+ }catch{return null;}
+}
 async function get<T>(path:string){const r=await fetch(root+path,{signal:AbortSignal.timeout(7000),next:{revalidate:45}});if(!r.ok)throw new Error("Upstream unavailable");return r.json() as Promise<T>;}
 export async function GET(req:NextRequest){
  const id=req.nextUrl.searchParams.get("id")??"";
+ const provider=req.nextUrl.searchParams.get("provider");
  const home=validTeam(req.nextUrl.searchParams.get("home")),away=validTeam(req.nextUrl.searchParams.get("away"));
  const kickoff=Number(req.nextUrl.searchParams.get("kickoff"));
  const alternate=home&&away&&Number.isFinite(kickoff)&&Math.abs(Date.now()-kickoff)<8*86400000?footballFallback(home,away,kickoff):Promise.resolve(null);
  if(!/^\d{1,15}$/.test(id))return Response.json({error:"Invalid fixture ID"},{status:400});
+ if(provider==="API-Football"){const direct=await directApiFixture(id);return direct?Response.json(direct,{headers:{"Cache-Control":"private, no-store"}}):Response.json({status:"unavailable",message:"API-Football could not verify this match"},{status:503,headers:{"Cache-Control":"no-store"}});}
  try{
   const [match,timeline,lineup]=await Promise.allSettled([
    get<{events?:Event[]|null}>("lookupevent.php?id="+id),
