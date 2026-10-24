@@ -131,6 +131,18 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
     await security(env,"login-success",role+":"+await digest(account.username),{role});
     return new Response(null,{status:303,headers:{Location:"/","Set-Cookie":`${cookieName}=${prefix}.${signature}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${ttl}`,"Cache-Control":"no-store"}});
   }
+  // Temporary read-only PS5 compatibility trial. Expires automatically.
+  // Never expose account/admin data, preference writes or authenticated telemetry.
+  const previewExpires=Date.parse("2026-10-26T00:00:00Z");
+  const previewPath=url.pathname;
+  const previewApi=/^\\/api\\/(?:matches(?:\\/|$)|match-centre(?:\\/|$)|team-badge(?:\\/|$)|streams(?:\\/|$))/.test(previewPath);
+  const protectedPath=/^\\/(?:admin|login|auth)(?:\\/|$)/.test(previewPath)
+    || /^\\/api\\/(?:admin|account|preferences|telemetry|playback-report)(?:\\/|$)/.test(previewPath);
+  const publicReadOnlyPreview=Date.now()<previewExpires
+    && (request.method==="GET" || request.method==="HEAD")
+    && !protectedPath
+    && (!previewPath.startsWith("/api/") || previewApi);
+  if(publicReadOnlyPreview)return null;
   const identity=await valid(request,env);
   if(identity) {
     const headers={"Cache-Control":"private, no-store"};
