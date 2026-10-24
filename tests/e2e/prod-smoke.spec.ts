@@ -68,6 +68,22 @@ test.describe("NINETY access control", () => {
   });
 });
 
+test("temporary anonymous matchday renders fixtures without account credentials", async ({ browser }) => {
+  test.skip(Date.now() >= Date.parse("2026-10-26T00:00:00Z"), "Temporary PS5 trial has expired.");
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage();
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.getByText(/Featured fixtures/i)).toBeVisible({ timeout: 20_000 });
+    const feed = await page.evaluate(async () => {
+      const [matches, account] = await Promise.all([fetch("/api/matches"), fetch("/api/account")]);
+      return { matchesStatus: matches.status, accountStatus: account.status };
+    });
+    expect(feed.matchesStatus).toBe(200);
+    expect(feed.accountStatus).toBe(401);
+  } finally { await context.close(); }
+});
+
 test.describe("NINETY session security", () => {
   test("cross-origin login POST is rejected", async ({ request }) => {
     const response = await request.post("/auth/login", {
