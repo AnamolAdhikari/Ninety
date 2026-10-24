@@ -61,6 +61,30 @@ async function valid(request: Request,env: AuthEnv): Promise<Identity|null> {
   const bytes=new Uint8Array(signature.match(/../g)!.map(h=>parseInt(h,16)));
   return await crypto.subtle.verify("HMAC",await key(env.NINETY_SESSION_SECRET!),bytes,encoder.encode(payload))?{role,storageId:role+":"+await digest(account.username)}:null;
 }
+// Legacy embedded browsers may omit Origin on a same-site HTML form POST.
+// Use a short-lived, signed form token as a CSRF-safe fallback instead of trusting
+// an absent Origin header. Cross-origin requests remain explicitly denied.
+async function formToken(env:AuthEnv):Promise<string>{
+  const expires=Math.floor(Date.now()/1000)+20*60;
+  const nonce=hex(crypto.getRandomValues(new Uint8Array(16)).buffer);
+  const payload=`${expires}.${nonce}`;
+  const signature=hex(await crypto.subtle.sign("HMAC",await key(env.NINETY_SESSION_SECRET!),encoder.encode("login-form:"+payload)));
+  return payload+"."+signature;
+}
+async function validFormToken(value:string,env:AuthEnv):Promise<boolean>{
+  const parts=value.split(".");
+  if(parts.length!==3||!/^[0-9]{10}$/.test(parts[0])||!/^[a-f0-9]{32}$/.test(parts[1])||!/^[a-f0-9]{64}$/.test(parts[2]))return false;
+  const expires=Number(parts[0]),now=Math.floor(Date.now()/1000);
+  if(expires<now||expires>now+20*60)return false;
+  const bytes=new Uint8Array(parts[2].match(/../g)!.map(h=>parseInt(h,16)));
+  return crypto.subtle.verify("HMAC",await key(env.NINETY_SESSION_SECRET!),bytes,encoder.encode("login-form:"+parts.slice(0,2).join(".")));
+}
+async function loginPage(env:AuthEnv,message="",status=200):Promise<Response>{
+  const token=await formToken(env);
+  const response=page(message,status);
+  // Form markup is created by us; token contains only digits and lowercase hex.
+  return new Response((await response.text()).replace('<form action="/auth/login" method="post">',`<form action="/auth/login" method="post"><input type="hidden" name="login_csrf" value="${token}">`),{status:response.status,headers:response.headers});
+}
 async function security(env:AuthEnv,event:string,actor:string|null=null,detail:Record<string,unknown>={}){try{await accounts(env,"/security-event",{event,actor,detail});}catch{}}
 export async function authenticate(request: Request,env: AuthEnv): Promise<Response|null> {
   const url=new URL(request.url);
@@ -71,23 +95,28 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
     return new Response(null,{status:303,headers:{Location:"/login","Set-Cookie":`${cookieName}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`,"Cache-Control":"no-store"}});
   }
   if(url.pathname==="/auth/login" && request.method==="POST") {
-    if(request.headers.get("origin")!==url.origin){await security(env,"invalid-request",null,{area:"login",reason:"origin"});return new Response("Forbidden",{status:403});}
+    const requestOrigin=request.headers.get("origin");
+    if(requestOrigin && requestOrigin!==url.origin){await security(env,"invalid-request",null,{area:"login",reason:"origin"});return loginPage(env,"This sign-in request was blocked for security. Please reload and try again.",403);}
     const rate=await env.LOGIN_RATE_LIMITER.limit({key:"login:"+(request.headers.get("CF-Connecting-IP")??"unknown")});
-    if(!rate.success){await security(env,"rate-limited",null,{area:"login"});return page("Too many attempts. Please wait a minute before trying again.",429);}
-    if(Number(request.headers.get("content-length")??0)>4096)return page("Invalid sign-in request.",400);
-    const raw=await request.text();if(raw.length>4096)return page("Invalid sign-in request.",400);
+    if(!rate.success){await security(env,"rate-limited",null,{area:"login"});return loginPage(env,"Too many attempts. Please wait a minute before trying again.",429);}
+    if(Number(request.headers.get("content-length")??0)>4096)return loginPage(env,"Invalid sign-in request.",400);
+    const raw=await request.text();if(raw.length>4096)return loginPage(env,"Invalid sign-in request.",400);
     const form=new URLSearchParams(raw);const username=form.get("username")??"",password=form.get("password")??"";
+    if(!requestOrigin && !await validFormToken(form.get("login_csrf")??"",env)){
+      await security(env,"invalid-request",null,{area:"login",reason:"csrf"});
+      return loginPage(env,"Your browser could not verify this sign-in. Reload the page and try again.",403);
+    }
     const accountRate=await env.LOGIN_RATE_LIMITER.limit({key:"login-account:"+(await digest(username.trim().toLowerCase())).slice(0,32)});
-    if(!accountRate.success){await security(env,"rate-limited",null,{area:"login"});return page("Too many attempts. Please wait a minute before trying again.",429);}
+    if(!accountRate.success){await security(env,"rate-limited",null,{area:"login"});return loginPage(env,"Too many attempts. Please wait a minute before trying again.",429);}
     const guest=credentials(env,"guest");
     const checks=await Promise.all([equal(username,env.NINETY_USERNAME),equal(password,env.NINETY_PASSWORD),equal(username,guest?.username??""),equal(password,guest?.password??"")]);
     const role:Role|null=checks[0]&&checks[1]?"owner":guest&&checks[2]&&checks[3]?"guest":null;
     if(!role) {
-      if(!env.NINETY_ACCOUNTS)return page("Incorrect username or password.",401);
+      if(!env.NINETY_ACCOUNTS)return loginPage(env,"Incorrect username or password.",401);
       const response=await accounts(env,"/verify",{username,password});
-      if(!response.ok)return page("Sign-in service is temporarily unavailable. Please try again.",503);
+      if(!response.ok)return loginPage(env,"Sign-in service is temporarily unavailable. Please try again.",503);
       const data=await response.json().catch(()=>null) as {account?:{id:string;version:number}}|null;
-      if(!data.account){await security(env,"login-failure",null,{method:"password"});return page("Incorrect username or password.",401);}
+      if(!data.account){await security(env,"login-failure",null,{method:"password"});return loginPage(env,"Incorrect username or password.",401);}
       const expiry=Math.floor(Date.now()/1000)+ttl,nonce=hex(crypto.getRandomValues(new Uint8Array(16)).buffer);
       const prefix=`friend.${data.account.id}.${data.account.version}.${expiry}.${nonce}`;
       const signature=hex(await crypto.subtle.sign("HMAC",await key(env.NINETY_SESSION_SECRET),encoder.encode(prefix)));
@@ -133,6 +162,6 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
     return null;
   }
   if(url.pathname.startsWith("/api/"))return Response.json({error:"Authentication required"},{status:401,headers:{"Cache-Control":"no-store"}});
-  if(url.pathname==="/login")return page();
+  if(url.pathname==="/login")return loginPage(env);
   return new Response(null,{status:303,headers:{Location:"/login","Cache-Control":"no-store"}});
 }
