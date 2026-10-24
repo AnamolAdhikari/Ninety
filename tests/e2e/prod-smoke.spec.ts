@@ -21,7 +21,11 @@ async function signIn(page: import("@playwright/test").Page) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       await page.goto("/", { waitUntil: "domcontentloaded", timeout: 30_000 });
-      if (await page.getByText(/Featured fixtures/i).isVisible().catch(() => false)) return;
+      if (await page.getByText(/Featured fixtures/i).isVisible().catch(() => false)) {
+        const account = await page.request.get("/api/account");
+        if (account.ok()) return;
+        await page.goto("/login", { waitUntil: "domcontentloaded" });
+      }
       await page.getByLabel("Username").fill(username);
       await page.getByLabel("Password").fill(password);
       await Promise.all([
@@ -41,7 +45,7 @@ async function signIn(page: import("@playwright/test").Page) {
 
 test.describe("NINETY access control", () => {
   test("anonymous APIs are protected and not cacheable", async ({ request }) => {
-    for (const path of ["/api/matches", "/api/account", "/api/preferences"]) {
+    for (const path of ["/api/account", "/api/preferences", "/api/admin/accounts"]) {
       const response = await request.get(path);
       expect(response.status(), path).toBe(401);
       expect(response.headers()["cache-control"] || "", path).toContain("no-store");
