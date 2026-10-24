@@ -142,6 +142,7 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
     && (request.method==="GET" || request.method==="HEAD")
     && !protectedPath
     && (!previewPath.startsWith("/api/") || previewApi);
+  if(url.hostname==="live.n90.workers.dev" && Date.now()<previewExpires && previewPath==="/login" && (request.method==="GET" || request.method==="HEAD") && url.searchParams.get("auth")!=="1") return new Response(null,{status:303,headers:{Location:"/","Cache-Control":"no-store"}});
   if(publicReadOnlyPreview)return null;
   const identity=await valid(request,env);
   if(identity) {
