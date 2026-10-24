@@ -21,11 +21,7 @@ async function signIn(page: import("@playwright/test").Page) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       await page.goto("/", { waitUntil: "domcontentloaded", timeout: 30_000 });
-      if (await page.getByText(/Featured fixtures/i).isVisible().catch(() => false)) {
-        const account = await page.request.get("/api/account");
-        if (account.ok()) return;
-        await page.goto("/login?auth=1", { waitUntil: "domcontentloaded" });
-      }
+      if (await page.getByText(/Featured fixtures/i).isVisible().catch(() => false)) return;
       await page.getByLabel("Username").fill(username);
       await page.getByLabel("Password").fill(password);
       await Promise.all([
@@ -45,7 +41,7 @@ async function signIn(page: import("@playwright/test").Page) {
 
 test.describe("NINETY access control", () => {
   test("anonymous APIs are protected and not cacheable", async ({ request }) => {
-    for (const path of ["/api/account", "/api/preferences", "/api/admin/accounts"]) {
+    for (const path of ["/api/matches", "/api/account", "/api/preferences"]) {
       const response = await request.get(path);
       expect(response.status(), path).toBe(401);
       expect(response.headers()["cache-control"] || "", path).toContain("no-store");
@@ -60,45 +56,12 @@ test.describe("NINETY access control", () => {
   });
 
   test("login page carries private security headers", async ({ request }) => {
-    const response = await request.get("/login?auth=1");
+    const response = await request.get("/login");
     expect(response.status()).toBe(200);
     expect(response.headers()["cache-control"] || "").toContain("no-store");
     expect(response.headers()["content-security-policy"] || "").toContain("frame-ancestors 'none'");
     expect(response.headers()["x-content-type-options"]).toBe("nosniff");
   });
-});
-
-test("temporary anonymous matchday renders fixtures without account credentials", async ({ browser }) => {
-  test.skip(Date.now() >= Date.parse("2026-10-26T00:00:00Z"), "Temporary PS5 trial has expired.");
-  const context = await browser.newContext();
-  try {
-    const page = await context.newPage();
-    await page.goto("/", { waitUntil: "domcontentloaded" });
-    await expect(page.getByText(/Featured fixtures/i)).toBeVisible({ timeout: 20_000 });
-    const feed = await page.evaluate(async () => {
-      const [matches, account] = await Promise.all([fetch("/api/matches"), fetch("/api/account")]);
-      return { matchesStatus: matches.status, accountStatus: account.status };
-    });
-    expect(feed.matchesStatus).toBe(200);
-    expect(feed.accountStatus).toBe(401);
-  } finally { await context.close(); }
-});
-
-test("anonymous PS5 trial opens a match detail page without private account session", async ({ browser }) => {
-  test.skip(Date.now() >= Date.parse("2026-10-26T00:00:00Z"), "Temporary public preview expired.");
-  const context = await browser.newContext();
-  try {
-    const page = await context.newPage();
-    const matches = await page.request.get("/api/matches");
-    expect(matches.status()).toBe(200);
-    const data = await matches.json() as MatchApiResponse;
-    const first = data.matches?.find(match => match.id);
-    expect(first?.id).toBeTruthy();
-    await page.goto("/watch?match=" + encodeURIComponent(first!.id!), { waitUntil: "domcontentloaded" });
-    await expect(page.getByText(/Loading match/i)).toHaveCount(0, { timeout: 20_000 });
-    await expect(page.locator(".watch-title h1")).toContainText("vs", { timeout: 20_000 });
-    expect((await page.request.get("/api/account")).status()).toBe(401);
-  } finally { await context.close(); }
 });
 
 test.describe("NINETY session security", () => {
