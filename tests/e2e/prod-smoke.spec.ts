@@ -84,6 +84,23 @@ test("temporary anonymous matchday renders fixtures without account credentials"
   } finally { await context.close(); }
 });
 
+test("anonymous PS5 trial opens a match detail page without private account session", async ({ browser }) => {
+  test.skip(Date.now() >= Date.parse("2026-10-26T00:00:00Z"), "Temporary public preview expired.");
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage();
+    const matches = await page.request.get("/api/matches");
+    expect(matches.status()).toBe(200);
+    const data = await matches.json() as MatchApiResponse;
+    const first = data.matches?.find(match => match.id);
+    expect(first?.id).toBeTruthy();
+    await page.goto("/watch?match=" + encodeURIComponent(first!.id!), { waitUntil: "domcontentloaded" });
+    await expect(page.getByText(/Loading match/i)).toHaveCount(0, { timeout: 20_000 });
+    await expect(page.locator(".watch-title h1")).toContainText("vs", { timeout: 20_000 });
+    expect((await page.request.get("/api/account")).status()).toBe(401);
+  } finally { await context.close(); }
+});
+
 test.describe("NINETY session security", () => {
   test("cross-origin login POST is rejected", async ({ request }) => {
     const response = await request.post("/auth/login", {
