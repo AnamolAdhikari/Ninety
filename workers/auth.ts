@@ -138,7 +138,7 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
   const previewApi=/^\/api\/(?:matches(?:\/|$)|match-centre(?:\/|$)|team-badge(?:\/|$)|streams(?:\/|$))/.test(previewPath);
   const protectedPath=/^\/(?:admin|login|auth)(?:\/|$)/.test(previewPath)
     || /^\/api\/(?:admin|account|preferences|telemetry|playback-report)(?:\/|$)/.test(previewPath);
-  const publicReadOnlyPreview=url.hostname==="dev.n90.workers.dev" && Date.now()<previewExpires
+  const publicReadOnlyPreview=url.hostname==="live.n90.workers.dev" && Date.now()<previewExpires
     && (request.method==="GET" || request.method==="HEAD")
     && !protectedPath
     && (!previewPath.startsWith("/api/") || previewApi);
