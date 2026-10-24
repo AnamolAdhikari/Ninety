@@ -55,7 +55,7 @@ export default function WatchPage(){
       try{
         setStatus("loading");
         failedSources.current.clear();if(!rejectedSources.current.size)setRecoveryMessage("");
-        await initializeAccountStorage().catch(()=>{});
+        await initializeAccountStorage();
         const id=new URLSearchParams(window.location.search).get("match");
         if(!id)throw new Error();
         const response=await fetch("/api/matches");if(!response.ok)throw new Error();
