@@ -24,7 +24,7 @@ async function signIn(page: import("@playwright/test").Page) {
       if (await page.getByText(/Featured fixtures/i).isVisible().catch(() => false)) {
         const account = await page.request.get("/api/account");
         if (account.ok()) return;
-        await page.goto("/login", { waitUntil: "domcontentloaded" });
+        await page.goto("/login?auth=1", { waitUntil: "domcontentloaded" });
       }
       await page.getByLabel("Username").fill(username);
       await page.getByLabel("Password").fill(password);
@@ -60,7 +60,7 @@ test.describe("NINETY access control", () => {
   });
 
   test("login page carries private security headers", async ({ request }) => {
-    const response = await request.get("/login");
+    const response = await request.get("/login?auth=1");
     expect(response.status()).toBe(200);
     expect(response.headers()["cache-control"] || "").toContain("no-store");
     expect(response.headers()["content-security-policy"] || "").toContain("frame-ancestors 'none'");
