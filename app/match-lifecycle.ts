@@ -33,3 +33,21 @@ export function isEffectivelyLive(match: MatchLifecycle, now: number): boolean {
   if (match.matchStatus && ["PST","SUSP","INT","CANC","ABD","AWD","WO"].includes(match.matchStatus)) return false;
   return true;
 }
+
+// Broadcast windows are deliberately independent of the match's Live/FT status.
+// A source must still be returned by the provider; a listed link does not prove playback.
+export const BROADCAST_EARLY_MS = 15 * 60_000;
+export const BROADCAST_POST_MATCH_GRACE_MS = 15 * 60_000;
+// The streaming feed lacks an actual full-time timestamp. Keep the grace period
+// relative to the existing lifecycle cutoff, including extra time when reported.
+export const BROADCAST_POST_MATCH_CUTOFF_MS = MATCH_WINDOW_MS + BROADCAST_POST_MATCH_GRACE_MS;
+export function canCheckBroadcast(match: MatchLifecycle, now: number): boolean {
+  if (!Number.isFinite(match.date) || !match.apiSources?.length) return false;
+  if (match.matchStatus && ["CANC","ABD","AWD","WO","PST","SUSP","INT"].includes(match.matchStatus)) return false;
+  const matchWindow = match.matchStatus && extraTime.has(match.matchStatus)
+    ? EXTRA_TIME_HARD_CAP_MS
+    : match.matchStatus && active.has(match.matchStatus)
+      ? ACTIVE_MATCH_HARD_CAP_MS
+      : MATCH_WINDOW_MS;
+  return now >= match.date! - BROADCAST_EARLY_MS && now <= match.date! + matchWindow + BROADCAST_POST_MATCH_GRACE_MS;
+}
