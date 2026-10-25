@@ -5,6 +5,9 @@ import {
   MATCH_WINDOW_MS,
   isEffectivelyLive,
   isMatchEnded,
+  canCheckBroadcast,
+  BROADCAST_EARLY_MS,
+  BROADCAST_POST_MATCH_CUTOFF_MS,
 } from "../../app/match-lifecycle";
 
 const kickoff = Date.UTC(2026, 9, 10, 18, 0, 0);
@@ -48,5 +51,26 @@ describe("match lifecycle rules", () => {
   it("does not infer an end time when kickoff is missing", () => {
     expect(isMatchEnded({ live: true }, kickoff)).toBe(false);
     expect(isEffectivelyLive({ live: true, apiSources: source }, kickoff)).toBe(false);
+  });
+});
+
+describe("broadcast access window", () => {
+  it("opens 15 minutes before kickoff only for matches with sources", () => {
+    const match = { date: kickoff, matchStatus: "NS", apiSources: source };
+    expect(canCheckBroadcast(match, kickoff - BROADCAST_EARLY_MS - 1)).toBe(false);
+    expect(canCheckBroadcast(match, kickoff - BROADCAST_EARLY_MS)).toBe(true);
+    expect(canCheckBroadcast({ ...match, apiSources: [] }, kickoff)).toBe(false);
+  });
+  it("keeps full-time and penalty broadcasts eligible while sources remain listed", () => {
+    for (const matchStatus of ["FT", "AET", "PEN"]) {
+      const match = { date: kickoff, matchStatus, apiSources: source };
+      expect(isMatchEnded(match, kickoff + 130 * 60_000)).toBe(true);
+      expect(canCheckBroadcast(match, kickoff + 130 * 60_000)).toBe(true);
+      expect(canCheckBroadcast(match, kickoff + BROADCAST_POST_MATCH_CUTOFF_MS + 1)).toBe(false);
+    }
+  });
+  it("does not check cancelled, postponed or suspended matches", () => {
+    for (const matchStatus of ["CANC", "ABD", "AWD", "WO", "PST", "SUSP", "INT"])
+      expect(canCheckBroadcast({date:kickoff,matchStatus,apiSources:source},kickoff)).toBe(false);
   });
 });
