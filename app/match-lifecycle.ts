@@ -33,3 +33,13 @@ export function isEffectivelyLive(match: MatchLifecycle, now: number): boolean {
   if (match.matchStatus && ["PST","SUSP","INT","CANC","ABD","AWD","WO"].includes(match.matchStatus)) return false;
   return true;
 }
+
+// Broadcast windows are deliberately independent of the match's Live/FT status.
+// A source must still be returned by the provider; a listed link does not prove playback.
+export const BROADCAST_EARLY_MS = 15 * 60_000;
+export const BROADCAST_POST_MATCH_CUTOFF_MS = 4 * 60 * 60_000;
+export function canCheckBroadcast(match: MatchLifecycle, now: number): boolean {
+  if (!Number.isFinite(match.date) || !match.apiSources?.length) return false;
+  if (match.matchStatus && ["CANC","ABD","AWD","WO","PST","SUSP","INT"].includes(match.matchStatus)) return false;
+  return now >= match.date! - BROADCAST_EARLY_MS && now <= match.date! + BROADCAST_POST_MATCH_CUTOFF_MS;
+}
