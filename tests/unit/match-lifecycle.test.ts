@@ -8,6 +8,7 @@ import {
   canCheckBroadcast,
   BROADCAST_EARLY_MS,
   BROADCAST_POST_MATCH_CUTOFF_MS,
+  BROADCAST_POST_MATCH_GRACE_MS,
 } from "../../app/match-lifecycle";
 
 const kickoff = Date.UTC(2026, 9, 10, 18, 0, 0);
@@ -66,8 +67,13 @@ describe("broadcast access window", () => {
       const match = { date: kickoff, matchStatus, apiSources: source };
       expect(isMatchEnded(match, kickoff + 130 * 60_000)).toBe(true);
       expect(canCheckBroadcast(match, kickoff + 130 * 60_000)).toBe(true);
-      expect(canCheckBroadcast(match, kickoff + BROADCAST_POST_MATCH_CUTOFF_MS + 1)).toBe(false);
+      expect(canCheckBroadcast(match, kickoff + (matchStatus === "AET" || matchStatus === "PEN" ? EXTRA_TIME_HARD_CAP_MS + BROADCAST_POST_MATCH_GRACE_MS : BROADCAST_POST_MATCH_CUTOFF_MS) + 1)).toBe(false);
     }
+  });
+  it("uses 15 minutes after the estimated normal match end", () => {
+    const match = {date:kickoff,matchStatus:"FT",apiSources:source};
+    expect(canCheckBroadcast(match,kickoff+BROADCAST_POST_MATCH_CUTOFF_MS)).toBe(true);
+    expect(canCheckBroadcast(match,kickoff+BROADCAST_POST_MATCH_CUTOFF_MS+1)).toBe(false);
   });
   it("does not check cancelled, postponed or suspended matches", () => {
     for (const matchStatus of ["CANC", "ABD", "AWD", "WO", "PST", "SUSP", "INT"])
