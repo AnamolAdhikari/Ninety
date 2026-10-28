@@ -8,7 +8,9 @@ const badge=(value:unknown)=>{const id=clean(value);return id?`${API}/api/images
 
 async function fixtureFallback(reason:string, request:Request){
   try {
-    const day=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()).split("/").join("-");
+    const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+    const part=(type:string)=>parts.find(p=>p.type===type)?.value??"";
+    const day=`${part("year")}-${part("month")}-${part("day")}`;
     const url=new URL("/api/match-centre/fixtures",request.url);
     url.searchParams.set("date",day);
     const result=await independentFixtures(new NextRequest(url));
