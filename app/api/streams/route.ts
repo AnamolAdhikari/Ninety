@@ -18,8 +18,8 @@ export async function GET(request:Request){
   if(!/^[a-z0-9-]{1,32}$/.test(source)||!id||id.length>180||!/^[a-zA-Z0-9._~-]+$/.test(id))return Response.json({error:"Invalid stream reference."},{status:400});
   try{
     const response=await fetch(`${API}/api/stream/${source}/${encodeURIComponent(id)}`,{headers:{Accept:"application/json"},cache:"no-store",signal:AbortSignal.timeout(10000)});
-    if(!response.ok){await recordHealth("stream-api-error");return Response.json({streams:[],error:"Source provider temporarily unavailable."},{status:502});}
-    const raw=await response.json() as RawStream[];
+    if(!response.ok){console.warn("[ninety:streams] upstream HTTP",JSON.stringify({source,status:response.status,contentType:response.headers.get("content-type")}));await recordHealth("stream-api-error");return Response.json({streams:[],error:"Source provider temporarily unavailable."},{status:502});}
+    const contentType=response.headers.get("content-type")??"";if(!contentType.toLowerCase().includes("application/json")){console.warn("[ninety:streams] upstream non-json",JSON.stringify({source,contentType}));throw new Error("upstream-non-json");}const raw=await response.json() as RawStream[];if(!Array.isArray(raw))throw new Error("upstream-invalid-payload");
     const streams=raw.flatMap((stream,index)=>{
       const embedUrl=clean(stream.embedUrl);
       try{const parsed=new URL(embedUrl);if(parsed.protocol!=="https:")return [];}catch{return [];}
@@ -27,5 +27,5 @@ export async function GET(request:Request){
     }).slice(0,12);
     if(!streams.length)await recordHealth("stream-unavailable");
     return Response.json({streams},{headers:{"Cache-Control":"no-store"}});
-  }catch{await recordHealth("stream-api-error");return Response.json({streams:[],error:"Source provider temporarily unavailable."},{status:502});}
+  }catch(error){console.warn("[ninety:streams] upstream exception",JSON.stringify({source,category:error instanceof Error?error.name:"unknown"}));await recordHealth("stream-api-error");return Response.json({streams:[],error:"Source provider temporarily unavailable."},{status:502});}
 }
