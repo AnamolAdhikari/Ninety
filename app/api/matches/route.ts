@@ -18,13 +18,19 @@ type PpvEvent = {
   category?: string;
   category_name?: string;
   poster?: string;
-  substreams?: Array<{iframe?:string;embed_url?:string;source_tag?:string;tag?:string;language?:string;hd?:boolean}>;
+  uri_name?: string;
+  locale?: string;
+  source_tag?: string;
+  starts_at?: number;
+  ends_at?: number;
+  always_live?: number | boolean;
+  substreams?: Array<{id?:string|number;iframe?:string;embed_url?:string;source_tag?:string;tag?:string;language?:string;locale?:string;hd?:boolean}>;
 };
 type PpvPayload = {streams?:Array<{category?:string;streams?:PpvEvent[]}>};
 const PPV_API = "https://api.ppv.st/api/streams";
 const normalizeName=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g," ").trim();
 async function getPpvEvents():Promise<PpvEvent[]>{
-  const response=await fetch(PPV_API,{headers:{Accept:"application/json"},next:{revalidate:60},signal:AbortSignal.timeout(8000)});
+  const response=await fetch(PPV_API,{headers:{Accept:"application/json","User-Agent":"Mozilla/5.0 (compatible; NINETY-Live/1.0)","Referer":"https://ppv.st/","Origin":"https://ppv.st"},next:{revalidate:60},signal:AbortSignal.timeout(10000)});
   if(!response.ok)throw new Error("ppv-http-"+response.status);
   const type=response.headers.get("content-type")?.toLowerCase()??"";
   if(!type.includes("application/json"))throw new Error("ppv-non-json");
@@ -66,6 +72,37 @@ function findPpvEvent(match:{home:string;away:string;date:number},events:PpvEven
   });
   return candidates.sort((a,b)=>Math.abs((a.starts_at??0)*1000-match.date)-Math.abs((b.starts_at??0)*1000-match.date))[0];
 }
+function splitPpvTeams(name:string):{home:string;away:string}|null{
+  const parts=name.trim().split(/\s+(?:vs?\.?|v|at|@)\s+/i);
+  if(parts.length!==2)return null;
+  const home=parts[0].trim(),away=parts[1].trim();
+  if(home.length<2||away.length<2)return null;
+  return {home,away};
+}
+function ppvFootballMatches(events:PpvEvent[],now:number){
+  return events.flatMap(event=>{
+    const category=normalizeName(event.category_name||event.category||"");
+    if(!["football","soccer","association football"].includes(category))return [];
+    const teams=splitPpvTeams(event.name||event.title||"");
+    const starts=Number(event.starts_at??0),ends=Number(event.ends_at??0);
+    if(!teams||!Number.isFinite(starts)||starts<=0||!Number.isFinite(ends)||ends<=0)return [];
+    const startMs=starts*1000,endMs=ends*1000;
+    if(endMs<now-15*60_000||startMs>now+7*24*60*60_000)return [];
+    if(event.id==null||!hasDirectEmbed(event))return [];
+    const live=now>=startMs&&now<=endMs;
+    const matchStatus=live?"LIVE":now<startMs?"NS":"FT";
+    return [{
+      id:"ppv-"+String(event.id),sport:"football",league:event.category_name||event.category||"Football",
+      home:teams.home,away:teams.away,
+      homeCode:teams.home.replace(/[^a-z]/gi,"").slice(0,3).toUpperCase(),
+      awayCode:teams.away.replace(/[^a-z]/gi,"").slice(0,3).toUpperCase(),
+      date:startMs,time:new Date(startMs).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:"America/Chicago"}),
+      live,matchStatus,popular:false,colorA:"#303a48",colorB:"#202b39",
+      apiSources:[{source:"ppv",id:String(event.id)}],broadcastProvider:"PPV.ST",
+      venueImage:"/stadiums/Default.jpg",venuePosition:"center"
+    }];
+  }).sort((a,b)=>(Number(b.live)-Number(a.live))||(a.date-b.date));
+}
 async function fixtureFallback(reason:string, request:Request){
   try {
     const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
@@ -77,10 +114,19 @@ async function fixtureFallback(reason:string, request:Request){
       independentFixtures(new NextRequest(url)),
       getPpvEvents().then(events=>({events,error:null as string|null})).catch(error=>({events:[] as PpvEvent[],error:error instanceof Error?error.message:"unknown"}))
     ]);
-    if(!result.ok)throw new Error("fixture-provider-"+result.status);
-    const payload=await result.json() as {fixtures?:Array<{id:string;home:string;away:string;league:string;homeBadge:string|null;awayBadge:string|null;kickoff:string|null;status:string|null}>;sources?:unknown};
+    const payload=result.ok?await result.json() as {fixtures?:Array<{id:string;home:string;away:string;league:string;homeBadge:string|null;awayBadge:string|null;kickoff:string|null;status:string|null}>;sources?:unknown}:null;
     const now=Date.now();
-    const fixtures=(payload.fixtures??[]).filter(f=>f.kickoff&&Number.isFinite(Date.parse(f.kickoff)));
+    const ppvOnly=ppvFootballMatches(ppvResult.events,now);
+    const fixtures=(payload?.fixtures??[]).filter(f=>f.kickoff&&Number.isFinite(Date.parse(f.kickoff)));
+    if(!fixtures.length&&ppvOnly.length){
+      console.warn("[ninety:matches] PPV.ST standalone catalogue active",JSON.stringify({count:ppvOnly.length,fixtureStatus:result.status}));
+      return Response.json({matches:ppvOnly,sports:[{id:"football",name:"Football"}],degraded:true,
+        message:"Football matches and broadcast embeds are supplied directly by PPV.ST.",
+        broadcastProvider:"PPV.ST",broadcastMatches:ppvOnly.length,
+        sources:{fixtures:result.ok?"empty":"unavailable",broadcasts:"PPV.ST"}}
+      ,{headers:{"Cache-Control":"no-store"}});
+    }
+    if(!fixtures.length)throw new Error("no-independent-fixtures-or-ppv-football-events");
     const matches=fixtures.sort((a,b)=>Math.abs(Date.parse(a.kickoff!)-now)-Math.abs(Date.parse(b.kickoff!)-now)).slice(0,80).map(f=>{
       const date=Date.parse(f.kickoff!);
       const ppv=findPpvEvent({home:f.home,away:f.away,date},ppvResult.events);
@@ -92,11 +138,12 @@ async function fixtureFallback(reason:string, request:Request){
         apiSources:ppv?[{source:"ppv",id:String(ppv.id)}]:[],broadcastProvider:ppv?"PPV.ST":undefined,
         venueImage:"/stadiums/Default.jpg",venuePosition:"center"};
     });
+    if(!matches.length&&ppvOnly.length)return Response.json({matches:ppvOnly,sports:[{id:"football",name:"Football"}],degraded:true,message:"Football matches and broadcast embeds are supplied directly by PPV.ST.",broadcastProvider:"PPV.ST",broadcastMatches:ppvOnly.length},{headers:{"Cache-Control":"no-store"}});
     if(!matches.length)throw new Error("empty-independent-fixtures");
     const matched=matches.filter(match=>match.apiSources.length).length;
     console.warn("[ninety:matches] independent fixtures active",JSON.stringify({reason,count:matches.length,ppvMatched:matched,ppvError:ppvResult.error}));
     return Response.json({matches,sports:[{id:"football",name:"Football"}],degraded:true,
-      message:"Independent fixtures active; PPV.ST iframe sources are attached where available.",sources:payload.sources,
+      message:"Independent fixtures active; PPV.ST iframe sources are attached where available.",sources:payload?.sources,
       broadcastProvider:"PPV.ST",broadcastMatches:matched},
       {headers:{"Cache-Control":"no-store"}});
   }catch(error){
