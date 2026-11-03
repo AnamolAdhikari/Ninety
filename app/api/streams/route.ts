@@ -1,8 +1,8 @@
 import { recordHealth } from "../../service-health";
 
 const PPV_API="https://api.ppv.st/api/streams";
-type PpvSource={iframe?:unknown;embed_url?:unknown;source_tag?:unknown;tag?:unknown;language?:unknown;hd?:unknown;id?:unknown};
-type PpvEvent={id?:unknown;name?:unknown;tag?:unknown;iframe?:unknown;substreams?:PpvSource[]};
+type PpvSource={iframe?:unknown;embed_url?:unknown;source_tag?:unknown;tag?:unknown;language?:unknown;locale?:unknown;hd?:unknown;id?:unknown};
+type PpvEvent={id?:unknown;name?:unknown;tag?:unknown;iframe?:unknown;source_tag?:unknown;uri_name?:unknown;substreams?:PpvSource[]};
 type PpvPayload={streams?:Array<{category?:string;streams?:PpvEvent[]}>};
 const clean=(value:unknown,fallback="")=>typeof value==="string"?value:fallback;
 
@@ -24,7 +24,7 @@ export async function GET(request:Request){
     return Response.json({streams:[],error:"Invalid or unsupported broadcast reference."},{status:400});
   }
   try{
-    const response=await fetch(PPV_API,{headers:{Accept:"application/json"},next:{revalidate:60},signal:AbortSignal.timeout(8000)});
+    const response=await fetch(PPV_API,{headers:{Accept:"application/json","User-Agent":"Mozilla/5.0 (compatible; NINETY-Live/1.0)","Referer":"https://ppv.st/","Origin":"https://ppv.st"},next:{revalidate:60},signal:AbortSignal.timeout(10000)});
     if(!response.ok){
       console.warn("[ninety:ppv] catalogue HTTP",JSON.stringify({status:response.status,contentType:response.headers.get("content-type")}));
       await recordHealth("stream-api-error");
@@ -47,7 +47,7 @@ export async function GET(request:Request){
       const embedUrl=safeEmbedUrl(raw);
       if(!embedUrl||seen.has(embedUrl))return [];
       seen.add(embedUrl);
-      const label=clean(item.language)||clean(item.source_tag)||clean(item.tag)||clean(event.tag)||"PPV.ST";
+      const label=clean(item.language)||clean(item.locale)||clean(item.source_tag)||clean(item.tag)||clean(event.source_tag)||clean(event.tag)||"PPV.ST";
       return [{id:clean(item.id,id+"-"+(index+1)),streamNo:index+1,language:label,hd:Boolean(item.hd)||/\bhd\b/i.test(label),embedUrl,source:"ppv"}];
     }).slice(0,12);
     if(!streams.length)await recordHealth("stream-unavailable");
