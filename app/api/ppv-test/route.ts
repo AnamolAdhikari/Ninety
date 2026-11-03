@@ -10,10 +10,11 @@ type RawEvent = {
   ends_at?: unknown; always_live?: unknown; category_name?: unknown;
   substreams?: RawSource[];
 };
-type RawPayload = { streams?: Array<{ category?: string; category_name?: string; streams?: RawEvent[] }> };
+type RawGroup = { category?: unknown; category_name?: unknown; streams?: RawEvent[] };
+type RawPayload = { success?: unknown; streams?: unknown; READ_ME?: unknown };
 
 function text(value: unknown): string {
-  return typeof value === "string" ? value : "";
+  return typeof value === "string" ? value : typeof value === "number" ? String(value) : "";
 }
 function safeEmbedUrl(value: string): string | null {
   try {
@@ -50,10 +51,13 @@ export async function GET() {
     }
     const payload = await response.json() as RawPayload;
     if (!Array.isArray(payload.streams)) {
-      return Response.json({ ok: false, error: "Unexpected PPV.ST catalogue response.", events: [] }, { status: 502 });
+      return Response.json({ ok: false, error: "Unexpected PPV.ST catalogue response.", providerKeys: Object.keys(payload), events: [] }, { status: 502 });
     }
 
-    const events = payload.streams.flatMap(group =>
+    // PPV.ST returns { success, timestamp, READ_ME, performance, streams },
+    // where streams is a list of category groups and each group has streams[].
+    const groups = payload.streams as RawGroup[];
+    const events = groups.flatMap(group =>
       (Array.isArray(group.streams) ? group.streams : []).map((event: RawEvent) => {
         const sources = [
           { ...event, label: text(event.source_tag) || text(event.tag) || "Main broadcast" },
