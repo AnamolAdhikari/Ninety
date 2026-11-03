@@ -55,10 +55,9 @@ function hasDirectEmbed(event:PpvEvent){
   return valid(event.iframe)||Boolean(event.substreams?.some(source=>valid(source.iframe||source.embed_url)));
 }
 function findPpvEvent(match:{home:string;away:string;date:number},events:PpvEvent[]){
-  const target=normalizeName(match.home+" "+match.away);
   const candidates=events.filter(event=>{
     const name=event.name||event.title||"";
-    if(!name||!teamAppears(name,match.home)||!teamAppears(name,match.away)||!hasDirectEmbed(event))return false;
+    if(event.id==null||!name||!teamAppears(name,match.home)||!teamAppears(name,match.away)||!hasDirectEmbed(event))return false;
     if(typeof event.starts_at==="number"&&event.starts_at>0){
       const delta=Math.abs(event.starts_at*1000-match.date);
       if(delta>6*60*60*1000)return false;
