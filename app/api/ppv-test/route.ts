@@ -51,7 +51,16 @@ export async function GET() {
     }
     const payload = await response.json() as RawPayload;
     if (!Array.isArray(payload.streams)) {
-      return Response.json({ ok: false, error: "Unexpected PPV.ST catalogue response.", providerKeys: Object.keys(payload), events: [] }, { status: 502 });
+      // Preserve the provider's own diagnostic so we can distinguish access,
+      // rate-limit, and upstream availability failures in this isolated test.
+      return Response.json({
+        ok: false,
+        error: "PPV.ST did not return its event catalogue.",
+        providerSuccess: payload.success ?? null,
+        providerError: typeof payload.error === "string" ? payload.error.slice(0, 500) : null,
+        providerKeys: Object.keys(payload),
+        events: [],
+      }, { status: 502 });
     }
 
     // PPV.ST returns { success, timestamp, READ_ME, performance, streams },
