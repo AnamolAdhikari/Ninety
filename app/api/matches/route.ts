@@ -22,7 +22,7 @@ type PpvEvent = {
 };
 type PpvPayload = {streams?:Array<{category?:string;streams?:PpvEvent[]}>};
 const PPV_API = "https://api.ppv.st/api/streams";
-const normalizeName=(value:string)=>value.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g," ").trim();
+const normalizeName=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g," ").trim();
 async function getPpvEvents():Promise<PpvEvent[]>{
   const response=await fetch(PPV_API,{headers:{Accept:"application/json"},next:{revalidate:60},signal:AbortSignal.timeout(8000)});
   if(!response.ok)throw new Error("ppv-http-"+response.status);
