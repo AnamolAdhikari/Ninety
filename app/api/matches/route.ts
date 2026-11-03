@@ -73,7 +73,7 @@ function findPpvEvent(match:{home:string;away:string;date:number},events:PpvEven
   return candidates.sort((a,b)=>Math.abs((a.starts_at??0)*1000-match.date)-Math.abs((b.starts_at??0)*1000-match.date))[0];
 }
 function splitPpvTeams(name:string):{home:string;away:string}|null{
-  const parts=name.trim().split(/\\s+(?:vs?\\.?|v|at|@)\\s+/i);
+  const parts=name.trim().split(/\s+(?:vs?\.?|v|at|@)\s+/i);
   if(parts.length!==2)return null;
   const home=parts[0].trim(),away=parts[1].trim();
   if(home.length<2||away.length<2)return null;
@@ -101,7 +101,7 @@ function ppvFootballMatches(events:PpvEvent[],now:number){
       apiSources:[{source:"ppv",id:String(event.id)}],broadcastProvider:"PPV.ST",
       venueImage:"/stadiums/Default.jpg",venuePosition:"center"
     }];
-  }).sort((a,b)=>Number(b.live)-Number(a.live)+(a.date-b.date));
+  }).sort((a,b)=>(Number(b.live)-Number(a.live))||(a.date-b.date));
 }
 async function fixtureFallback(reason:string, request:Request){
   try {
