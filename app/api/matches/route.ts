@@ -1,175 +1,109 @@
+import { NextRequest } from "next/server";
+import { GET as independentFixtures } from "../match-centre/fixtures/route";
 import { recordHealth } from "../../service-health";
 const API = "https://streamed.pk";
 type RawMatch = { id?:unknown; title?:unknown; category?:unknown; date?:unknown; popular?:unknown; teams?:{home?:{name?:unknown;badge?:unknown};away?:{name?:unknown;badge?:unknown}}; sources?:Array<{source?:unknown;id?:unknown}> };
 const clean=(value:unknown,fallback="")=>typeof value==="string"?value:fallback;
 const badge=(value:unknown)=>{const id=clean(value);return id?`${API}/api/images/badge/${encodeURIComponent(id)}.webp`:undefined;};
 
-export async function GET(){
-  try{
-    const [matchesResponse,liveResponse]=await Promise.all([
-      fetch(`${API}/api/matches/football`,{headers:{Accept:"application/json"},next:{revalidate:60}}),
-      fetch(`${API}/api/matches/live`,{headers:{Accept:"application/json"},cache:"no-store"}).catch(()=>null)
-    ]);
-    if(!matchesResponse.ok)throw new Error(`matches ${matchesResponse.status}`);
-    const contentType=matchesResponse.headers.get("content-type")?.toLowerCase()??"";
-    if(!contentType.includes("application/json"))throw new Error("Invalid match feed content type");
-    const raw=await matchesResponse.json() as RawMatch[], now=Date.now();
-    if(!Array.isArray(raw))throw new Error("Invalid match feed payload");
-    let liveRaw:RawMatch[]=[];
-    if(liveResponse?.ok){
-      try{
-        const livePayload=await liveResponse.json() as unknown;
-        if(Array.isArray(livePayload))liveRaw=livePayload as RawMatch[];
-        else await recordHealth("match-feed-error");
-      }catch{
-        await recordHealth("match-feed-error");
-      }
+type PpvEvent = {
+  id?: string | number;
+  name?: string;
+  title?: string;
+  tag?: string;
+  iframe?: string;
+  starts_at?: number;
+  ends_at?: number;
+  always_live?: number;
+  category?: string;
+  category_name?: string;
+  poster?: string;
+  substreams?: Array<{iframe?:string;embed_url?:string;source_tag?:string;tag?:string;language?:string;hd?:boolean}>;
+};
+type PpvPayload = {streams?:Array<{category?:string;streams?:PpvEvent[]}>};
+const PPV_API = "https://api.ppv.st/api/streams";
+const normalizeName=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g," ").trim();
+async function getPpvEvents():Promise<PpvEvent[]>{
+  const response=await fetch(PPV_API,{headers:{Accept:"application/json"},next:{revalidate:60},signal:AbortSignal.timeout(8000)});
+  if(!response.ok)throw new Error("ppv-http-"+response.status);
+  const type=response.headers.get("content-type")?.toLowerCase()??"";
+  if(!type.includes("application/json"))throw new Error("ppv-non-json");
+  const payload=await response.json() as PpvPayload;
+  if(!Array.isArray(payload.streams))throw new Error("ppv-invalid-catalog");
+  return payload.streams.flatMap(group=>(Array.isArray(group.streams)?group.streams:[]).map(event=>({...event,category_name:event.category_name||group.category||"Sports"})));
+}
+const aliases:Record<string,string[]> = {
+  "manchester united":["man utd","manutd","man united"],
+  "manchester city":["man city","mancity"],
+  "brighton and hove albion":["brighton"],
+  "tottenham hotspur":["tottenham","spurs"],
+  "paris saint germain":["psg"],
+  "atletico madrid":["atletico"],
+  "inter milan":["inter"],
+  "ac milan":["milan"],
+  "borussia dortmund":["dortmund"],
+  "bayern munich":["bayern"],
+};
+function teamAppears(eventName:string,team:string){
+  const event=normalizeName(eventName),key=normalizeName(team);
+  if(key.length>=4&&event.includes(key))return true;
+  const alias=aliases[key]??[];
+  return alias.some(value=>event.includes(normalizeName(value)));
+}
+function hasDirectEmbed(event:PpvEvent){
+  const valid=(value:string|undefined)=>{try{const url=new URL(value??"");return url.protocol==="https:"&&Boolean(url.hostname)&&!url.username&&!url.password;}catch{return false;}};
+  return valid(event.iframe)||Boolean(event.substreams?.some(source=>valid(source.iframe||source.embed_url)));
+}
+function findPpvEvent(match:{home:string;away:string;date:number},events:PpvEvent[]){
+  const candidates=events.filter(event=>{
+    const name=event.name||event.title||"";
+    if(event.id==null||!name||!teamAppears(name,match.home)||!teamAppears(name,match.away)||!hasDirectEmbed(event))return false;
+    if(typeof event.starts_at==="number"&&event.starts_at>0){
+      const delta=Math.abs(event.starts_at*1000-match.date);
+      if(delta>6*60*60*1000)return false;
     }
-    const liveById=new Map(liveRaw.map(item=>[clean(item.id),item]).filter(([id])=>Boolean(id)));
-    let matches=raw.slice(0,80).map((match,index)=>{
-      const title=clean(match.title,"Live event"), [titleHome,titleAway]=title.split(/\s+vs\.?\s+/i);
-      const home=clean(match.teams?.home?.name,titleHome||title), away=clean(match.teams?.away?.name,titleAway||"Event");
-      const date=typeof match.date==="number"?match.date:Number(match.date)||now;
-      const id=clean(match.id,`event-${index}`);
-      const liveMatch=liveById.get(id);
-      const preferredSources=Array.isArray(liveMatch?.sources)&&liveMatch!.sources!.length?liveMatch!.sources:match.sources;
-      return {id,sport:clean(match.category,"Sports"),league:clean(match.category,"Sports"),home,away,
-        homeCode:home.replace(/[^a-zA-Z]/g,"").slice(0,3).toUpperCase(),awayCode:away.replace(/[^a-zA-Z]/g,"").slice(0,3).toUpperCase(),
+    return true;
+  });
+  return candidates.sort((a,b)=>Math.abs((a.starts_at??0)*1000-match.date)-Math.abs((b.starts_at??0)*1000-match.date))[0];
+}
+async function fixtureFallback(reason:string, request:Request){
+  try {
+    const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+    const part=(type:string)=>parts.find(p=>p.type===type)?.value??"";
+    const day=`${part("year")}-${part("month")}-${part("day")}`;
+    const url=new URL("/api/match-centre/fixtures",request.url);
+    url.searchParams.set("date",day);
+    const [result,ppvResult]=await Promise.all([
+      independentFixtures(new NextRequest(url)),
+      getPpvEvents().then(events=>({events,error:null as string|null})).catch(error=>({events:[] as PpvEvent[],error:error instanceof Error?error.message:"unknown"}))
+    ]);
+    if(!result.ok)throw new Error("fixture-provider-"+result.status);
+    const payload=await result.json() as {fixtures?:Array<{id:string;home:string;away:string;league:string;homeBadge:string|null;awayBadge:string|null;kickoff:string|null;status:string|null}>;sources?:unknown};
+    const now=Date.now();
+    const fixtures=(payload.fixtures??[]).filter(f=>f.kickoff&&Number.isFinite(Date.parse(f.kickoff)));
+    const matches=fixtures.sort((a,b)=>Math.abs(Date.parse(a.kickoff!)-now)-Math.abs(Date.parse(b.kickoff!)-now)).slice(0,80).map(f=>{
+      const date=Date.parse(f.kickoff!);
+      const ppv=findPpvEvent({home:f.home,away:f.away,date},ppvResult.events);
+      return {id:"fixture-"+f.id,sport:"football",league:f.league||"Football",home:f.home,away:f.away,
+        homeCode:f.home.replace(/[^a-z]/gi,"").slice(0,3).toUpperCase(),awayCode:f.away.replace(/[^a-z]/gi,"").slice(0,3).toUpperCase(),
         date,time:new Date(date).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:"America/Chicago"}),
-        live:Boolean(liveMatch)||(date<=now&&date>=now-4*60*60_000),popular:Boolean(match.popular),colorA:"#303a48",colorB:"#202b39",
-        homeBadge:badge(match.teams?.home?.badge),awayBadge:badge(match.teams?.away?.badge),
-        apiSources:Array.isArray(preferredSources)?preferredSources.map(s=>({source:clean(s.source),id:clean(s.id)})).filter(s=>s.source&&s.id).slice(0,12):[]};
-    }).sort((a,b)=>Number(b.live)-Number(a.live)||a.date-b.date);
-    // Collapse duplicate provider entries without changing legitimate fixtures.
-    // Team names + kickoff are more stable than provider IDs when feeds merge sources.
-    const seenFixtures=new Set<string>();
-    matches=matches.filter(match=>{
-      const key=`${match.home.toLocaleLowerCase()}|${match.away.toLocaleLowerCase()}|${match.date}`;
-      if(seenFixtures.has(key))return false;
-      seenFixtures.add(key);
-      return true;
-    }).slice(0,80);
-    // Curated stadium artwork is intentionally independent from the football-data
-    // provider so venue-plan/quota limits cannot block the featured hero.
-    const stadiums: Record<string,{venueName:string;venueCity:string;venueImage:string;venuePosition?:string}> = {
-      "barcelona": {
-        venueName: "Spotify Camp Nou",
-        venueCity: "Barcelona",
-        venueImage: "/stadiums/fc-barcelona-camp-3840x2160-19432.jpeg",
-      },
-      "real madrid": {
-        venueName: "Santiago Bernabéu",
-        venueCity: "Madrid",
-        venueImage: "/stadiums/Real%20Madrid%20Santiago%20Bernabeu%20Stadium%20Wallpaper%20Net.jpg",
-        venuePosition: "center 72%",
-      },
-      "liverpool": {
-        venueName: "Anfield",
-        venueCity: "Liverpool",
-        venueImage: "/stadiums/Anfield.jpg",
-      },
-      "manchester city": {
-        venueName: "Etihad Stadium",
-        venueCity: "Manchester",
-        venueImage: "/stadiums/ManCity.jpg",
-        venuePosition: "center 38%",
-      },
-      "arsenal": {
-        venueName: "Emirates Stadium",
-        venueCity: "London",
-        venueImage: "/stadiums/Arsenal.jpg",
-      },
-      "manchester united": {
-        venueName: "Old Trafford",
-        venueCity: "Manchester",
-        venueImage: "/stadiums/Old%20Trafford.webp",
-      },
-      "chelsea": {
-        venueName: "Stamford Bridge",
-        venueCity: "London",
-        venueImage: "/stadiums/Chealsea.jpg",
-        venuePosition: "center 34%",
-      },
-      "tottenham": {
-        venueName: "Tottenham Hotspur Stadium",
-        venueCity: "London",
-        venueImage: "/stadiums/Tottenham.jpg",
-      },
-      "tottenham hotspur": {
-        venueName: "Tottenham Hotspur Stadium",
-        venueCity: "London",
-        venueImage: "/stadiums/Tottenham.jpg",
-      },
-      "bayern munich": {
-        venueName: "Allianz Arena",
-        venueCity: "Munich",
-        venueImage: "/stadiums/Bayern.jpg",
-      },
-      "borussia dortmund": {
-        venueName: "Signal Iduna Park",
-        venueCity: "Dortmund",
-        venueImage: "/stadiums/Dortmund.webp",
-        venuePosition: "center 38%",
-      },
-      "paris saint-germain": {
-        venueName: "Parc des Princes",
-        venueCity: "Paris",
-        venueImage: "/stadiums/PSG.jpg",
-      },
-      "psg": {
-        venueName: "Parc des Princes",
-        venueCity: "Paris",
-        venueImage: "/stadiums/PSG.jpg",
-      },
-      "juventus": {
-        venueName: "Allianz Stadium",
-        venueCity: "Turin",
-        venueImage: "/stadiums/Juventus.jpg",
-      },
-      "inter milan": {
-        venueName: "San Siro",
-        venueCity: "Milan",
-        venueImage: "/stadiums/Inter-Milan.jpg",
-        venuePosition: "center 36%",
-      },
-      "inter": {
-        venueName: "San Siro",
-        venueCity: "Milan",
-        venueImage: "/stadiums/Inter-Milan.jpg",
-        venuePosition: "center 36%",
-      },
-      "atletico madrid": {
-        venueName: "Metropolitano",
-        venueCity: "Madrid",
-        venueImage: "/stadiums/Atle%CC%81tico.jpg",
-        venuePosition: "center 36%",
-      },
-    };
-    const stadiumAliases: Record<string,string> = {
-      "fc barcelona":"barcelona","barca":"barcelona",
-      "real madrid cf":"real madrid",
-      "liverpool fc":"liverpool",
-      "man city":"manchester city","manchester city fc":"manchester city",
-      "arsenal fc":"arsenal",
-      "man united":"manchester united","man utd":"manchester united","manchester united fc":"manchester united",
-      "chelsea fc":"chelsea",
-      "spurs":"tottenham hotspur","tottenham hotspur fc":"tottenham hotspur",
-      "bayern":"bayern munich","fc bayern":"bayern munich","fc bayern munich":"bayern munich","bayern münchen":"bayern munich",
-      "dortmund":"borussia dortmund","bvb":"borussia dortmund",
-      "paris sg":"paris saint-germain","paris saint germain":"paris saint-germain",
-      "juventus fc":"juventus",
-      "internazionale":"inter milan","inter milano":"inter milan","fc internazionale":"inter milan",
-      "atlético madrid":"atletico madrid","atletico de madrid":"atletico madrid",
-    };
-    const normalizeTeam=(name:string)=>name.trim().toLocaleLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-    matches = matches.map(match => {
-      const normalized=normalizeTeam(match.home);
-      const alias=stadiumAliases[normalized]??normalized;
-      const stadium=stadiums[alias];
-      return stadium
-        ? {...match,...stadium}
-        : {...match,venueImage:"/stadiums/Default.jpg",venuePosition:"center"};
+        live:["1H","HT","2H","ET","BT","P","INT","LIVE"].includes((f.status??"").toUpperCase()),
+        popular:false,colorA:"#303a48",colorB:"#202b39",homeBadge:f.homeBadge??undefined,awayBadge:f.awayBadge??undefined,
+        apiSources:ppv?[{source:"ppv",id:String(ppv.id)}]:[],broadcastProvider:ppv?"PPV.ST":undefined,
+        venueImage:"/stadiums/Default.jpg",venuePosition:"center"};
     });
-    return Response.json({matches,sports:[{id:"football",name:"Football"}]},{headers:{"Cache-Control":"public, max-age=30, s-maxage=60"}});
-  }catch{await recordHealth("match-feed-error");return Response.json({error:"Live event feed is temporarily unavailable."},{status:502});}
+    if(!matches.length)throw new Error("empty-independent-fixtures");
+    const matched=matches.filter(match=>match.apiSources.length).length;
+    console.warn("[ninety:matches] independent fixtures active",JSON.stringify({reason,count:matches.length,ppvMatched:matched,ppvError:ppvResult.error}));
+    return Response.json({matches,sports:[{id:"football",name:"Football"}],degraded:true,
+      message:"Independent fixtures active; PPV.ST iframe sources are attached where available.",sources:payload.sources,
+      broadcastProvider:"PPV.ST",broadcastMatches:matched},
+      {headers:{"Cache-Control":"no-store"}});
+  }catch(error){
+    console.error("[ninety:matches] fixture fallback failed",JSON.stringify({reason,error:error instanceof Error?error.name:"unknown"}));
+    return Response.json({error:"Match feeds temporarily unavailable."},{status:502,headers:{"Cache-Control":"no-store"}});
+  }
+}
+export async function GET(request:Request){
+  return fixtureFallback("primary-stream-catalogue-retired",request);
 }
