@@ -1,4 +1,4 @@
-import { getBroadcastRegistry } from "../../../lib/broadcast/registry";
+import { getBroadcastRegistryAsync } from "../../../lib/broadcast/registry";
 import { recordHealth } from "../../service-health";
 
 const PPV_API="https://api.ppv.st/api/streams";
@@ -25,7 +25,7 @@ export async function GET(request:Request){
     return Response.json({streams:[],error:"Invalid or unsupported broadcast reference."},{status:400});
   }
   try{
-    const registered=getBroadcastRegistry().find(event=>event.id===id);
+    const registered=(await getBroadcastRegistryAsync()).find(event=>event.id===id);
     const response=registered?null:await fetch(PPV_API,{headers:{Accept:"application/json","User-Agent":"Mozilla/5.0 (compatible; NINETY-Live/1.0)","Referer":"https://ppv.st/","Origin":"https://ppv.st"},next:{revalidate:60},signal:AbortSignal.timeout(10000)});
     if(response&&!response.ok){
       console.warn("[ninety:ppv] catalogue HTTP",JSON.stringify({status:response.status,contentType:response.headers.get("content-type")}));
