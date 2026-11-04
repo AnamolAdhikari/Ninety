@@ -1,0 +1,19 @@
+{
+  "name": "ninety-catalogue-refresh",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "kv_namespaces": [
+    {
+      "binding": "NINETY_BROADCAST_CATALOGUE",
+      "id": "f638c84c504143678bb0dedb5d201eae"
+    }
+  ],
+  "vars": {
+    "CATALOGUE_URL": "https://api.ppv.st/api/streams"
+  }
+}
