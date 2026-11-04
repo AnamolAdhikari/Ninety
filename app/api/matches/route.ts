@@ -105,35 +105,59 @@ function ppvFootballMatches(events:PpvEvent[],now:number){
 }
 async function fixtureFallback(reason:string, request:Request){
   try {
-    const parts=new Intl.DateTimeFormat("en-US",{timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
-    const part=(type:string)=>parts.find(p=>p.type===type)?.value??"";
-    const day=`${part("year")}-${part("month")}-${part("day")}`;
-    const url=new URL("/api/match-centre/fixtures",request.url);
-    url.searchParams.set("date",day);
-    const [result,ppvResult]=await Promise.all([
-      independentFixtures(new NextRequest(url)),
+    const nowDate=new Date();
+    const dates=Array.from({length:5},(_,i)=>{
+      const day=new Date(nowDate.getTime()+(i-1)*86400000);
+      return day.toISOString().slice(0,10);
+    });
+    const [fixtureResults,ppvResult]=await Promise.all([
+      Promise.allSettled(dates.map(async day=>{
+        const url=new URL("/api/match-centre/fixtures",request.url);
+        url.searchParams.set("date",day);
+        const response=await independentFixtures(new NextRequest(url));
+        if(!response.ok)throw new Error("fixtures-"+day+"-"+response.status);
+        return await response.json() as {fixtures?:Array<{id:string;home:string;away:string;league:string;homeBadge:string|null;awayBadge:string|null;kickoff:string|null;status:string|null}>;sources?:unknown};
+      })),
       getPpvEvents().then(events=>({events,error:null as string|null})).catch(error=>({events:[] as PpvEvent[],error:error instanceof Error?error.message:"unknown"}))
     ]);
-    const payload=result.ok?await result.json() as {fixtures?:Array<{id:string;home:string;away:string;league:string;homeBadge:string|null;awayBadge:string|null;kickoff:string|null;status:string|null}>;sources?:unknown}:null;
+    const successful=fixtureResults.filter((r):r is PromiseFulfilledResult<{fixtures?:Array<{id:string;home:string;away:string;league:string;homeBadge:string|null;awayBadge:string|null;kickoff:string|null;status:string|null}>;sources?:unknown}>=>r.status==="fulfilled");
+    const payload={fixtures:successful.flatMap(r=>r.value.fixtures??[]),sources:successful.map(r=>r.value.sources).filter(Boolean)};
+    const fixtureStatus=successful.length?200:503;
     const now=Date.now();
     const ppvOnly=ppvFootballMatches(ppvResult.events,now);
     const fixtures=(payload?.fixtures??[]).filter(f=>f.kickoff&&Number.isFinite(Date.parse(f.kickoff)));
     if(!fixtures.length&&ppvOnly.length){
-      console.warn("[ninety:matches] PPV.ST standalone catalogue active",JSON.stringify({count:ppvOnly.length,fixtureStatus:result.status}));
+      console.warn("[ninety:matches] PPV.ST standalone catalogue active",JSON.stringify({count:ppvOnly.length,fixtureStatus}));
       return Response.json({matches:ppvOnly,sports:[{id:"football",name:"Football"}],degraded:true,
         message:"Football matches and broadcast embeds are supplied directly by PPV.ST.",
         broadcastProvider:"PPV.ST",broadcastMatches:ppvOnly.length,
-        sources:{fixtures:result.ok?"empty":"unavailable",broadcasts:"PPV.ST"}}
+        sources:{fixtures:successful.length?"empty":"unavailable",broadcasts:"PPV.ST"}}
       ,{headers:{"Cache-Control":"no-store"}});
     }
     if(!fixtures.length)throw new Error("no-independent-fixtures-or-ppv-football-events");
-    const matches=fixtures.sort((a,b)=>Math.abs(Date.parse(a.kickoff!)-now)-Math.abs(Date.parse(b.kickoff!)-now)).slice(0,80).map(f=>{
+    const activeStatuses=new Set(["1H","HT","2H","ET","BT","P","INT","LIVE"]);
+    const finishedStatuses=new Set(["FT","AET","PEN","CANC","PST","ABD","AWD","WO"]);
+    const prioritized=fixtures.sort((a,b)=>{
+      const rank=(f:typeof fixtures[number])=>{
+        const status=(f.status??"").toUpperCase();
+        const kickoff=Date.parse(f.kickoff!);
+        if(activeStatuses.has(status))return 0;
+        if(!finishedStatuses.has(status)&&kickoff>=now-3*60*60_000&&kickoff<=now+6*60*60_000)return 1;
+        if(!finishedStatuses.has(status)&&kickoff>now)return 2;
+        return 3;
+      };
+      return rank(a)-rank(b)||Date.parse(a.kickoff!)-Date.parse(b.kickoff!);
+    });
+    const selected=prioritized.filter((f,i)=>i<200&&(
+      i<35||!finishedStatuses.has((f.status??"").toUpperCase())
+    ));
+    const matches=selected.map(f=>{
       const date=Date.parse(f.kickoff!);
       const ppv=findPpvEvent({home:f.home,away:f.away,date},ppvResult.events);
       return {id:"fixture-"+f.id,sport:"football",league:f.league||"Football",home:f.home,away:f.away,
         homeCode:f.home.replace(/[^a-z]/gi,"").slice(0,3).toUpperCase(),awayCode:f.away.replace(/[^a-z]/gi,"").slice(0,3).toUpperCase(),
         date,time:new Date(date).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:"America/Chicago"}),
-        live:["1H","HT","2H","ET","BT","P","INT","LIVE"].includes((f.status??"").toUpperCase()),
+        live:activeStatuses.has((f.status??"").toUpperCase()),matchStatus:f.status??undefined,
         popular:false,colorA:"#303a48",colorB:"#202b39",homeBadge:f.homeBadge??undefined,awayBadge:f.awayBadge??undefined,
         apiSources:ppv?[{source:"ppv",id:String(ppv.id)}]:[],broadcastProvider:ppv?"PPV.ST":undefined,
         venueImage:"/stadiums/Default.jpg",venuePosition:"center"};
