@@ -13,9 +13,6 @@ type PpvEvent = {
   title?: string;
   tag?: string;
   iframe?: string;
-  starts_at?: number;
-  ends_at?: number;
-  always_live?: number;
   category?: string;
   category_name?: string;
   poster?: string;
