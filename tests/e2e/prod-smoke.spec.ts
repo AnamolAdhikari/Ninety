@@ -17,26 +17,24 @@ const password = process.env.NINETY_E2E_PASSWORD;
 
 async function signIn(page: import("@playwright/test").Page) {
   if (!username || !password) throw new Error("Set NINETY_E2E_USERNAME and NINETY_E2E_PASSWORD before running authenticated E2E tests.");
-  let lastError: unknown;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      await page.goto("/", { waitUntil: "domcontentloaded", timeout: 30_000 });
-      if (await page.getByText(/Featured fixtures/i).isVisible().catch(() => false)) return;
-      await page.getByLabel("Username").fill(username);
-      await page.getByLabel("Password").fill(password);
-      await Promise.all([
-        page.waitForURL(url => !url.pathname.startsWith("/auth"), { timeout: 20_000 }),
-        page.getByRole("button", { name: "Sign in" }).click(),
-      ]);
-      await expect(page.getByText(/Featured fixtures/i)).toBeVisible({ timeout: 20_000 });
-      return;
-    } catch (error) {
-      lastError = error;
-      if (attempt === 2) break;
-      await page.waitForTimeout(1_000 * (attempt + 1));
-    }
+  // Keep authentication setup within the test timeout, and preserve the original failure.
+  // Retrying inside beforeEach can outlive Playwright's timeout and hide the root cause.
+  await page.goto("/", { waitUntil: "domcontentloaded", timeout: 12_000 });
+  if (await page.getByText(/Featured fixtures/i).isVisible().catch(() => false)) return;
+  const userField = page.getByLabel("Username");
+  const passField = page.getByLabel("Password");
+  await userField.waitFor({ state: "visible", timeout: 5_000 });
+  await userField.fill(username);
+  await passField.fill(password);
+  const response = await Promise.all([
+    page.waitForResponse(response => response.url().includes("/auth/login") && response.request().method() === "POST", { timeout: 10_000 }),
+    page.getByRole("button", { name: "Sign in" }).click(),
+  ]).then(([result]) => result);
+  if (!response.ok() && response.status() !== 303 && response.status() !== 302) {
+    throw new Error(`Ninety sign-in POST returned HTTP ${response.status()}`);
   }
-  throw lastError;
+  await page.waitForURL(url => !url.pathname.startsWith("/auth") && url.pathname !== "/login", { timeout: 8_000 });
+  await expect(page.getByText(/Featured fixtures/i)).toBeVisible({ timeout: 5_000 });
 }
 
 test.describe("NINETY access control", () => {
