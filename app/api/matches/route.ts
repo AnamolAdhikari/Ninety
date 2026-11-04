@@ -38,6 +38,7 @@ async function getPpvEvents():Promise<PpvEvent[]>{
   if(!Array.isArray(payload.streams))throw new Error("ppv-invalid-catalog");
   return payload.streams.flatMap(group=>(Array.isArray(group.streams)?group.streams:[]).map(event=>({...event,category_name:event.category_name||group.category||"Sports"})));
 }
+const MATCH_KICKOFF_TOLERANCE_MS = 90 * 60_000;
 const aliases:Record<string,string[]> = {
   "manchester united":["man utd","manutd","man united"],
   "manchester city":["man city","mancity"],
@@ -64,10 +65,8 @@ function findPpvEvent(match:{home:string;away:string;date:number},events:PpvEven
   const candidates=events.filter(event=>{
     const name=event.name||event.title||"";
     if(event.id==null||!name||!teamAppears(name,match.home)||!teamAppears(name,match.away)||!hasDirectEmbed(event))return false;
-    if(typeof event.starts_at==="number"&&event.starts_at>0){
-      const delta=Math.abs(event.starts_at*1000-match.date);
-      if(delta>6*60*60*1000)return false;
-    }
+    if(typeof event.starts_at!=="number"||!Number.isFinite(event.starts_at)||event.starts_at<=0)return false;
+    if(Math.abs(event.starts_at*1000-match.date)>MATCH_KICKOFF_TOLERANCE_MS)return false;
     return true;
   });
   return candidates.sort((a,b)=>Math.abs((a.starts_at??0)*1000-match.date)-Math.abs((b.starts_at??0)*1000-match.date))[0];
@@ -179,7 +178,7 @@ async function fixtureFallback(reason:string, request:Request){
       const duplicate=matches.find(fixture=>{
         const sameTeams=(teamAppears(match.home,fixture.home)&&teamAppears(match.away,fixture.away)) ||
           (teamAppears(match.home,fixture.away)&&teamAppears(match.away,fixture.home));
-        return sameTeams&&Math.abs(fixture.date-match.date)<=6*60*60_000;
+        return sameTeams&&Math.abs(fixture.date-match.date)<=MATCH_KICKOFF_TOLERANCE_MS;
       });
       if(duplicate){
         if(!duplicate.apiSources.length){
