@@ -1,3 +1,4 @@
+import { getBroadcastRegistry } from "../../../lib/broadcast/registry";
 import { NextRequest } from "next/server";
 import { GET as independentFixtures } from "../match-centre/fixtures/route";
 import { recordHealth } from "../../service-health";
@@ -12,9 +13,6 @@ type PpvEvent = {
   title?: string;
   tag?: string;
   iframe?: string;
-  starts_at?: number;
-  ends_at?: number;
-  always_live?: number;
   category?: string;
   category_name?: string;
   poster?: string;
@@ -30,6 +28,8 @@ type PpvPayload = {streams?:Array<{category?:string;streams?:PpvEvent[]}>};
 const PPV_API = "https://api.ppv.st/api/streams";
 const normalizeName=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g," ").trim();
 async function getPpvEvents():Promise<PpvEvent[]>{
+  const registry=getBroadcastRegistry();
+  if(registry.length)return registry;
   const response=await fetch(PPV_API,{headers:{Accept:"application/json","User-Agent":"Mozilla/5.0 (compatible; NINETY-Live/1.0)","Referer":"https://ppv.st/","Origin":"https://ppv.st"},next:{revalidate:60},signal:AbortSignal.timeout(10000)});
   if(!response.ok)throw new Error("ppv-http-"+response.status);
   const type=response.headers.get("content-type")?.toLowerCase()??"";
