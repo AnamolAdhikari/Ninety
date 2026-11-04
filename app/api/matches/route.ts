@@ -121,7 +121,7 @@ async function fixtureFallback(reason:string, request:Request){
       getPpvEvents().then(events=>({events,error:null as string|null})).catch(error=>({events:[] as PpvEvent[],error:error instanceof Error?error.message:"unknown"}))
     ]);
     const successful=fixtureResults.filter((r):r is PromiseFulfilledResult<{fixtures?:Array<{id:string;home:string;away:string;league:string;homeBadge:string|null;awayBadge:string|null;kickoff:string|null;status:string|null}>;sources?:unknown}>=>r.status==="fulfilled");
-    const payload={fixtures:successful.flatMap(r=>r.value.fixtures??[]),sources:successful.flatMap(r=>r.value.sources??[])};
+    const payload={fixtures:successful.flatMap(r=>r.value.fixtures??[]),sources:successful.map(r=>r.value.sources).filter(Boolean)};
     const fixtureStatus=successful.length?200:503;
     const now=Date.now();
     const ppvOnly=ppvFootballMatches(ppvResult.events,now);
