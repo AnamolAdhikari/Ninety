@@ -43,11 +43,16 @@ describe("match lifecycle rules", () => {
 
   it("requires kickoff and a live signal, independent of broadcast sources", () => {
     const valid = { date: kickoff, live: true, apiSources: source };
-    expect(isEffectivelyLive(valid, kickoff)).toBe(true);
+    expect(isEffectivelyLive(valid, kickoff)).toBe(false);
     expect(isEffectivelyLive(valid, kickoff - 1)).toBe(false);
     expect(isEffectivelyLive({ ...valid, live: false }, kickoff + 1)).toBe(false);
-    expect(isEffectivelyLive({ ...valid, apiSources: [] }, kickoff + 1)).toBe(true);
+    expect(isEffectivelyLive({ ...valid, apiSources: [] }, kickoff + 1)).toBe(false);
     expect(isEffectivelyLive({ date: kickoff, matchStatus: "2H", live: false, apiSources: [] }, kickoff + 1)).toBe(true);
+  });
+
+  it.each(["NS", "TBD", ""])("does not label %s as live based only on kickoff or broadcasts", matchStatus => {
+    expect(isEffectivelyLive({date:kickoff,matchStatus,live:false,apiSources:source},kickoff+60_000)).toBe(false);
+    expect(isEffectivelyLive({date:kickoff,matchStatus,live:true,apiSources:source},kickoff+60_000)).toBe(false);
   });
 
   it("does not infer an end time when kickoff is missing", () => {
