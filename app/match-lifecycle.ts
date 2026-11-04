@@ -28,13 +28,11 @@ export function isMatchEnded(match: MatchLifecycle, now: number): boolean {
 export function isEffectivelyLive(match: MatchLifecycle, now: number): boolean {
   if (!Number.isFinite(match.date) || now < match.date! || isMatchEnded(match, now)) return false;
   const activeStatus = Boolean(match.matchStatus && active.has(match.matchStatus));
-  const status = match.matchStatus?.toUpperCase() ?? "";
-  const kickoffFallback = (!status || status === "NS" || status === "TBD") &&
-    now < match.date! + MATCH_WINDOW_MS;
-  if (!match.live && !activeStatus && !kickoffFallback) return false;
+  // A scheduled kickoff or an available embed is not proof that play started.
+  // Only a provider-reported active state qualifies for the Live section.
+  if (!activeStatus || !match.matchStatus) return false;
   // Match status is independent of whether a playable broadcast is available.
-  // API-Football can be stale or unavailable when quota is exhausted, so an old NS/TBD
-  // must not hide a match that has already kicked off. Explicit terminal/suspended states still win.
+  // Unknown and stale NS/TBD fixtures stay available outside Live.
   if (match.matchStatus && ["PST","SUSP","INT","CANC","ABD","AWD","WO"].includes(match.matchStatus)) return false;
   return true;
 }
