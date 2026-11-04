@@ -9,7 +9,7 @@ const extraTime = new Set(["ET", "BT", "P"]);
 
 export function isMatchEnded(match: MatchLifecycle, now: number): boolean {
   if (match.matchStatus && finished.has(match.matchStatus)) return true;
-  if (match.matchStatus && ["NS", "TBD", "PST", "SUSP", "INT"].includes(match.matchStatus)) return false;
+  if (match.matchStatus && ["PST", "SUSP", "INT"].includes(match.matchStatus)) return false;
   if (!Number.isFinite(match.date)) return false;
 
   // Provider statuses can become stale when its quota/cache stops refreshing.
@@ -26,8 +26,10 @@ export function isMatchEnded(match: MatchLifecycle, now: number): boolean {
 }
 
 export function isEffectivelyLive(match: MatchLifecycle, now: number): boolean {
-  if (!match.live || !match.apiSources?.length || !Number.isFinite(match.date) || now < match.date! || isMatchEnded(match, now)) return false;
-  // The stream feed is the primary source for whether a playable match has started.
+  if (!Number.isFinite(match.date) || now < match.date! || isMatchEnded(match, now)) return false;
+  const activeStatus = Boolean(match.matchStatus && active.has(match.matchStatus));
+  if (!match.live && !activeStatus) return false;
+  // Match status is independent of whether a playable broadcast is available.
   // API-Football can be stale or unavailable when quota is exhausted, so an old NS/TBD
   // must not hide a match that has already kicked off. Explicit terminal/suspended states still win.
   if (match.matchStatus && ["PST","SUSP","INT","CANC","ABD","AWD","WO"].includes(match.matchStatus)) return false;
