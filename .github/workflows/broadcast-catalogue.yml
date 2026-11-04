@@ -48,7 +48,7 @@ jobs:
           const raw=fs.readFileSync('/tmp/ninety-catalogue.json','utf8');
           const payload=JSON.parse(raw);
           const allowed=new Set(process.env.ALLOWED_HOSTS.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean));
-          if(!Array.isArray(payload.events)||payload.events.length>1000)throw Error('Expected events array (max 1000)');
+          if(!Array.isArray(payload.events)||payload.events.length===0||payload.events.length>1000)throw Error('Expected nonempty events array (max 1000); preserving existing registry');
           let count=0;
           for(const event of payload.events){
             if(typeof event.id!=='string'||!/^[a-zA-Z0-9._~-]{1,180}$/.test(event.id)||typeof event.name!=='string'||!event.name.trim()||event.name.length>200)throw Error('Invalid event');
