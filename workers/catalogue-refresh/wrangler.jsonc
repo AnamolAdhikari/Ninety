@@ -3,9 +3,7 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
   "triggers": {
-    "crons": [
-      "* * * * *"
-    ]
+    "crons": []
   },
   "kv_namespaces": [
     {
