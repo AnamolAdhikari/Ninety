@@ -84,7 +84,7 @@ function ppvFootballMatches(events:PpvEvent[],now:number){
     const category=normalizeName(event.category_name||event.category||"");
     if(!["football","soccer","association football"].includes(category))return [];
     const teams=splitPpvTeams(event.name||event.title||"");
-    const starts=Number(event.starts_at??0),ends=Number(event.ends_at??0);
+    const starts=Number(event.starts_at??0),ends=Number(event.ends_at??(starts>0?starts+3*60*60:0));
     if(!teams||!Number.isFinite(starts)||starts<=0||!Number.isFinite(ends)||ends<=0)return [];
     const startMs=starts*1000,endMs=ends*1000;
     if(endMs<now-15*60_000||startMs>now+7*24*60*60_000)return [];
@@ -165,10 +165,15 @@ async function fixtureFallback(reason:string, request:Request){
     if(!matches.length&&ppvOnly.length)return Response.json({matches:ppvOnly,sports:[{id:"football",name:"Football"}],degraded:true,message:"Football matches and broadcast embeds are supplied directly by PPV.ST.",broadcastProvider:"PPV.ST",broadcastMatches:ppvOnly.length},{headers:{"Cache-Control":"no-store"}});
     if(!matches.length)throw new Error("empty-independent-fixtures");
     const matched=matches.filter(match=>match.apiSources.length).length;
-    console.warn("[ninety:matches] independent fixtures active",JSON.stringify({reason,count:matches.length,ppvMatched:matched,ppvError:ppvResult.error}));
-    return Response.json({matches,sports:[{id:"football",name:"Football"}],degraded:true,
+    // Include valid catalogue broadcasts even when the independent fixture feed
+    // omits a match or uses a team alias that prevents exact matching.
+    const linkedIds=new Set(matches.flatMap(match=>match.apiSources.map(source=>source.id)));
+    const additional=ppvOnly.filter(match=>!linkedIds.has(match.apiSources[0]?.id??""));
+    const allMatches=[...matches,...additional];
+    console.warn("[ninety:matches] independent fixtures active",JSON.stringify({reason,count:allMatches.length,ppvMatched:matched+additional.length,ppvError:ppvResult.error}));
+    return Response.json({matches:allMatches,sports:[{id:"football",name:"Football"}],degraded:true,
       message:"Independent fixtures active; PPV.ST iframe sources are attached where available.",sources:payload?.sources,
-      broadcastProvider:"PPV.ST",broadcastMatches:matched},
+      broadcastProvider:"PPV.ST",broadcastMatches:matched+additional.length},
       {headers:{"Cache-Control":"no-store"}});
   }catch(error){
     console.error("[ninety:matches] fixture fallback failed",JSON.stringify({reason,error:error instanceof Error?error.name:"unknown"}));
