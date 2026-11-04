@@ -68,7 +68,9 @@ export async function getBroadcastRegistryAsync(): Promise<RegistryEvent[]> {
     if (namespace) {
       const raw = await namespace.get("football-catalogue");
       if (raw && raw.length <= 1_000_000) {
-        return parseBroadcastRegistry(raw);
+        const parsed = parseBroadcastRegistry(raw);
+        if (parsed.length) return parsed;
+        console.warn("[ninety:broadcast] KV catalogue empty or invalid; trying configured fallback");
       }
     }
   } catch (error) {
