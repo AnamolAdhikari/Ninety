@@ -17,8 +17,10 @@ function extract(input: unknown) {
     const root = input as Record<string, unknown>;
     const keys = Object.keys(root).slice(0,12).filter(key => /^[a-zA-Z0-9_-]{1,40}$/.test(key));
     const message = typeof root.message === "string" ? root.message.slice(0,120) : undefined;
+    const upstreamError = typeof root.error === "string" ? root.error.slice(0,160) : root.error && typeof root.error === "object" ? Object.keys(root.error as Record<string,unknown>).slice(0,8) : undefined;
+    const success = typeof root.success === "boolean" ? root.success : undefined;
     const code = typeof root.code === "string" || typeof root.code === "number" ? String(root.code).slice(0,40) : undefined;
-    console.error("catalogue-upstream-shape",JSON.stringify({rootType:Array.isArray(input)?"array":"object",keys,code,message}));
+    console.error("catalogue-upstream-shape",JSON.stringify({rootType:Array.isArray(input)?"array":"object",keys,code,message,success,upstreamError}));
     throw Error("missing-streams");
   }
   const events: Event[] = [];
