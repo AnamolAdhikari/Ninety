@@ -24,19 +24,10 @@ type PpvEvent = {
   always_live?: number | boolean;
   substreams?: Array<{id?:string|number;iframe?:string;embed_url?:string;source_tag?:string;tag?:string;language?:string;locale?:string;hd?:boolean}>;
 };
-type PpvPayload = {streams?:Array<{category?:string;streams?:PpvEvent[]}>};
-const PPV_API = "https://api.ppv.st/api/streams";
-const normalizeName=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g," ").trim();
+// Match discovery only uses the operator-approved KV/secret catalogue.
+// Do not make unapproved third-party network requests from production Workers.
 async function getPpvEvents():Promise<PpvEvent[]>{
-  const registry=await getBroadcastRegistryAsync();
-  if(registry.length)return registry;
-  const response=await fetch(PPV_API,{headers:{Accept:"application/json","User-Agent":"Mozilla/5.0 (compatible; NINETY-Live/1.0)","Referer":"https://ppv.st/","Origin":"https://ppv.st"},next:{revalidate:60},signal:AbortSignal.timeout(10000)});
-  if(!response.ok)throw new Error("ppv-http-"+response.status);
-  const type=response.headers.get("content-type")?.toLowerCase()??"";
-  if(!type.includes("application/json"))throw new Error("ppv-non-json");
-  const payload=await response.json() as PpvPayload;
-  if(!Array.isArray(payload.streams))throw new Error("ppv-invalid-catalog");
-  return payload.streams.flatMap(group=>(Array.isArray(group.streams)?group.streams:[]).map(event=>({...event,category_name:event.category_name||group.category||"Sports"})));
+  return getBroadcastRegistryAsync();
 }
 const MATCH_KICKOFF_TOLERANCE_MS = 90 * 60_000;
 const aliases:Record<string,string[]> = {
@@ -98,7 +89,7 @@ function ppvFootballMatches(events:PpvEvent[],now:number){
       awayCode:teams.away.replace(/[^a-z]/gi,"").slice(0,3).toUpperCase(),
       date:startMs,time:new Date(startMs).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:"America/Chicago"}),
       live,matchStatus,popular:false,colorA:"#303a48",colorB:"#202b39",
-      apiSources:[{source:"ppv",id:String(event.id)}],broadcastProvider:"PPV.ST",
+      apiSources:[{source:"ppv",id:String(event.id)}],broadcastProvider:"Ninety",
       venueImage:"/stadiums/Default.jpg",venuePosition:"center"
     }];
   }).sort((a,b)=>(Number(b.live)-Number(a.live))||(a.date-b.date));
@@ -127,11 +118,11 @@ async function fixtureFallback(reason:string, request:Request){
     const ppvOnly=ppvFootballMatches(ppvResult.events,now);
     const fixtures=(payload?.fixtures??[]).filter(f=>f.kickoff&&Number.isFinite(Date.parse(f.kickoff)));
     if(!fixtures.length&&ppvOnly.length){
-      console.warn("[ninety:matches] PPV.ST standalone catalogue active",JSON.stringify({count:ppvOnly.length,fixtureStatus}));
+      console.warn("[ninety:matches] approved standalone catalogue active",JSON.stringify({count:ppvOnly.length,fixtureStatus}));
       return Response.json({matches:ppvOnly,sports:[{id:"football",name:"Football"}],degraded:true,
-        message:"Football matches and broadcast embeds are supplied directly by PPV.ST.",
-        broadcastProvider:"PPV.ST",broadcastMatches:ppvOnly.length,
-        sources:{fixtures:successful.length?"empty":"unavailable",broadcasts:"PPV.ST"}}
+        message:"Fixture provider unavailable; showing available scheduled events.",
+        broadcastProvider:"Ninety",broadcastMatches:ppvOnly.length,
+        sources:{fixtures:successful.length?"empty":"unavailable",broadcasts:"catalogue"}}
       ,{headers:{"Cache-Control":"no-store"}});
     }
     if(!fixtures.length)throw new Error("no-independent-fixtures-or-ppv-football-events");
@@ -163,10 +154,10 @@ async function fixtureFallback(reason:string, request:Request){
         date,time:new Date(date).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:"America/Chicago"}),
         live:activeStatuses.has((f.status??"").toUpperCase()),matchStatus:f.status??undefined,
         popular:false,colorA:"#303a48",colorB:"#202b39",homeBadge:f.homeBadge??undefined,awayBadge:f.awayBadge??undefined,
-        apiSources:ppv?[{source:"ppv",id:String(ppv.id)}]:[],broadcastProvider:ppv?"PPV.ST":undefined,
+        apiSources:ppv?[{source:"ppv",id:String(ppv.id)}]:[],broadcastProvider:ppv?"Ninety":undefined,
         venueImage:"/stadiums/Default.jpg",venuePosition:"center"};
     });
-    if(!matches.length&&ppvOnly.length)return Response.json({matches:ppvOnly,sports:[{id:"football",name:"Football"}],degraded:true,message:"Football matches and broadcast embeds are supplied directly by PPV.ST.",broadcastProvider:"PPV.ST",broadcastMatches:ppvOnly.length},{headers:{"Cache-Control":"no-store"}});
+    if(!matches.length&&ppvOnly.length)return Response.json({matches:ppvOnly,sports:[{id:"football",name:"Football"}],degraded:true,message:"Fixture provider unavailable; showing available scheduled events.",broadcastProvider:"Ninety",broadcastMatches:ppvOnly.length},{headers:{"Cache-Control":"no-store"}});
     if(!matches.length)throw new Error("empty-independent-fixtures");
     const matched=matches.filter(match=>match.apiSources.length).length;
     // Include valid catalogue broadcasts even when the independent fixture feed
@@ -184,7 +175,7 @@ async function fixtureFallback(reason:string, request:Request){
       if(duplicate){
         if(!duplicate.apiSources.length){
           duplicate.apiSources=[...match.apiSources];
-          duplicate.broadcastProvider="PPV.ST";
+          duplicate.broadcastProvider="Ninety";
         }
         return false;
       }
@@ -193,8 +184,8 @@ async function fixtureFallback(reason:string, request:Request){
     const allMatches=[...matches,...additional];
     console.warn("[ninety:matches] independent fixtures active",JSON.stringify({reason,count:allMatches.length,ppvMatched:matched+additional.length,ppvError:ppvResult.error}));
     return Response.json({matches:allMatches,sports:[{id:"football",name:"Football"}],degraded:true,
-      message:"Independent fixtures active; PPV.ST iframe sources are attached where available.",sources:payload?.sources,
-      broadcastProvider:"PPV.ST",broadcastMatches:matched+additional.length},
+      message:"Fixtures loaded; available broadcasts attached where matched.",sources:payload?.sources,
+      broadcastProvider:"Ninety",broadcastMatches:matched+additional.length},
       {headers:{"Cache-Control":"no-store"}});
   }catch(error){
     console.error("[ninety:matches] fixture fallback failed",JSON.stringify({reason,error:error instanceof Error?error.name:"unknown"}));
