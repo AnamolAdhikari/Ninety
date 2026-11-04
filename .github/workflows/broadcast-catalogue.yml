@@ -62,6 +62,14 @@ jobs:
           }
           console.log('Validated',payload.events.length,'events and',count,'embeds');
           NODE
+      - name: Save validated catalogue snapshot
+        if: steps.configured.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: validated-broadcast-catalogue-${{ github.run_id }}
+          path: /tmp/ninety-catalogue.json
+          retention-days: 3
+          if-no-files-found: error
       - name: Install toolchain
         if: steps.configured.outputs.enabled == 'true'
         uses: actions/setup-node@v4
