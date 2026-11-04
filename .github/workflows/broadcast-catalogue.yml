@@ -1,0 +1,87 @@
+name: Broadcast catalogue refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: broadcast-catalogue-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CATALOGUE_URL: ${{ secrets.NINETY_AUTHORIZED_CATALOGUE_URL }}
+      ALLOWED_HOSTS: ${{ secrets.NINETY_BROADCAST_ALLOWED_HOSTS }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check feed configuration
+        id: configured
+        shell: bash
+        run: |
+          if [ -z "$CATALOGUE_URL" ] || [ -z "$ALLOWED_HOSTS" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Set NINETY_AUTHORIZED_CATALOGUE_URL and NINETY_BROADCAST_ALLOWED_HOSTS secrets to enable updates. No catalogue change was made."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Download approved catalogue
+        if: steps.configured.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          case "$CATALOGUE_URL" in https://*) ;; *) echo "::error::Catalogue URL must be HTTPS"; exit 1;; esac
+          curl --fail --show-error --silent --location --max-time 25 --max-filesize 1000000 --output /tmp/ninety-catalogue.json "$CATALOGUE_URL"
+      - name: Validate catalogue and exact embed hosts
+        if: steps.configured.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const raw=fs.readFileSync('/tmp/ninety-catalogue.json','utf8');
+          const payload=JSON.parse(raw);
+          const allowed=new Set(process.env.ALLOWED_HOSTS.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean));
+          if(!Array.isArray(payload.events)||payload.events.length>1000)throw Error('Expected events array (max 1000)');
+          let count=0;
+          for(const event of payload.events){
+            if(typeof event.id!=='string'||!/^[a-zA-Z0-9._~-]{1,180}$/.test(event.id)||typeof event.name!=='string'||!event.name.trim()||event.name.length>200)throw Error('Invalid event');
+            const urls=[event.iframe,...(Array.isArray(event.substreams)?event.substreams.map(s=>s.iframe):[])].filter(Boolean);
+            if(!urls.length)throw Error('Event without an embed');
+            for(const value of urls){
+              const u=new URL(value);
+              if(u.protocol!=='https:'||u.username||u.password||!allowed.has(u.hostname.toLowerCase())||u.port&&u.port!=='443')throw Error('Unapproved embed hostname or URL');
+              count++;
+            }
+          }
+          console.log('Validated',payload.events.length,'events and',count,'embeds');
+          NODE
+      - name: Install toolchain
+        if: steps.configured.outputs.enabled == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable pnpm
+        if: steps.configured.outputs.enabled == 'true'
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.25.0 --activate
+      - name: Build Cloudflare worker configuration
+        if: steps.configured.outputs.enabled == 'true'
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+      - name: Update Cloudflare broadcast registry secrets
+        if: steps.configured.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Cloudflare deployment secrets missing"; exit 1; }
+          pnpm exec wrangler secret put NINETY_BROADCAST_REGISTRY_JSON --config dist/server/wrangler.json < /tmp/ninety-catalogue.json
+          printf '%s' "$ALLOWED_HOSTS" | pnpm exec wrangler secret put NINETY_BROADCAST_ALLOWED_HOSTS --config dist/server/wrangler.json
+          echo "Broadcast registry secrets updated; verify production playback separately."
