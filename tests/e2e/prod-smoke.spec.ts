@@ -105,6 +105,8 @@ test.describe("NINETY session security", () => {
 });
 
 test.describe("NINETY authenticated production smoke", () => {
+  // A shared sign-in failure should stop dependent tests rather than repeat 30s timeouts across the suite.
+  test.describe.configure({ mode: "serial" });
   test.beforeEach(async ({ page }) => { await signIn(page); });
 
   test("homepage loads authenticated matchday", async ({ page }) => {
