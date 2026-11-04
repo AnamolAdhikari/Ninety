@@ -13,7 +13,14 @@ function validUrl(value: unknown): value is string {
 function extract(input: unknown) {
   if (!input || typeof input !== "object") throw Error("invalid-response");
   const streams = (input as {streams?:unknown}).streams;
-  if (!Array.isArray(streams)) throw Error("missing-streams");
+  if (!Array.isArray(streams)) {
+    const root = input as Record<string, unknown>;
+    const keys = Object.keys(root).slice(0,12).filter(key => /^[a-zA-Z0-9_-]{1,40}$/.test(key));
+    const message = typeof root.message === "string" ? root.message.slice(0,120) : undefined;
+    const code = typeof root.code === "string" || typeof root.code === "number" ? String(root.code).slice(0,40) : undefined;
+    console.error("catalogue-upstream-shape",JSON.stringify({rootType:Array.isArray(input)?"array":"object",keys,code,message}));
+    throw Error("missing-streams");
+  }
   const events: Event[] = [];
   for (const group of streams) {
     if (!group || typeof group !== "object") continue;
@@ -44,7 +51,8 @@ async function refresh(env: Env) {
   const response = await fetch(url.toString(),{headers:{Accept:"application/json"},signal:AbortSignal.timeout(12000)});
   if (!response.ok) throw Error("upstream-http-"+response.status);
   if (!(response.headers.get("content-type")||"").toLowerCase().includes("json")) throw Error("upstream-not-json");
-  const {body,count} = extract(await response.json());
+  const payload: unknown = await response.json();
+  const {body,count} = extract(payload);
   const previous = await env.NINETY_BROADCAST_CATALOGUE.get(KEY);
   // Never replace a substantial healthy catalogue with an unexpectedly tiny one.
   if (previous) {
