@@ -15,6 +15,7 @@ const managedLinux = readExecutionProfile() === "managed-linux";
 
 const localBindingConfig = {
   main: "./workers/entry.ts",
+  kv_namespaces: [{ binding: "NINETY_BROADCAST_CATALOGUE", id: "f638c84c504143678bb0dedb5d201eae" }],
   assets: { binding: "ASSETS", run_worker_first: true },
   durable_objects: { bindings: [{ name: "MATCH_PRESENCE", class_name: "MatchPresence" }, { name: "NINETY_ACCOUNTS", class_name: "NinetyAccounts" }] },
   migrations: [{ tag: "match-presence-v1", new_sqlite_classes: ["MatchPresence"] }, { tag: "ninety-accounts-v1", new_sqlite_classes: ["NinetyAccounts"] }],
