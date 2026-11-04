@@ -26,8 +26,7 @@ function safeUrl(value: unknown): string | undefined {
     return url.toString();
   } catch { return; }
 }
-export function getBroadcastRegistry(): RegistryEvent[] {
-  const raw = process.env.NINETY_BROADCAST_REGISTRY_JSON;
+function parseBroadcastRegistry(raw: string | undefined): RegistryEvent[] {
   if (!raw || raw.length > 1_000_000) return [];
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -57,4 +56,23 @@ export function getBroadcastRegistry(): RegistryEvent[] {
         always_live: e.always_live === true, iframe, substreams}];
     });
   } catch { return []; }
+}
+
+/** Read the operator-approved remote catalogue, retaining the last secret as fallback. */
+export function getBroadcastRegistry(): RegistryEvent[] { return parseBroadcastRegistry(process.env.NINETY_BROADCAST_REGISTRY_JSON); }
+
+export async function getBroadcastRegistryAsync(): Promise<RegistryEvent[]> {
+  try {
+    const { env } = await import("cloudflare:workers");
+    const namespace = (env as unknown as {NINETY_BROADCAST_CATALOGUE?: {get(key:string):Promise<string|null>}}).NINETY_BROADCAST_CATALOGUE;
+    if (namespace) {
+      const raw = await namespace.get("football-catalogue");
+      if (raw && raw.length <= 1_000_000) {
+        return parseBroadcastRegistry(raw);
+      }
+    }
+  } catch (error) {
+    console.warn("[ninety:broadcast] KV read failed", error instanceof Error ? error.name : "unknown");
+  }
+  return getBroadcastRegistry();
 }
