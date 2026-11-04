@@ -35,7 +35,13 @@ export async function GET(request:Request){
     const contentType=response?.headers.get("content-type")?.toLowerCase()??"application/json";
     if(!contentType.includes("application/json"))throw new Error("ppv-non-json");
     const payload=registered?{streams:[{streams:[registered]}]} as PpvPayload:await response!.json() as PpvPayload;
-    if(!Array.isArray(payload.streams))throw new Error("ppv-invalid-catalogue");
+    if(!Array.isArray(payload.streams)){
+      const upstream=payload as PpvPayload & {success?:unknown;error?:unknown};
+      const errorText=typeof upstream.error==="string"?upstream.error:"";
+      const category=/ip blocked|access denied|forbidden|blocked/i.test(errorText)?"upstream-access-denied":upstream.success===false?"upstream-rejected":"missing-streams-array";
+      console.warn("[ninety:ppv] catalogue diagnostic",JSON.stringify({category,status:response?.status??200}));
+      throw new Error("ppv-"+category);
+    }
     const events=payload.streams.flatMap(group=>Array.isArray(group.streams)?group.streams:[]);
     const event=events.find(item=>String(item.id??"")===id);
     if(!event)return Response.json({streams:[],error:"PPV.ST has no matching event."},{status:404,headers:{"Cache-Control":"no-store"}});
@@ -55,7 +61,8 @@ export async function GET(request:Request){
     if(!streams.length)await recordHealth("stream-unavailable");
     return Response.json({streams,provider:"PPV.ST"},{headers:{"Cache-Control":"no-store"}});
   }catch(error){
-    console.warn("[ninety:ppv] catalogue exception",JSON.stringify({category:error instanceof Error?error.name:"unknown"}));
+    const category=error instanceof Error?(error.message.startsWith("ppv-")?error.message.slice(4):error.name==="TimeoutError"?"timeout":error.name==="SyntaxError"?"invalid-json":error.name==="TypeError"?"network-error":error.name):"unknown";
+    console.warn("[ninety:ppv] catalogue exception",JSON.stringify({category}));
     await recordHealth("stream-api-error");
     return Response.json({streams:[],error:"PPV.ST broadcast lookup failed."},{status:502});
   }
