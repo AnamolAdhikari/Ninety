@@ -1,3 +1,4 @@
+import { getBroadcastRegistry } from "../../../lib/broadcast/registry";
 import { recordHealth } from "../../service-health";
 
 const PPV_API="https://api.ppv.st/api/streams";
@@ -24,15 +25,16 @@ export async function GET(request:Request){
     return Response.json({streams:[],error:"Invalid or unsupported broadcast reference."},{status:400});
   }
   try{
-    const response=await fetch(PPV_API,{headers:{Accept:"application/json","User-Agent":"Mozilla/5.0 (compatible; NINETY-Live/1.0)","Referer":"https://ppv.st/","Origin":"https://ppv.st"},next:{revalidate:60},signal:AbortSignal.timeout(10000)});
-    if(!response.ok){
+    const registered=getBroadcastRegistry().find(event=>event.id===id);
+    const response=registered?null:await fetch(PPV_API,{headers:{Accept:"application/json","User-Agent":"Mozilla/5.0 (compatible; NINETY-Live/1.0)","Referer":"https://ppv.st/","Origin":"https://ppv.st"},next:{revalidate:60},signal:AbortSignal.timeout(10000)});
+    if(response&&!response.ok){
       console.warn("[ninety:ppv] catalogue HTTP",JSON.stringify({status:response.status,contentType:response.headers.get("content-type")}));
       await recordHealth("stream-api-error");
       return Response.json({streams:[],error:"PPV.ST catalogue temporarily unavailable."},{status:502});
     }
-    const contentType=response.headers.get("content-type")?.toLowerCase()??"";
+    const contentType=response?.headers.get("content-type")?.toLowerCase()??"application/json";
     if(!contentType.includes("application/json"))throw new Error("ppv-non-json");
-    const payload=await response.json() as PpvPayload;
+    const payload=registered?{streams:[{streams:[registered]}]} as PpvPayload:await response!.json() as PpvPayload;
     if(!Array.isArray(payload.streams))throw new Error("ppv-invalid-catalogue");
     const events=payload.streams.flatMap(group=>Array.isArray(group.streams)?group.streams:[]);
     const event=events.find(item=>String(item.id??"")===id);
