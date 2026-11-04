@@ -20,7 +20,7 @@ async function signIn(page: import("@playwright/test").Page) {
   // Keep authentication setup within the test timeout, and preserve the original failure.
   // Retrying inside beforeEach can outlive Playwright's timeout and hide the root cause.
   await page.goto("/", { waitUntil: "domcontentloaded", timeout: 12_000 });
-  if (await page.getByText(/Featured fixtures/i).isVisible().catch(() => false)) return;
+  if (await page.getByRole("tablist", { name: "Match filters" }).isVisible().catch(() => false)) return;
   const userField = page.getByLabel("Username");
   const passField = page.getByLabel("Password");
   await userField.waitFor({ state: "visible", timeout: 5_000 });
@@ -34,7 +34,7 @@ async function signIn(page: import("@playwright/test").Page) {
     throw new Error(`Ninety sign-in POST returned HTTP ${response.status()}`);
   }
   await page.waitForURL(url => !url.pathname.startsWith("/auth") && url.pathname !== "/login", { timeout: 8_000 });
-  await expect(page.getByText(/Featured fixtures/i)).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByRole("tablist", { name: "Match filters" })).toBeVisible({ timeout: 8_000 });
 }
 
 test.describe("NINETY access control", () => {
@@ -108,7 +108,7 @@ test.describe("NINETY authenticated production smoke", () => {
   test.beforeEach(async ({ page }) => { await signIn(page); });
 
   test("homepage loads authenticated matchday", async ({ page }) => {
-    await expect(page.getByText(/Featured fixtures/i)).toBeVisible();
+    await expect(page.getByRole("tablist", { name: "Match filters" })).toBeVisible();
     await expect(page.locator("body")).not.toContainText("Authentication required");
   });
 
@@ -580,7 +580,7 @@ test.describe("NINETY authenticated production smoke", () => {
     // mounted and wait for that real refresh path rather than reloading the auth shell.
     await page.waitForTimeout(61_000);
 
-    await expect(page.getByText(/Featured fixtures/i)).toBeVisible();
+    await expect(page.getByRole("tablist", { name: "Match filters" })).toBeVisible();
     await expect.poll(async () => watchLinks.count(), { timeout: 5_000 }).toBeGreaterThanOrEqual(before);
   });
 
