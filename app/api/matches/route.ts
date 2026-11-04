@@ -148,9 +148,13 @@ async function fixtureFallback(reason:string, request:Request){
       };
       return rank(a)-rank(b)||Date.parse(a.kickoff!)-Date.parse(b.kickoff!);
     });
-    const selected=prioritized.filter((f,i)=>i<200&&(
-      i<35||!finishedStatuses.has((f.status??"").toUpperCase())
-    ));
+    // Keep the normal fixture cap for unlinked matches, but never discard a
+    // broadcast-backed fixture solely because the fixture feed is crowded.
+    const selected=prioritized.filter((f,i)=>{
+      if(i<200&&(i<35||!finishedStatuses.has((f.status??"").toUpperCase())))return true;
+      const kickoff=Date.parse(f.kickoff!);
+      return Boolean(findPpvEvent({home:f.home,away:f.away,date:kickoff},ppvResult.events));
+    });
     const matches=selected.map(f=>{
       const date=Date.parse(f.kickoff!);
       const ppv=findPpvEvent({home:f.home,away:f.away,date},ppvResult.events);
@@ -168,7 +172,24 @@ async function fixtureFallback(reason:string, request:Request){
     // Include valid catalogue broadcasts even when the independent fixture feed
     // omits a match or uses a team alias that prevents exact matching.
     const linkedIds=new Set(matches.flatMap(match=>match.apiSources.map(source=>source.id)));
-    const additional=ppvOnly.filter(match=>!linkedIds.has(match.apiSources[0]?.id??""));
+    // Match by team names and kickoff as well as provider ID. A fixture can
+    // have a playable stream without the fixture-to-catalogue alias matching.
+    const additional=ppvOnly.filter(match=>{
+      if(linkedIds.has(match.apiSources[0]?.id??""))return false;
+      const duplicate=matches.find(fixture=>{
+        const sameTeams=(teamAppears(match.home,fixture.home)&&teamAppears(match.away,fixture.away)) ||
+          (teamAppears(match.home,fixture.away)&&teamAppears(match.away,fixture.home));
+        return sameTeams&&Math.abs(fixture.date-match.date)<=6*60*60_000;
+      });
+      if(duplicate){
+        if(!duplicate.apiSources.length){
+          duplicate.apiSources=[...match.apiSources];
+          duplicate.broadcastProvider="PPV.ST";
+        }
+        return false;
+      }
+      return true;
+    });
     const allMatches=[...matches,...additional];
     console.warn("[ninety:matches] independent fixtures active",JSON.stringify({reason,count:allMatches.length,ppvMatched:matched+additional.length,ppvError:ppvResult.error}));
     return Response.json({matches:allMatches,sports:[{id:"football",name:"Football"}],degraded:true,
