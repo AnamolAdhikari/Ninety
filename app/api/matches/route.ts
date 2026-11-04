@@ -88,8 +88,9 @@ function ppvFootballMatches(events:PpvEvent[],now:number){
     const startMs=starts*1000,endMs=ends*1000;
     if(endMs<now-15*60_000||startMs>now+7*24*60*60_000)return [];
     if(event.id==null||!hasDirectEmbed(event))return [];
-    const live=now>=startMs&&now<=endMs;
-    const matchStatus=live?"LIVE":now<startMs?"NS":"FT";
+    // PPV catalogue timestamps indicate an event window, not verified play status.
+    const live=false;
+    const matchStatus=now>=endMs?"FT":"NS";
     return [{
       id:"ppv-"+String(event.id),sport:"football",league:event.category_name||event.category||"Football",
       home:teams.home,away:teams.away,
