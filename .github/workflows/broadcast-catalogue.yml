@@ -28,7 +28,9 @@ jobs:
         shell: bash
         run: |
           if [ -z "$CATALOGUE_URL" ] || [ -z "$ALLOWED_HOSTS" ]; then
-            echo "::error::Missing NINETY_AUTHORIZED_CATALOGUE_URL or NINETY_BROADCAST_ALLOWED_HOSTS. No catalogue change was made."
+            if [ -z "$CATALOGUE_URL" ]; then echo "::error::Missing Actions secret NINETY_AUTHORIZED_CATALOGUE_URL (approved HTTPS JSON catalogue)."; fi
+            if [ -z "$ALLOWED_HOSTS" ]; then echo "::error::Missing Actions secret NINETY_BROADCAST_ALLOWED_HOSTS (comma-separated approved iframe hosts)."; fi
+            echo "::notice::Configure these in Settings > Secrets and variables > Actions. Existing catalogue remains unchanged."
             exit 1
           else
             echo "enabled=true" >> "$GITHUB_OUTPUT"
@@ -39,6 +41,14 @@ jobs:
         run: |
           case "$CATALOGUE_URL" in https://*) ;; *) echo "::error::Catalogue URL must be HTTPS"; exit 1;; esac
           curl --fail --show-error --silent --location --max-time 25 --max-filesize 1000000 --output /tmp/ninety-catalogue.json "$CATALOGUE_URL"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const data = JSON.parse(fs.readFileSync('/tmp/ninety-catalogue.json', 'utf8'));
+          if (data?.success === false || data?.error || (!Array.isArray(data?.streams) && !Array.isArray(data?.events))) {
+            throw Error('Upstream returned an error or unexpected catalogue shape; preserving existing registry');
+          }
+          console.log('Catalogue response shape accepted');
+          NODE
       - name: Normalize catalogue into Ninety registry
         if: steps.configured.outputs.enabled == 'true'
         run: node scripts/normalize-broadcast-catalogue.mjs /tmp/ninety-catalogue.json /tmp/ninety-registry.json
@@ -95,6 +105,22 @@ jobs:
         shell: bash
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Cloudflare deployment secrets missing"; exit 1; }
-          pnpm exec wrangler secret put NINETY_BROADCAST_REGISTRY_JSON --config dist/server/wrangler.json < /tmp/ninety-registry.json
+          # Catalogue exceeds the 5 KB Worker secret limit; publish to the KV namespace
+          # already bound to the production Worker and read by getBroadcastRegistryAsync().
+          KV_NAMESPACE_ID="f638c84c504143678bb0dedb5d201eae"
+          KV_KEY="football-catalogue"
+          KV_API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces/$KV_NAMESPACE_ID/values/$KV_KEY"
+          curl --fail --show-error --silent --retry 2 --max-time 30 \
+            --request PUT \
+            --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data-binary @/tmp/ninety-registry.json \
+            --output /tmp/ninety-kv-response.json "$KV_API"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const response = JSON.parse(fs.readFileSync('/tmp/ninety-kv-response.json','utf8'));
+          if (response.success !== true) throw Error('Cloudflare KV write was not confirmed');
+          console.log('Broadcast catalogue published to Cloudflare KV');
+          NODE
           printf '%s' "$ALLOWED_HOSTS" | pnpm exec wrangler secret put NINETY_BROADCAST_ALLOWED_HOSTS --config dist/server/wrangler.json
-          echo "Broadcast registry secrets updated; verify production playback separately."
+          echo "Catalogue KV and allowed-host secret updated; verify production playback separately."
