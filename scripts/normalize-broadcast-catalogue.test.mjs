@@ -40,3 +40,13 @@ test('rejects duplicate IDs',()=>{
   const item={id:'same',name:'Alpha vs Beta',iframe:'https://player.example.com/watch'};
   assert.notEqual(run({events:[item,item]}).status,0);
 });
+
+test('flattens nested football groups and excludes other sports',()=>{
+  const r=run({streams:[
+    {category:'Football',streams:[{id:42,name:'Alpha vs Beta',substreams:[{iframe:'https://player.example.com/watch/42'}]}]},
+    {category:'Basketball',streams:[{id:43,name:'Other game',iframe:'https://player.example.com/watch/43'}]}
+  ]});
+  assert.equal(r.status,0,r.error);
+  assert.equal(r.data.events.length,1);
+  assert.equal(r.data.events[0].id,'42');
+});
