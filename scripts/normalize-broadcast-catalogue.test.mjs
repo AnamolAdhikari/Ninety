@@ -23,7 +23,7 @@ test('normalizes authorized events',()=>{
   assert.equal(r.data.events[0].substreams[0].iframe,'https://player.example.com/watch/1');
 });
 test('accepts grouped streams with explicit event embeds',()=>{
-  const r=run({streams:[{events:[{id:'match-2',title:'Gamma vs Delta',streams:[{embed_url:'https://player.example.com/watch/2'}]}]}]});
+  const r=run({streams:[{category:'Football',events:[{id:'match-2',title:'Gamma vs Delta',streams:[{embed_url:'https://player.example.com/watch/2'}]}]}]});
   assert.equal(r.status,0,r.error);
   assert.equal(r.data.events.length,1);
 });
