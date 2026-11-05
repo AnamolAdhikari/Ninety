@@ -146,7 +146,12 @@ async function fixtureFallback(reason:string, request:Request){
     });
     // Keep the normal fixture cap for unlinked matches, but never discard a
     // broadcast-backed fixture solely because the fixture feed is crowded.
-    const fixtureBroadcasts=new Map<string,PpvEvent|undefined>();\n    const matchForFixture=(f:typeof fixtures[number])=>{\n      if(!fixtureBroadcasts.has(f.id))fixtureBroadcasts.set(f.id,findPpvEvent({home:f.home,away:f.away,date:Date.parse(f.kickoff!)}));\n      return fixtureBroadcasts.get(f.id);\n    };\n    const selected=prioritized.filter((f,i)=>{
+    const fixtureBroadcasts=new Map<string,PpvEvent|undefined>();
+    const matchForFixture=(f:typeof fixtures[number])=>{
+      if(!fixtureBroadcasts.has(f.id))fixtureBroadcasts.set(f.id,findPpvEvent({home:f.home,away:f.away,date:Date.parse(f.kickoff!)}));
+      return fixtureBroadcasts.get(f.id);
+    };
+    const selected=prioritized.filter((f,i)=>{
       if(i<200&&(i<35||!finishedStatuses.has((f.status??"").toUpperCase())))return true;
       const kickoff=Date.parse(f.kickoff!);
       return Boolean(findPpvEvent({home:f.home,away:f.away,date:kickoff},ppvResult.events));
