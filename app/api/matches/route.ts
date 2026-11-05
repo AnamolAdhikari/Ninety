@@ -144,18 +144,14 @@ async function fixtureFallback(reason:string, request:Request){
       };
       return rank(a)-rank(b)||Date.parse(a.kickoff!)-Date.parse(b.kickoff!);
     });
-    // Keep the normal fixture cap for unlinked matches, but never discard a
-    // broadcast-backed fixture solely because the fixture feed is crowded.
+    // Public discovery is broadcast-first: only list fixtures linked to an
+    // approved catalogue entry. The fixture feed enriches those events.
     const fixtureBroadcasts=new Map<string,PpvEvent|undefined>();
     const matchForFixture=(f:typeof fixtures[number])=>{
       if(!fixtureBroadcasts.has(f.id))fixtureBroadcasts.set(f.id,findPpvEvent({home:f.home,away:f.away,date:Date.parse(f.kickoff!)}));
       return fixtureBroadcasts.get(f.id);
     };
-    const selected=prioritized.filter((f,i)=>{
-      if(i<200&&(i<35||!finishedStatuses.has((f.status??"").toUpperCase())))return true;
-      const kickoff=Date.parse(f.kickoff!);
-      return Boolean(matchForFixture(f));
-    });
+    const selected=prioritized.filter(f=>Boolean(matchForFixture(f)));
     const matches=selected.map(f=>{
       const date=Date.parse(f.kickoff!);
       const ppv=matchForFixture(f);
@@ -168,7 +164,8 @@ async function fixtureFallback(reason:string, request:Request){
         venueImage:"/stadiums/Default.jpg",venuePosition:"center"};
     });
     if(!matches.length&&ppvOnly.length)return Response.json({matches:ppvOnly,sports:[{id:"football",name:"Football"}],degraded:true,message:"Fixture provider unavailable; showing available scheduled events.",broadcastProvider:"Ninety",broadcastMatches:ppvOnly.length},{headers:{"Cache-Control":"no-store"}});
-    if(!matches.length)throw new Error("empty-independent-fixtures");
+    // An empty approved catalogue is not a fixture-feed error. Fail closed.
+    if(!matches.length&&!ppvOnly.length)return Response.json({matches:[],sports:[{id:"football",name:"Football"}],degraded:true,message:"No approved football broadcasts currently listed.",broadcastMatches:0},{headers:{"Cache-Control":"no-store"}});
     const matched=matches.filter(match=>match.apiSources.length).length;
     // Include valid catalogue broadcasts even when the independent fixture feed
     // omits a match or uses a team alias that prevents exact matching.
@@ -189,7 +186,7 @@ async function fixtureFallback(reason:string, request:Request){
       }
       return true;
     });
-    const allMatches=[...matches,...additional];
+    const allMatches=[...matches,...additional].filter(match=>match.apiSources.length>0);
     console.warn("[ninety:matches] independent fixtures active",JSON.stringify({reason,count:allMatches.length,ppvMatched:matched+additional.length,ppvError:ppvResult.error}));
     return Response.json({matches:allMatches,sports:[{id:"football",name:"Football"}],degraded:true,
       message:"Fixtures loaded; available broadcasts attached where matched.",sources:payload?.sources,
