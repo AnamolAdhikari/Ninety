@@ -44,9 +44,34 @@ function hasDirectEmbed(event:PpvEvent){
   const valid=(value:string|undefined)=>{try{const url=new URL(value??"");return url.protocol==="https:"&&Boolean(url.hostname)&&!url.username&&!url.password;}catch{return false;}};
   return valid(event.iframe)||Boolean(event.substreams?.some(source=>valid(source.iframe||source.embed_url)));
 }
-function findPpvEvent(match:{home:string;away:string;date:number},events:PpvEvent[]){
-  const candidates=events.filter(event=>event.id!=null&&hasDirectEmbed(event)&&broadcastMatchesFixture(event,match,MATCH_KICKOFF_TOLERANCE_MS));
-  return candidates.sort((a,b)=>Math.abs((a.starts_at??0)*1000-match.date)-Math.abs((b.starts_at??0)*1000-match.date))[0];
+// Index playable broadcasts by kickoff window once per request. This avoids
+// parsing URLs and team names for every fixture/event pair.
+function createBroadcastLookup(events:PpvEvent[]){
+  const bucketMs=30*60_000;
+  const buckets=new Map<number,PpvEvent[]>();
+  for(const event of events){
+    if(event.id==null||!hasDirectEmbed(event))continue;
+    const start=Number(event.starts_at)*1000;
+    if(!Number.isFinite(start)||start<=0)continue;
+    const key=Math.floor(start/bucketMs);
+    const list=buckets.get(key);
+    if(list)list.push(event);else buckets.set(key,[event]);
+  }
+  return (match:{home:string;away:string;date:number}):PpvEvent|undefined=>{
+    if(!Number.isFinite(match.date))return;
+    const center=Math.floor(match.date/bucketMs);
+    let best:PpvEvent|undefined;
+    let distance=Infinity;
+    for(let key=center-4;key<=center+4;key++){
+      for(const event of buckets.get(key)??[]){
+        const delta=Math.abs(Number(event.starts_at)*1000-match.date);
+        if(delta<=MATCH_KICKOFF_TOLERANCE_MS&&delta<distance&&broadcastMatchesFixture(event,match,MATCH_KICKOFF_TOLERANCE_MS)){
+          best=event;distance=delta;
+        }
+      }
+    }
+    return best;
+  };
 }
 function ppvFootballMatches(events:PpvEvent[],now:number){
   return events.flatMap(event=>{
@@ -94,7 +119,7 @@ async function fixtureFallback(reason:string, request:Request){
     const payload={fixtures:successful.flatMap(r=>r.value.fixtures??[]),sources:successful.map(r=>r.value.sources).filter(Boolean)};
     const fixtureStatus=successful.length?200:503;
     const now=Date.now();
-    const ppvOnly=ppvFootballMatches(ppvResult.events,now);
+    const ppvOnly=ppvFootballMatches(ppvResult.events,now);\n    const findPpvEvent=createBroadcastLookup(ppvResult.events);
     const fixtures=(payload?.fixtures??[]).filter(f=>f.kickoff&&Number.isFinite(Date.parse(f.kickoff)));
     if(!fixtures.length&&ppvOnly.length){
       console.warn("[ninety:matches] approved standalone catalogue active",JSON.stringify({count:ppvOnly.length,fixtureStatus}));
@@ -102,7 +127,7 @@ async function fixtureFallback(reason:string, request:Request){
         message:"Fixture provider unavailable; showing available scheduled events.",
         broadcastProvider:"Ninety",broadcastMatches:ppvOnly.length,
         sources:{fixtures:successful.length?"empty":"unavailable",broadcasts:"catalogue"}}
-      ,{headers:{"Cache-Control":"no-store"}});
+      ,{headers:{"Cache-Control":"public, max-age=10, s-maxage=30, stale-while-revalidate=30"}});
     }
     if(!fixtures.length)throw new Error("no-independent-fixtures-or-ppv-football-events");
     const activeStatuses=new Set(["1H","HT","2H","ET","BT","P","INT","LIVE"]);
@@ -120,14 +145,14 @@ async function fixtureFallback(reason:string, request:Request){
     });
     // Keep the normal fixture cap for unlinked matches, but never discard a
     // broadcast-backed fixture solely because the fixture feed is crowded.
-    const selected=prioritized.filter((f,i)=>{
+    const fixtureBroadcasts=new Map<string,PpvEvent|undefined>();\n    const matchForFixture=(f:typeof fixtures[number])=>{\n      if(!fixtureBroadcasts.has(f.id))fixtureBroadcasts.set(f.id,findPpvEvent({home:f.home,away:f.away,date:Date.parse(f.kickoff!)}));\n      return fixtureBroadcasts.get(f.id);\n    };\n    const selected=prioritized.filter((f,i)=>{
       if(i<200&&(i<35||!finishedStatuses.has((f.status??"").toUpperCase())))return true;
       const kickoff=Date.parse(f.kickoff!);
       return Boolean(findPpvEvent({home:f.home,away:f.away,date:kickoff},ppvResult.events));
     });
     const matches=selected.map(f=>{
       const date=Date.parse(f.kickoff!);
-      const ppv=findPpvEvent({home:f.home,away:f.away,date},ppvResult.events);
+      const ppv=matchForFixture(f);
       return {id:"fixture-"+f.id,sport:"football",league:f.league||"Football",home:f.home,away:f.away,
         homeCode:f.home.replace(/[^a-z]/gi,"").slice(0,3).toUpperCase(),awayCode:f.away.replace(/[^a-z]/gi,"").slice(0,3).toUpperCase(),
         date,time:new Date(date).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:"America/Chicago"}),
@@ -147,7 +172,7 @@ async function fixtureFallback(reason:string, request:Request){
     const additional=ppvOnly.filter(match=>{
       if(linkedIds.has(match.apiSources[0]?.id??""))return false;
       const duplicate=matches.find(fixture=>{
-        return broadcastMatchesFixture({name:match.home+" vs "+match.away,starts_at:match.date/1000},{home:fixture.home,away:fixture.away,date:fixture.date},MATCH_KICKOFF_TOLERANCE_MS);
+        return Math.abs(match.date-fixture.date)<=MATCH_KICKOFF_TOLERANCE_MS && broadcastMatchesFixture({name:match.home+" vs "+match.away,starts_at:match.date/1000},{home:fixture.home,away:fixture.away,date:fixture.date},MATCH_KICKOFF_TOLERANCE_MS);
       });
       if(duplicate){
         if(!duplicate.apiSources.length){
