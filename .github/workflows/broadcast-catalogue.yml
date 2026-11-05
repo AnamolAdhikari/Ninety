@@ -105,6 +105,22 @@ jobs:
         shell: bash
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Cloudflare deployment secrets missing"; exit 1; }
-          pnpm exec wrangler secret put NINETY_BROADCAST_REGISTRY_JSON --config dist/server/wrangler.json < /tmp/ninety-registry.json
+          # Catalogue exceeds the 5 KB Worker secret limit; publish to the KV namespace
+          # already bound to the production Worker and read by getBroadcastRegistryAsync().
+          KV_NAMESPACE_ID="f638c84c504143678bb0dedb5d201eae"
+          KV_KEY="football-catalogue"
+          KV_API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/storage/kv/namespaces/$KV_NAMESPACE_ID/values/$KV_KEY"
+          curl --fail --show-error --silent --retry 2 --max-time 30 \
+            --request PUT \
+            --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data-binary @/tmp/ninety-registry.json \
+            --output /tmp/ninety-kv-response.json "$KV_API"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const response = JSON.parse(fs.readFileSync('/tmp/ninety-kv-response.json','utf8'));
+          if (response.success !== true) throw Error('Cloudflare KV write was not confirmed');
+          console.log('Broadcast catalogue published to Cloudflare KV');
+          NODE
           printf '%s' "$ALLOWED_HOSTS" | pnpm exec wrangler secret put NINETY_BROADCAST_ALLOWED_HOSTS --config dist/server/wrangler.json
-          echo "Broadcast registry secrets updated; verify production playback separately."
+          echo "Catalogue KV and allowed-host secret updated; verify production playback separately."
