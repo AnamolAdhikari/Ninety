@@ -2,6 +2,15 @@ import { getBroadcastRegistryAsync } from "../../../lib/broadcast/registry";
 import { NextRequest } from "next/server";
 import { GET as independentFixtures } from "../match-centre/fixtures/route";
 import { recordHealth } from "../../service-health";
+function normalizeName(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 const API = "https://streamed.pk";
 type RawMatch = { id?:unknown; title?:unknown; category?:unknown; date?:unknown; popular?:unknown; teams?:{home?:{name?:unknown;badge?:unknown};away?:{name?:unknown;badge?:unknown}}; sources?:Array<{source?:unknown;id?:unknown}> };
 const clean=(value:unknown,fallback="")=>typeof value==="string"?value:fallback;

@@ -47,7 +47,7 @@ async function valid(request: Request,env: AuthEnv): Promise<Identity|null> {
     try{response=await accounts(env,"/session",{id,version:Number(version)});}catch{return null;}
     if(!response.ok)return null;
     const data=await response.json().catch(()=>null) as {account?:unknown}|null;
-    return data.account?{role:"friend",storageId:"friend:"+id}:null;
+    return data?.account?{role:"friend",storageId:"friend:"+id}:null;
   }
   const legacy=parts.length===3;
   const role=legacy?"owner":parts[0];
@@ -87,7 +87,7 @@ export async function authenticate(request: Request,env: AuthEnv): Promise<Respo
       const response=await accounts(env,"/verify",{username,password});
       if(!response.ok)return page("Sign-in service is temporarily unavailable. Please try again.",503);
       const data=await response.json().catch(()=>null) as {account?:{id:string;version:number}}|null;
-      if(!data.account){await security(env,"login-failure",null,{method:"password"});return page("Incorrect username or password.",401);}
+      if(!data?.account){await security(env,"login-failure",null,{method:"password"});return page("Incorrect username or password.",401);}
       const expiry=Math.floor(Date.now()/1000)+ttl,nonce=hex(crypto.getRandomValues(new Uint8Array(16)).buffer);
       const prefix=`friend.${data.account.id}.${data.account.version}.${expiry}.${nonce}`;
       const signature=hex(await crypto.subtle.sign("HMAC",await key(env.NINETY_SESSION_SECRET),encoder.encode(prefix)));
