@@ -103,9 +103,25 @@ test.describe("NINETY session security", () => {
 });
 
 test.describe("NINETY authenticated production smoke", () => {
-  // A shared sign-in failure should stop dependent tests rather than repeat 30s timeouts across the suite.
+  // Authenticate once per browser project/serial retry instead of POSTing to
+  // production login for every test. Preserve the real rate limiter.
   test.describe.configure({ mode: "serial" });
-  test.beforeEach(async ({ page }) => { await signIn(page); });
+  let authenticatedState: Awaited<ReturnType<import("@playwright/test").BrowserContext["storageState"]>>;
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    try {
+      const page = await context.newPage();
+      await signIn(page);
+      authenticatedState = await context.storageState();
+    } finally {
+      await context.close();
+    }
+  });
+  test.beforeEach(async ({ context, page }) => {
+    await context.addCookies(authenticatedState.cookies);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("tablist", { name: "Match filters" })).toBeVisible({ timeout: 8_000 });
+  });
 
   test("homepage loads authenticated matchday", async ({ page }) => {
     await expect(page.getByRole("tablist", { name: "Match filters" })).toBeVisible();
