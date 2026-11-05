@@ -1,4 +1,5 @@
 import { getBroadcastRegistryAsync } from "../../../lib/broadcast/registry";
+import { broadcastMatchesFixture, splitBroadcastTeams } from "../../../lib/broadcast/match-fixture";
 import { NextRequest } from "next/server";
 import { GET as independentFixtures } from "../match-centre/fixtures/route";
 import { recordHealth } from "../../service-health";
@@ -39,50 +40,19 @@ async function getPpvEvents():Promise<PpvEvent[]>{
   return getBroadcastRegistryAsync();
 }
 const MATCH_KICKOFF_TOLERANCE_MS = 90 * 60_000;
-const aliases:Record<string,string[]> = {
-  "manchester united":["man utd","manutd","man united"],
-  "manchester city":["man city","mancity"],
-  "brighton and hove albion":["brighton"],
-  "tottenham hotspur":["tottenham","spurs"],
-  "paris saint germain":["psg"],
-  "atletico madrid":["atletico"],
-  "inter milan":["inter"],
-  "ac milan":["milan"],
-  "borussia dortmund":["dortmund"],
-  "bayern munich":["bayern"],
-};
-function teamAppears(eventName:string,team:string){
-  const event=normalizeName(eventName),key=normalizeName(team);
-  if(key.length>=4&&event.includes(key))return true;
-  const alias=aliases[key]??[];
-  return alias.some(value=>event.includes(normalizeName(value)));
-}
 function hasDirectEmbed(event:PpvEvent){
   const valid=(value:string|undefined)=>{try{const url=new URL(value??"");return url.protocol==="https:"&&Boolean(url.hostname)&&!url.username&&!url.password;}catch{return false;}};
   return valid(event.iframe)||Boolean(event.substreams?.some(source=>valid(source.iframe||source.embed_url)));
 }
 function findPpvEvent(match:{home:string;away:string;date:number},events:PpvEvent[]){
-  const candidates=events.filter(event=>{
-    const name=event.name||event.title||"";
-    if(event.id==null||!name||!teamAppears(name,match.home)||!teamAppears(name,match.away)||!hasDirectEmbed(event))return false;
-    if(typeof event.starts_at!=="number"||!Number.isFinite(event.starts_at)||event.starts_at<=0)return false;
-    if(Math.abs(event.starts_at*1000-match.date)>MATCH_KICKOFF_TOLERANCE_MS)return false;
-    return true;
-  });
+  const candidates=events.filter(event=>event.id!=null&&hasDirectEmbed(event)&&broadcastMatchesFixture(event,match,MATCH_KICKOFF_TOLERANCE_MS));
   return candidates.sort((a,b)=>Math.abs((a.starts_at??0)*1000-match.date)-Math.abs((b.starts_at??0)*1000-match.date))[0];
-}
-function splitPpvTeams(name:string):{home:string;away:string}|null{
-  const parts=name.trim().split(/\s+(?:vs?\.?|v|at|@)\s+/i);
-  if(parts.length!==2)return null;
-  const home=parts[0].trim(),away=parts[1].trim();
-  if(home.length<2||away.length<2)return null;
-  return {home,away};
 }
 function ppvFootballMatches(events:PpvEvent[],now:number){
   return events.flatMap(event=>{
-    const category=normalizeName(event.category_name||event.category||"");
+    const category=(event.category_name||event.category||"").trim().toLowerCase();
     if(!["football","soccer","association football"].includes(category))return [];
-    const teams=splitPpvTeams(event.name||event.title||"");
+    const teams=splitBroadcastTeams(event.name||event.title||"");
     const starts=Number(event.starts_at??0),ends=Number(event.ends_at??(starts>0?starts+3*60*60:0));
     if(!teams||!Number.isFinite(starts)||starts<=0||!Number.isFinite(ends)||ends<=0)return [];
     const startMs=starts*1000,endMs=ends*1000;
@@ -177,9 +147,7 @@ async function fixtureFallback(reason:string, request:Request){
     const additional=ppvOnly.filter(match=>{
       if(linkedIds.has(match.apiSources[0]?.id??""))return false;
       const duplicate=matches.find(fixture=>{
-        const sameTeams=(teamAppears(match.home,fixture.home)&&teamAppears(match.away,fixture.away)) ||
-          (teamAppears(match.home,fixture.away)&&teamAppears(match.away,fixture.home));
-        return sameTeams&&Math.abs(fixture.date-match.date)<=MATCH_KICKOFF_TOLERANCE_MS;
+        return broadcastMatchesFixture({name:match.home+" vs "+match.away,starts_at:match.date/1000},{home:fixture.home,away:fixture.away,date:fixture.date},MATCH_KICKOFF_TOLERANCE_MS);
       });
       if(duplicate){
         if(!duplicate.apiSources.length){
