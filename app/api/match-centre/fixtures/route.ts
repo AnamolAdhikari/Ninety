@@ -9,11 +9,21 @@ const root="https://www.thesportsdb.com/api/v1/json/123/";
 const safeBadge=(v:unknown)=>typeof v==="string"&&/^https:\/\/(?:www\.)?(?:thesportsdb\.com|r2\.thesportsdb\.com|media\.api-sports\.io)\//i.test(v)?v:null;
 const safeScore=(v:unknown)=>v===null||v===undefined||v===""?null:/^\d+$/.test(String(v))?Number(v):null;
 const activeStatuses=new Set(["1H","HT","2H","ET","BT","P","INT","LIVE"]);
+function safeProviderError(error:unknown){
+ const message=error instanceof Error?error.message:String(error??"unknown");
+ if(message==="Lineup data is not connected yet.")return "configuration_missing";
+ if(/allowance|quota|limit|429/i.test(message))return "quota_or_rate_limit";
+ if(/not available on the connected football data plan|subscription|season/i.test(message))return "plan_restriction";
+ if(/^sportsdb-http-\d+$/.test(message))return message;
+ if(/timeout|timed out|abort/i.test(message))return "timeout";
+ if(/fetch failed|network|socket|dns/i.test(message))return "network_error";
+ return "provider_error";
+}
 function live(status:string|null){return activeStatuses.has((status??"").toUpperCase())}
 function identity(m:Match){const d=Date.parse(m.kickoff??"");return teamKey(m.home)+"/"+teamKey(m.away)+"/"+(Number.isFinite(d)?Math.round(d/5400000):"unknown")}
 async function sportsdb(day:string):Promise<Match[]>{
  const response=await fetch(root+"eventsday.php?"+new URLSearchParams({d:day,s:"Soccer"}),{signal:AbortSignal.timeout(6500),next:{revalidate:45}});
- if(!response.ok)throw new Error("TheSportsDB unavailable");
+ if(!response.ok)throw new Error("sportsdb-http-"+response.status);
  const body=await response.json() as {events?:SportsEvent[]|null};
  return (body.events??[]).filter(e=>/^\d+$/.test(e.idEvent??"")&&e.strHomeTeam&&e.strAwayTeam&&(!e.strSport||e.strSport==="Soccer")).map(e=>({
  id:"sportsdb-"+e.idEvent,providerId:e.idEvent!,provider:"TheSportsDB" as const,home:e.strHomeTeam!,away:e.strAwayTeam!,league:e.strLeague??"Football",homeBadge:safeBadge(e.strHomeTeamBadge),awayBadge:safeBadge(e.strAwayTeamBadge),
@@ -32,7 +42,17 @@ export async function GET(request:NextRequest){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||Number.isNaN(Date.parse(day))||Math.abs(Date.parse(day)-Date.now())>8*86400000)return Response.json({error:"Invalid date"},{status:400});
  const results=await Promise.allSettled([sportsdb(day),apiFootball(day)]);
  const found=results.flatMap(r=>r.status==="fulfilled"?r.value:[]);
- if(results.every(r=>r.status==="rejected"))return Response.json({status:"unavailable",fixtures:[],message:"Both independent football providers are unavailable."},{status:503,headers:{"Cache-Control":"no-store"}});
+ const diagnostics=results.map((r,i)=>({
+  provider:i===0?"TheSportsDB":"API-Football",
+  available:r.status==="fulfilled",
+  count:r.status==="fulfilled"?r.value.length:0,
+  error:r.status==="rejected"?safeProviderError(r.reason):undefined
+ }));
+ if(results.every(r=>r.status==="rejected"))return Response.json({
+  status:"unavailable",fixtures:[],
+  message:"Both independent football providers are unavailable.",
+  sources:diagnostics,checkedAt:Date.now()
+ },{status:503,headers:{"Cache-Control":"no-store"}});
  const byId=new Map<string,Match>();
  // Prefer API-Football's live state when both providers identify the same game.
  for(const match of found){
@@ -43,5 +63,5 @@ export async function GET(request:NextRequest){
   byId.set(key,{...preferred,homeBadge:preferred.homeBadge??other.homeBadge,awayBadge:preferred.awayBadge??other.awayBadge,score:{home:preferred.score.home??other.score.home,away:preferred.score.away??other.score.away},status:preferred.status??other.status,source:preferred.source+" + "+other.source});
  }
  const fixtures=[...byId.values()].sort((a,b)=>Number(live(b.status))-Number(live(a.status))||(Date.parse(a.kickoff??"")||0)-(Date.parse(b.kickoff??"")||0));
- return Response.json({date:day,fixtures,checkedAt:Date.now(),sources:results.map((r,i)=>({provider:i===0?"TheSportsDB":"API-Football",available:r.status==="fulfilled",count:r.status==="fulfilled"?r.value.length:0})),coverage:"Provider-reported fixtures; live status only when explicitly supplied"},{headers:{"Cache-Control":"public, max-age=15, s-maxage=30"}});
+ return Response.json({date:day,fixtures,checkedAt:Date.now(),sources:diagnostics,coverage:"Provider-reported fixtures; live status only when explicitly supplied"},{headers:{"Cache-Control":"public, max-age=15, s-maxage=30"}});
 }
