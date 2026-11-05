@@ -154,7 +154,7 @@ async function fixtureFallback(reason:string, request:Request){
     const selected=prioritized.filter((f,i)=>{
       if(i<200&&(i<35||!finishedStatuses.has((f.status??"").toUpperCase())))return true;
       const kickoff=Date.parse(f.kickoff!);
-      return Boolean(findPpvEvent({home:f.home,away:f.away,date:kickoff},ppvResult.events));
+      return Boolean(matchForFixture(f));
     });
     const matches=selected.map(f=>{
       const date=Date.parse(f.kickoff!);
