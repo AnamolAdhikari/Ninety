@@ -46,7 +46,15 @@ let items;
 if (Array.isArray(source.events)) items = source.events;
 else if (Array.isArray(source.streams)) {
   // Grouped catalogues must supply explicit event objects; do not guess IDs or embeds.
-  items = source.streams.flatMap(group => Array.isArray(group?.events) ? group.events : [group]);
+  items = source.streams.flatMap(group => {
+    if (!group || typeof group !== 'object') return [];
+    const category = String(group.category ?? group.category_name ?? '').toLowerCase().trim();
+    const entries = Array.isArray(group.streams) ? group.streams : Array.isArray(group.events) ? group.events : [group];
+    return entries.filter(item => {
+      const itemCategory = String(item?.category_name ?? item?.category ?? category).toLowerCase().trim();
+      return ['football', 'soccer', 'association football'].includes(itemCategory);
+    }).map(item => ({...item, category_name: 'Football'}));
+  });
 } else throw Error('Expected events or streams array');
 
 const events = items.map(normalizeEvent).filter(Boolean);
