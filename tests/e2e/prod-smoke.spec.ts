@@ -640,28 +640,14 @@ test.describe("NINETY authenticated production smoke", () => {
   });
 
   test("page has no horizontal overflow", async ({ page }) => {
+    // Descendants inside clipped or horizontally scrollable containers can
+    // legitimately sit outside the viewport. Check document-level overflow,
+    // while the separate mobile-controls test checks essential control bounds.
     const result = await page.evaluate(() => {
       const root = document.documentElement;
       const viewport = root.clientWidth;
-      // The ticker intentionally animates off-screen inside a clipped container.
-      // Inspect the actual elements rather than reverse-matching their geometry:
-      // repeated buttons can have identical bounds during animation.
-      const structuralOffenders = [...document.querySelectorAll<HTMLElement>("body *")]
-        .filter(element => !element.closest(".ticker-marquee"))
-        .map(element => {
-          const rect = element.getBoundingClientRect();
-          return {
-            tag: element.tagName.toLowerCase(),
-            className: typeof element.className === "string" ? element.className : "",
-            left: Math.round(rect.left),
-            right: Math.round(rect.right),
-            width: Math.round(rect.width),
-          };
-        })
-        .filter(item => item.left < -2 || item.right > viewport + 2)
-        .slice(0, 12);
-      return { overflow: root.scrollWidth - viewport, viewport, structuralOffenders };
+      return { overflow: root.scrollWidth - viewport, viewport };
     });
-    expect(result.structuralOffenders, JSON.stringify(result)).toHaveLength(0);
+    expect(result.overflow, JSON.stringify(result)).toBeLessThanOrEqual(2);
   });
 });
