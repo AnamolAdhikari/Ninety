@@ -119,7 +119,8 @@ async function fixtureFallback(reason:string, request:Request){
     const payload={fixtures:successful.flatMap(r=>r.value.fixtures??[]),sources:successful.map(r=>r.value.sources).filter(Boolean)};
     const fixtureStatus=successful.length?200:503;
     const now=Date.now();
-    const ppvOnly=ppvFootballMatches(ppvResult.events,now);\n    const findPpvEvent=createBroadcastLookup(ppvResult.events);
+    const ppvOnly=ppvFootballMatches(ppvResult.events,now);
+    const findPpvEvent=createBroadcastLookup(ppvResult.events);
     const fixtures=(payload?.fixtures??[]).filter(f=>f.kickoff&&Number.isFinite(Date.parse(f.kickoff)));
     if(!fixtures.length&&ppvOnly.length){
       console.warn("[ninety:matches] approved standalone catalogue active",JSON.stringify({count:ppvOnly.length,fixtureStatus}));
