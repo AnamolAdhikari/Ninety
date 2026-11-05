@@ -643,7 +643,11 @@ test.describe("NINETY authenticated production smoke", () => {
     const result = await page.evaluate(() => {
       const root = document.documentElement;
       const viewport = root.clientWidth;
-      const offenders = [...document.querySelectorAll<HTMLElement>("body *")]
+      // The ticker intentionally animates off-screen inside a clipped container.
+      // Inspect the actual elements rather than reverse-matching their geometry:
+      // repeated buttons can have identical bounds during animation.
+      const structuralOffenders = [...document.querySelectorAll<HTMLElement>("body *")]
+        .filter(element => !element.closest(".ticker-marquee"))
         .map(element => {
           const rect = element.getBoundingClientRect();
           return {
@@ -656,14 +660,7 @@ test.describe("NINETY authenticated production smoke", () => {
         })
         .filter(item => item.left < -2 || item.right > viewport + 2)
         .slice(0, 12);
-      const structuralOffenders = offenders.filter(item => {
-        const element = Array.from(document.querySelectorAll("*")).find(node => {
-          const rect = node.getBoundingClientRect();
-          return node.tagName.toLowerCase() === item.tag && Math.round(rect.left) === Math.round(item.left) && Math.round(rect.right) === Math.round(item.right);
-        });
-        return !element?.closest(".ticker-marquee");
-      });
-      return { overflow: root.scrollWidth - viewport, viewport, offenders, structuralOffenders };
+      return { overflow: root.scrollWidth - viewport, viewport, structuralOffenders };
     });
     expect(result.structuralOffenders, JSON.stringify(result)).toHaveLength(0);
   });
